@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Imitação — Calculadora de Intervalos</title>
+<style>
+:root{--bg:#090c12;--panel:#111722;--panel2:#171e2a;--line:#2a3442;--text:#edf3fa;--muted:#93a0b1;--cyan:#62e9ff;--blue:#35a9ff;--green:#4dff9a;--red:#ff4f72}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% 0,#152536 0,#090c12 38%);color:var(--text);font:14px "Segoe UI",Arial,sans-serif}
+header{padding:28px 38px;border-bottom:1px solid var(--line);background:#0b1017e8}h1{margin:0 0 7px;font-size:27px}header p{margin:0;color:var(--muted);max-width:1050px;line-height:1.5}
+.app{display:grid;grid-template-columns:285px 1fr;min-height:calc(100vh - 110px)}aside{padding:24px;border-right:1px solid var(--line);background:#0d1219}.field,.comes{margin-bottom:18px}
+label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:100%;padding:10px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:7px;outline:0}select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #62e9ff20}
+.comes{padding:13px;border:1px solid var(--line);border-radius:9px;background:#10151e}.ct{margin-bottom:9px;color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1.2px}
+.note{color:var(--muted);font-size:12px;line-height:1.5}main{padding:28px 34px 45px;overflow:auto}.title{margin-bottom:12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+.viable{padding:20px;border:1px solid #274554;border-radius:12px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:30px}.moves{display:flex;gap:9px;flex-wrap:wrap}.move{padding:8px 13px;border:1px solid #285060;border-radius:7px;background:#13232c;color:#8cf0ff;font-weight:650}.none{color:var(--red);font-weight:600}
+.wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:28px}table{width:100%;border-collapse:collapse;min-width:560px;background:#0f141c}th,td{padding:10px 13px;border-bottom:1px solid var(--line);text-align:center}th{background:#171e29;color:#cbd5e1;font-size:13px}td:first-child,th:first-child{text-align:left}tr:last-child td{border-bottom:0}
+.iv{display:inline-block;min-width:58px;padding:4px 7px;border-radius:5px;font-weight:700}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
+@media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}}
+</style>
+</head>
+<body>
+<header>
+<h1>Imitação — Calculadora de Intervalos</h1>
+<p>Ferramenta para explorar movimentos melódicos possíveis do Líder em uma textura imitativa. Os cálculos consideram as transposições das Comes e o atraso sucessivo das entradas.</p>
+</header>
+<div class="app">
+<aside>
+<div class="field"><label for="voices">Número de vozes</label><select id="voices"><option value="2">2 — Líder + 1 Comes</option><option value="3">3 — Líder + 2 Comes</option><option value="4">4 — Líder + 3 Comes</option></select></div>
+<div id="controls"></div>
+<div class="note">A 1ª Comes entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
+</aside>
+<main>
+<section class="viable"><div class="title">Movimentos melódicos viáveis para o Líder</div><div id="moves" class="moves"></div></section>
+<div class="title">Tabela de possibilidades</div><div id="table"></div>
+</main>
+</div>
+<script>
+const I=[
+["U",0,0,0],["2ªm",1,1,1],["2ªM",2,1,1],["3ªm",3,2,1],["3ªM",4,2,1],["4ªJ",5,3,1],["4ªaum",6,3,1],["5ªJ",7,4,1],["5ªaum",8,4,1],["6ªm",8,5,1],["6ªM",9,5,1],["7ªm",10,6,1],["7ªM",11,6,1],["8ªJ",12,7,1]
+];
+const options=[...I.map(x=>[x[0]+" acima",x[1],x[2],1]),...I.slice(1).map(x=>[x[0]+" abaixo",x[1],x[2],-1])];
+const moves=[I[0],...I.slice(1).flatMap(x=>[[x[0]+" ↑",x[1],x[2],1],[x[0]+" ↓",x[1],x[2],-1]])];
+function opts(){return options.map((x,i)=>`<option value="${i}">${x[0]}</option>`).join("")}
+function setup(){
+ const n=+voices.value; controls.innerHTML="";
+ for(let k=1;k<n;k++) controls.innerHTML+=`<div class="comes"><div class="ct">${k}ª Comes</div><select id="c${k}">${opts()}</select></div>`;
+ if(n>=2)c1.value=options.findIndex(x=>x[0]=="5ªJ acima");
+ if(n>=3)c2.value=options.findIndex(x=>x[0]=="4ªJ abaixo");
+ if(n>=4)c3.value=options.findIndex(x=>x[0]=="5ªJ acima");
+ document.querySelectorAll("select").forEach(x=>x.onchange=calc);
+}
+function signed(x){return x[1]*x[3]}
+function cls(s){s=Math.abs(s)%12;return [0,7].includes(s)?"perfect":[3,4,8,9].includes(s)?"imperfect":"dissonant"}
+function label(s){
+ let a=Math.abs(s),o=Math.floor(a/12),p=a%12;
+ let names={0:"U",1:"2ªm",2:"2ªM",3:"3ªm",4:"3ªM",5:"4ªJ",6:"4ªaum",7:"5ªJ",8:"6ªm",9:"6ªM",10:"7ªm",11:"7ªM"};
+ if(o===0)return names[p]; if(p===0)return `${o+1}ªJ`; return `${names[p]} + ${o}ª`;
+}
+/*
+  A tabela mostra relações consecutivas:
+  Líder→Comes1, Comes1→Comes2, etc.
+  Para duas vozes, a altura inicial da Comes é a sua transposição.
+  Para cada relação sucessiva, a nota da voz posterior coincide
+  com a nota anterior da voz precedente, acrescida da sua transposição.
+*/
+function calc(){
+ const n=+voices.value, t=[{s:0,d:0}];
+ for(let k=1;k<n;k++){let x=options[+document.getElementById("c"+k).value];t.push({s:x[1]*x[3],d:x[2]*x[3]})}
+ let rows=[],good=[];
+ for(const m0 of moves){
+   let m={s:m0[1]*m0[3],d:m0[2]*m0[3]}, rel=[],ok=true;
+   for(let k=1;k<n;k++){
+     // intervalo inicial entre as duas vozes consecutivas
+     // e efeito do movimento do Líder sobre a voz precedente.
+     let sem=t[k].s-t[k-1].s;
+     let dia=t[k].d-t[k-1].d;
+     // No instante de entrada da voz k, a voz k-1 já avançou pelo movimento.
+     // A nova diferença é: transposição posterior - (transposição anterior + movimento).
+     sem-=m.s; dia-=m.d;
+     // Normalizamos direção/intervalo apenas para apresentação/classificação.
+     rel.push({s:Math.abs(sem),lab:label(sem),c:cls(sem)});
+     if(cls(sem)==="dissonant")ok=false;
+   }
+   rows.push({m:m0,rel,ok});if(ok)good.push(m0);
+ }
+ movesBox(good); tableBox(rows,n);
+}
+function movesBox(a){moves.innerHTML=a.length?a.map(x=>`<span class="move">${x[0]}</span>`).join(""):`<span class="none">Nenhum movimento atende simultaneamente aos critérios consonantes.</span>`}
+function tableBox(rows,n){
+ let h="<div class='wrap'><table><thead><tr><th>Movimento do Líder</th>";
+ for(let k=1;k<n;k++)h+=`<th>Comes ${k}</th>`;h+="</tr></thead><tbody>";
+ for(const r of rows){h+=`<tr><td>${r.m[0]}</td>`;for(const x of r.rel)h+=`<td><span class="iv ${x.c}">${x.lab}</span></td>`;h+="</tr>"}
+ table.innerHTML=h+"</tbody></table></div>";
+}
+voices.onchange=()=>{setup();calc()};setup();calc();
+</script>
+</body>
+</html>
