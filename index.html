@@ -15,7 +15,7 @@ label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:
 .viable{padding:20px;border:1px solid #274554;border-radius:12px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:20px}
 .moves{display:flex;gap:9px;flex-wrap:wrap}.move{padding:8px 13px;border:1px solid #285060;border-radius:7px;background:#13232c;color:#8cf0ff;font-weight:650}.none{color:var(--red);font-weight:600}
 
-/* Tabs */
+/* Tabs (área principal) */
 .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line)}
 .tab-btn{padding:11px 20px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
 .tab-btn:hover{color:var(--text)}
@@ -23,14 +23,32 @@ label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
+/* Alternância de modo (barra lateral) */
+.mode-switch{display:flex;gap:6px}
+.mode-btn{flex:1;padding:9px 6px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
+.mode-btn:hover{color:var(--text)}
+.mode-btn.active{color:#04141c;background:var(--cyan);border-color:var(--cyan)}
+
+/* Painel de classificação de Classes de Intervalo (modo Atonal) */
+.ic-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.ic-chip{padding:7px 10px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid transparent;font-family:inherit}
+.ic-chip.desired{color:var(--green);border-color:#4dff9a55;background:#4dff9a12}
+.ic-chip.undesired{color:var(--red);border-color:#ff4f7255;background:#ff4f7212}
+
 /* Tabelas: largura pelo conteúdo, sem esticar nem quebrar linha */
 .wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
 table{width:auto;border-collapse:collapse;background:#0f141c;font-size:12px}
 th,td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
 th{background:#171e29;color:#cbd5e1;font-size:12px}
-td:first-child,th:first-child{text-align:left}
+td:first-child,th:first-child{text-align:left;min-width:50px}
 tr:last-child td{border-bottom:0}
-.iv{display:inline-block;min-width:40px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
+.iv{display:inline-block;min-width:40px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}.desired{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.undesired{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
+
+/* Tabela de Referência compacta — usada só no modo Atonal (colunas mais
+   estreitas, linhas mais baixas, célula só com o número da CI) */
+table.compact th,table.compact td{padding:1px 4px;line-height:1.2}
+table.compact td:first-child,table.compact th:first-child{min-width:70px}
+table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 @media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}}
 </style>
 </head>
@@ -42,8 +60,30 @@ tr:last-child td{border-bottom:0}
 </header>
 <div class="app">
 <aside>
-<div class="field"><label for="voices">Número de vozes</label><select id="voices"><option value="2">2 — Líder + 1 Imitação</option><option value="3">3 — Líder + 2 Imitações</option><option value="4">4 — Líder + 3 Imitações</option></select></div>
+<div class="field">
+  <label>Modo</label>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-modo="tonal" type="button">Tonal</button>
+    <button class="mode-btn" data-modo="atonal" type="button">Atonal</button>
+  </div>
+</div>
+
+<div class="field"><label for="voices">Número de vozes</label><select id="voices">
+  <option value="2">2 — Líder + 1 Imitação</option>
+  <option value="3">3 — Líder + 2 Imitações</option>
+  <option value="4">4 — Líder + 3 Imitações</option>
+  <option value="5">5 — Líder + 4 Imitações</option>
+  <option value="6">6 — Líder + 5 Imitações</option>
+</select></div>
+
 <div id="controls"></div>
+
+<div id="icPanel" class="field" style="display:none">
+  <label>Classes de intervalo (clique para alternar)</label>
+  <div class="ic-grid" id="icGrid"></div>
+  <div class="note">Verde = desejada · Vermelho = indesejada. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
+</div>
+
 <div class="note">A 1ª Imitação entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
 </aside>
 <main>
@@ -54,7 +94,7 @@ tr:last-child td{border-bottom:0}
 
 <div id="tab-referencia" class="tab-panel active">
   <div class="title">Todos os movimentos × todas as transposições possíveis</div>
-  <p class="note" style="margin-bottom:14px">Grade de consulta geral: cada célula mostra o intervalo resultante entre uma voz e a voz imediatamente anterior a ela (já deslocada pelo movimento melódico), para qualquer transposição de entrada. Serve de referência tanto para o par Líder → 1ª Imitação quanto para qualquer par de Imitações consecutivas.</p>
+  <p class="note" id="refNote" style="margin-bottom:14px"></p>
   <div id="refTable"></div>
 </div>
 
@@ -66,123 +106,145 @@ tr:last-child td{border-bottom:0}
 </main>
 </div>
 <script>
-// Intervalos simplificados: [nome, número_do_intervalo (1-indexado), graus_0-indexados]
-const intervalos = [
-  ["U", 1, 0],
-  ["2ª", 2, 1],
-  ["3ª", 3, 2],
-  ["4ª", 4, 3],
-  ["5ª", 5, 4],
-  ["6ª", 6, 5],
-  ["7ª", 7, 6],
-  ["8ª", 8, 7]
+// =====================================================================
+// MODO TONAL — intervalos diatônicos (grau 0-indexado + direção embutida
+// no próprio valor: positivo = acima, negativo = abaixo)
+// =====================================================================
+const intervalosTonal = [
+  ["U", 0], ["2ª", 1], ["3ª", 2], ["4ª", 3],
+  ["5ª", 4], ["6ª", 5], ["7ª", 6], ["8ª", 7]
 ];
 
-// Opções dos seletores de transposição das Imitações.
-// "U acima" foi substituído por "Uníssono" (uníssono não tem direção),
-// mas isso só afeta o rótulo mostrado nos seletores — o array "moves"
-// (linhas das tabelas) continua usando "U" normalmente.
-const options = [
-  ...intervalos.map(x => [x[1] === 1 ? "U" : x[0] + " ↑", x[1], x[2], 1]),
-  ...intervalos.slice(1).map(x => [x[0] + " ↓", x[1], x[2], -1])
+// Cada opção: [rótulo, valor_sinalizado_em_graus]
+const optionsTonal = [
+  ...intervalosTonal.map(x => [x[1] === 0 ? "U" : x[0] + " ↑", x[1]]),
+  ...intervalosTonal.slice(1).map(x => [x[0] + " ↓", -x[1]])
 ];
+const movesTonal = optionsTonal; // mesmo domínio: "quanto se desloca, em graus"
 
-// Movimentos possíveis do Líder: U, e cada intervalo acima/abaixo.
-const moves = [
-  [intervalos[0][0], intervalos[0][1], intervalos[0][2], 1],
-  ...intervalos.slice(1).flatMap(x => [
-    [x[0] + " ↑", x[1], x[2], 1],
-    [x[0] + " ↓", x[1], x[2], -1]
-  ])
-];
-
-function opts() {
-  return options.map((x, i) => `<option value="${i}">${x[0]}</option>`).join("");
+// Classificação tonal: 4ª tratada como dissonante (convenção do
+// contraponto de espécies). Só U/8ª/15ª (g=0) e 5ª/12ª/19ª (g=4) são
+// perfeitas; 3ª/6ª (g=2,5) imperfeitas; o restante, dissonante.
+function clsTonal(intervalNum) {
+  const g = (intervalNum - 1) % 7;
+  if (g === 0 || g === 4) return "perfect";
+  else if (g === 2 || g === 5) return "imperfect";
+  else return "dissonant";
 }
+
+// =====================================================================
+// MODO Atonal — semitons (0 a 11) + direção embutida no valor sinalizado
+// =====================================================================
+const optionsAtonal = [
+  ["0", 0],
+  ...Array.from({ length: 11 }, (_, i) => i + 1).map(n => [n + " ↑", n]),
+  ...Array.from({ length: 11 }, (_, i) => i + 1).map(n => [n + " ↓", -n])
+];
+const movesAtonal = optionsAtonal; // mesmo domínio: "quanto se desloca, em semitons"
+
+// Classificação atônica: definida manualmente pelo usuário por classe de
+// intervalo (IC0 a IC6). Todas começam "indesejadas" (vermelho) até serem
+// marcadas como "desejadas" (verde) no painel da barra lateral.
+const icDesired = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+function clsAtonal(ic) {
+  return icDesired[ic] ? "desired" : "undesired";
+}
+
+// =====================================================================
+// Estado de modo e acesso genérico aos dados do modo ativo
+// =====================================================================
+let modo = "tonal";
+function currentOptions() { return modo === "tonal" ? optionsTonal : optionsAtonal; }
+function currentMoves() { return modo === "tonal" ? movesTonal : movesAtonal; }
+
+// Calcula o resultado (rótulo + classificação) entre duas transposições e
+// um movimento, já abstraindo qual modo está ativo. "val1"/"val2"/"valMov"
+// são sempre valores numéricos sinalizados (graus no tonal, semitons no
+// Atonal) — a mesma mecânica de "voz anterior deslocada vs. voz seguinte
+// parada" de sempre.
+function calcularResultado(val1, val2, valMovimento) {
+  const delta = val2 - val1 - valMovimento;
+  if (modo === "tonal") {
+    const intervalNum = Math.abs(delta) + 1;
+    return { value: intervalNum, label: intervalNum + "ª", cls: clsTonal(intervalNum) };
+  } else {
+    const mod = ((delta % 12) + 12) % 12;
+    const ic = Math.min(mod, 12 - mod);
+    return { value: ic, label: "IC" + ic, cls: clsAtonal(ic) };
+  }
+}
+
+// =====================================================================
+// Configuração das Imitações (barra lateral)
+// =====================================================================
+// Ciclo de valores padrão do modo tonal para até 5 Imitações (6 vozes).
+// No modo Atonal o padrão é sempre "0" (uníssono), que já é a primeira
+// opção da lista — não precisa de atribuição explícita.
+const defaultsTonal = ["5ª ↑", "4ª ↓", "5ª ↑", "4ª ↓", "5ª ↑"];
 
 function setup() {
   const n = +voices.value;
+  const opts = currentOptions();
   controls.innerHTML = "";
   for (let k = 1; k < n; k++) {
-    controls.innerHTML += `<div class="comes"><div class="ct">${k}ª Imitação</div><select id="c${k}">${opts()}</select></div>`;
+    const optsHtml = opts.map((x, i) => `<option value="${i}">${x[0]}</option>`).join("");
+    controls.innerHTML += `<div class="comes"><div class="ct">${k}ª Imitação</div><select id="c${k}">${optsHtml}</select></div>`;
   }
-  if (n >= 2) c1.value = options.findIndex(x => x[0] == "5ª acima");
-  if (n >= 3) c2.value = options.findIndex(x => x[0] == "4ª abaixo");
-  if (n >= 4) c3.value = options.findIndex(x => x[0] == "5ª acima");
+  if (modo === "tonal") {
+    for (let k = 1; k < n; k++) {
+      const idx = opts.findIndex(x => x[0] === defaultsTonal[k - 1]);
+      if (idx >= 0) document.getElementById("c" + k).value = idx;
+    }
+  }
   // Escopo restrito a "#controls select": não sobrescreve o onchange do
-  // próprio "#voices" (bug corrigido em rodada anterior).
+  // próprio "#voices".
   document.querySelectorAll("#controls select").forEach(x => x.onchange = calc);
 }
 
-// Classificação: 4ª é tratada como dissonante (convenção do contraponto de
-// espécies). Só U/8ª/15ª... (g=0) e 5ª/12ª/19ª... (g=4) são perfeitas.
-function cls(intervalNum) {
-  const g = (intervalNum - 1) % 7;
-  if (g === 0 || g === 4) {
-    return "perfect";
-  } else if (g === 2 || g === 5) {
-    return "imperfect";
-  } else {
-    return "dissonant";
-  }
-}
-
-function label(intervalNum) {
-  return Math.abs(intervalNum) + "ª";
-}
-
-// Opera sobre graus 0-indexados (.d), consistentes entre si, e só depois
-// reconverte para número de intervalo (+1).
-function calcularIntervalo(transposicao1, transposicao2, movimento) {
-  let deltaGraus = transposicao2.d - transposicao1.d - movimento.d;
-  return Math.abs(deltaGraus) + 1;
-}
-
+// =====================================================================
+// Cálculo principal (aba "Movimentos viáveis")
+// =====================================================================
 function calc() {
   const n = +voices.value;
-  const t = [{ s: 0, d: 0, dir: 1 }];
+  const t = [0]; // Líder sempre parte de 0
 
   for (let k = 1; k < n; k++) {
-    let x = options[+document.getElementById("c" + k).value];
-    t.push({ s: x[1] * x[3], d: x[2] * x[3], dir: x[3] });
+    const idx = +document.getElementById("c" + k).value;
+    t.push(currentOptions()[idx][1]);
   }
 
   let rows = [];
   let good = [];
 
-  for (const m0 of moves) {
-    let m = { s: m0[1] * m0[3], d: m0[2] * m0[3], dir: m0[3] };
+  for (const mv of currentMoves()) {
+    const mVal = mv[1];
     let rel = [];
     let ok = true;
 
     for (let k = 1; k < n; k++) {
-      let intervalo = calcularIntervalo(t[k-1], t[k], m);
-      rel.push({
-        intervalo: intervalo,
-        lab: label(intervalo),
-        c: cls(intervalo)
-      });
-      if (cls(intervalo) === "dissonant") ok = false;
+      const r = calcularResultado(t[k - 1], t[k], mVal);
+      rel.push(r);
+      if (r.cls === "dissonant" || r.cls === "undesired") ok = false;
     }
-    rows.push({ m: m0, rel, ok });
-    if (ok) good.push(m0);
+    rows.push({ m: mv, rel, ok });
+    if (ok) good.push(mv);
   }
 
-  // Ordena apenas os badges de "Movimentos Viáveis": do mais ascendente
-  // (maior grau positivo) para o mais descendente (maior grau negativo).
-  // A ordem das linhas na tabela (variável "rows") permanece a original.
-  good.sort((a, b) => (b[2] * b[3]) - (a[2] * a[3]));
+  // Ordena os badges de "Movimentos Viáveis": do mais ascendente (maior
+  // valor sinalizado) para o mais descendente. A ordem das linhas na
+  // tabela ("rows") permanece a original.
+  good.sort((a, b) => b[1] - a[1]);
 
   movesBox(good);
   tableBox(rows, n);
 }
 
 function movesBox(a) {
-  const movesElement = document.getElementById('moves');
+  const movesElement = document.getElementById("moves");
   if (a.length) {
     movesElement.innerHTML = a.map(x => `<span class="move">${x[0]}</span>`).join("");
   } else {
-    movesElement.innerHTML = `<span class="none">Nenhum movimento atende simultaneamente aos critérios consonantes.</span>`;
+    movesElement.innerHTML = `<span class="none">Nenhum movimento atende simultaneamente aos critérios ${modo === "tonal" ? "consonantes" : "desejados"}.</span>`;
   }
 }
 
@@ -194,36 +256,79 @@ function tableBox(rows, n) {
   for (const r of rows) {
     h += `<tr><td>${r.m[0]}</td>`;
     for (const x of r.rel) {
-      h += `<td><span class="iv ${x.c}">${x.lab}</span></td>`;
+      h += `<td><span class="iv ${x.cls}">${x.label}</span></td>`;
     }
     h += "</tr>";
   }
   table.innerHTML = h + "</tbody></table></div>";
 }
 
-// Tabela de Referência: grade estática 15x15 (todos os movimentos do Líder
-// × todas as transposições possíveis). Reaproveita exatamente as mesmas
-// funções calcularIntervalo/cls/label usadas no Configurador.
+// =====================================================================
+// Tabela de Referência (aba inicial): grade estática — todos os
+// movimentos do Líder × todas as transposições possíveis do modo ativo.
+// Reaproveita a mesma calcularResultado() usada em "Movimentos viáveis".
+// =====================================================================
 function buildReferenceTable() {
-  let h = "<div class='wrap'><table><thead><tr><th>...........</th>";
-  for (const opt of options) h += `<th>${opt[0]}</th>`;
+  const opts = currentOptions();
+  const mvs = currentMoves();
+
+  const tableClass = modo === "atonal" ? " class='compact'" : "";
+  let h = `<div class='wrap'><table${tableClass}><thead><tr><th></th>`;
+  for (const opt of opts) h += `<th>${opt[0]}</th>`;
   h += "</tr></thead><tbody>";
 
-  for (const mv of moves) {
+  for (const mv of mvs) {
     h += `<tr><td>${mv[0]}</td>`;
-    const movimento = { d: mv[2] * mv[3] };
-    for (const opt of options) {
-      const lider = { d: 0 };
-      const transposicao = { d: opt[2] * opt[3] };
-      const intervalo = calcularIntervalo(lider, transposicao, movimento);
-      h += `<td><span class="iv ${cls(intervalo)}">${label(intervalo)}</span></td>`;
+    for (const opt of opts) {
+      const r = calcularResultado(0, opt[1], mv[1]);
+      const displayLabel = modo === "atonal" ? r.value : r.label;
+      h += `<td><span class="iv ${r.cls}">${displayLabel}</span></td>`;
     }
     h += "</tr>";
   }
   refTable.innerHTML = h + "</tbody></table></div>";
+
+  refNote.textContent = modo === "tonal"
+    ? "Grade de consulta geral: cada célula mostra o intervalo resultante entre uma voz e a voz imediatamente anterior a ela (já deslocada pelo movimento melódico), para qualquer transposição de entrada. Serve de referência tanto para o par Líder → 1ª Imitação quanto para qualquer par de Imitações consecutivas."
+    : "Grade de consulta geral em classes de intervalo (IC0–IC6). A cor de cada célula segue a classificação definida no painel \"Classes de intervalo\", na barra lateral.";
 }
 
+// =====================================================================
+// Painel de classificação de Classes de Intervalo (modo Atonal)
+// =====================================================================
+function renderIcPanel() {
+  icGrid.innerHTML = Object.keys(icDesired).map(ic =>
+    `<button type="button" class="ic-chip ${icDesired[ic] ? "desired" : "undesired"}" data-ic="${ic}">IC${ic}</button>`
+  ).join("");
+  icGrid.querySelectorAll(".ic-chip").forEach(btn => {
+    btn.onclick = () => {
+      const ic = btn.dataset.ic;
+      icDesired[ic] = !icDesired[ic];
+      renderIcPanel();
+      calc();
+      buildReferenceTable();
+    };
+  });
+}
+
+// =====================================================================
+// Alternância de modo (Tonal / Atonal)
+// =====================================================================
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    modo = btn.dataset.modo;
+    icPanel.style.display = modo === "atonal" ? "block" : "none";
+    setup();
+    calc();
+    buildReferenceTable();
+  };
+});
+
+// =====================================================================
 // Alternância de abas
+// =====================================================================
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -234,6 +339,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 });
 
 voices.onchange = () => { setup(); calc(); };
+renderIcPanel();
 setup();
 calc();
 buildReferenceTable();
