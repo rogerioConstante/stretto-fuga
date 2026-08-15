@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Imitação — Calculadora de Intervalos</title>
+<title>Stretto Fuga</title>
 <style>
 :root{--bg:#090c12;--panel:#111722;--panel2:#171e2a;--line:#2a3442;--text:#edf3fa;--muted:#93a0b1;--cyan:#62e9ff;--blue:#35a9ff;--green:#4dff9a;--red:#ff4f72}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% 0,#152536 0,#090c12 38%);color:var(--text);font:14px "Segoe UI",Arial,sans-serif}
@@ -14,15 +14,31 @@ label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:
 .note{color:var(--muted);font-size:12px;line-height:1.5}main{padding:28px 34px 45px;overflow:auto}.title{margin-bottom:12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
 .viable{padding:20px;border:1px solid #274554;border-radius:12px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:20px}
 .moves{display:flex;gap:9px;flex-wrap:wrap}.move{padding:8px 13px;border:1px solid #285060;border-radius:7px;background:#13232c;color:#8cf0ff;font-weight:650}.none{color:var(--red);font-weight:600}
-.wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}table{width:100%;border-collapse:collapse;min-width:560px;background:#0f141c;font-size:12px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center}th{background:#171e29;color:#cbd5e1;font-size:12px}td:first-child,th:first-child{text-align:left}tr:last-child td{border-bottom:0}
-.iv{display:inline-block;min-width:50px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.tab-btn{padding:11px 20px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Tabelas: largura pelo conteúdo, sem esticar nem quebrar linha */
+.wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+table{width:auto;border-collapse:collapse;background:#0f141c;font-size:12px}
+th,td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{background:#171e29;color:#cbd5e1;font-size:12px}
+td:first-child,th:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+.iv{display:inline-block;min-width:40px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
 @media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}}
 </style>
 </head>
 <body>
 <header>
-<h1>Imitação — Calculadora de Intervalos</h1>
-<p>Ferramenta para explorar movimentos melódicos possíveis do Líder em uma textura imitativa. Os cálculos consideram as transposições das Imitações e o atraso sucessivo das entradas.</p>
+<h1>Stretto Fuga — Calculadora de Intervalos</h1>
+<p>Ferramenta para explorar movimentos melódicos possíveis do Líder em uma textura imitativa.</p>
+<div class="note">por Rogério Tavares Constante</div>
 </header>
 <div class="app">
 <aside>
@@ -31,9 +47,22 @@ label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:
 <div class="note">A 1ª Imitação entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
 </aside>
 <main>
-<div class="title">Movimentos melódicos viáveis para o Líder</div>
-<section class="viable"><div id="moves" class="moves"></div></section>
-<div class="title">Tabela de possibilidades</div><div id="table"></div>
+<div class="tabs">
+  <button class="tab-btn active" data-tab="referencia" type="button">Tabela de Referência</button>
+  <button class="tab-btn" data-tab="configurador" type="button">Movimentos viáveis</button>
+</div>
+
+<div id="tab-referencia" class="tab-panel active">
+  <div class="title">Todos os movimentos × todas as transposições possíveis</div>
+  <p class="note" style="margin-bottom:14px">Grade de consulta geral: cada célula mostra o intervalo resultante entre uma voz e a voz imediatamente anterior a ela (já deslocada pelo movimento melódico), para qualquer transposição de entrada. Serve de referência tanto para o par Líder → 1ª Imitação quanto para qualquer par de Imitações consecutivas.</p>
+  <div id="refTable"></div>
+</div>
+
+<div id="tab-configurador" class="tab-panel">
+  <div class="title">Movimentos melódicos viáveis para o Líder</div>
+  <section class="viable"><div id="moves" class="moves"></div></section>
+  <div class="title">Tabela de possibilidades</div><div id="table"></div>
+</div>
 </main>
 </div>
 <script>
@@ -49,13 +78,16 @@ const intervalos = [
   ["8ª", 8, 7]
 ];
 
+// Opções dos seletores de transposição das Imitações.
+// "U acima" foi substituído por "Uníssono" (uníssono não tem direção),
+// mas isso só afeta o rótulo mostrado nos seletores — o array "moves"
+// (linhas das tabelas) continua usando "U" normalmente.
 const options = [
-  ...intervalos.map(x => [x[0] + " acima", x[1], x[2], 1]),
-  ...intervalos.slice(1).map(x => [x[0] + " abaixo", x[1], x[2], -1])
+  ...intervalos.map(x => [x[1] === 1 ? "U" : x[0] + " ↑", x[1], x[2], 1]),
+  ...intervalos.slice(1).map(x => [x[0] + " ↓", x[1], x[2], -1])
 ];
 
-// CORREÇÃO (rodada anterior): "U" agora tem direção explícita (1) como os
-// demais itens. Antes m0[3] ficava undefined e a linha "Uníssono" virava NaN.
+// Movimentos possíveis do Líder: U, e cada intervalo acima/abaixo.
 const moves = [
   [intervalos[0][0], intervalos[0][1], intervalos[0][2], 1],
   ...intervalos.slice(1).flatMap(x => [
@@ -77,21 +109,13 @@ function setup() {
   if (n >= 2) c1.value = options.findIndex(x => x[0] == "5ª acima");
   if (n >= 3) c2.value = options.findIndex(x => x[0] == "4ª abaixo");
   if (n >= 4) c3.value = options.findIndex(x => x[0] == "5ª acima");
-  // CORREÇÃO 1 (nova): antes este seletor era "select" (sem escopo), o que
-  // capturava também o <select id="voices"> e sobrescrevia seu onchange
-  // (definido lá embaixo como "setup(); calc();") com apenas "calc". Depois
-  // da primeira execução de setup(), mudar o número de vozes deixava de
-  // reconstruir os campos de Imitação 2/3 — só recalculava a tabela.
-  // Restringindo o seletor a "#controls select", tocamos apenas nos campos
-  // dinâmicos de Imitação, preservando o onchange do próprio "#voices".
+  // Escopo restrito a "#controls select": não sobrescreve o onchange do
+  // próprio "#voices" (bug corrigido em rodada anterior).
   document.querySelectorAll("#controls select").forEach(x => x.onchange = calc);
 }
 
-// Classifica o intervalo baseado no número do intervalo (1-indexado)
-// CORREÇÃO 3 (nova): a 4ª (e suas compostas: 11ª, 18ª...) volta a ser
-// classificada como dissonante, conforme a convenção pedagógica do
-// contraponto de espécies (a 4ª exige preparação/resolução, ao contrário
-// da 5ª e da 8ª). Apenas g=0 (U/8ª/15ª) e g=4 (5ª/12ª/19ª) são perfeitas.
+// Classificação: 4ª é tratada como dissonante (convenção do contraponto de
+// espécies). Só U/8ª/15ª... (g=0) e 5ª/12ª/19ª... (g=4) são perfeitas.
 function cls(intervalNum) {
   const g = (intervalNum - 1) % 7;
   if (g === 0 || g === 4) {
@@ -107,9 +131,8 @@ function label(intervalNum) {
   return Math.abs(intervalNum) + "ª";
 }
 
-// Calcula o intervalo resultante entre duas transposições, operando sobre
-// graus 0-indexados (.d), que são aditivos/subtrativos de forma consistente,
-// e só depois reconvertendo para número de intervalo (+1).
+// Opera sobre graus 0-indexados (.d), consistentes entre si, e só depois
+// reconverte para número de intervalo (+1).
 function calcularIntervalo(transposicao1, transposicao2, movimento) {
   let deltaGraus = transposicao2.d - transposicao1.d - movimento.d;
   return Math.abs(deltaGraus) + 1;
@@ -145,6 +168,11 @@ function calc() {
     if (ok) good.push(m0);
   }
 
+  // Ordena apenas os badges de "Movimentos Viáveis": do mais ascendente
+  // (maior grau positivo) para o mais descendente (maior grau negativo).
+  // A ordem das linhas na tabela (variável "rows") permanece a original.
+  good.sort((a, b) => (b[2] * b[3]) - (a[2] * a[3]));
+
   movesBox(good);
   tableBox(rows, n);
 }
@@ -173,9 +201,42 @@ function tableBox(rows, n) {
   table.innerHTML = h + "</tbody></table></div>";
 }
 
+// Tabela de Referência: grade estática 15x15 (todos os movimentos do Líder
+// × todas as transposições possíveis). Reaproveita exatamente as mesmas
+// funções calcularIntervalo/cls/label usadas no Configurador.
+function buildReferenceTable() {
+  let h = "<div class='wrap'><table><thead><tr><th>...........</th>";
+  for (const opt of options) h += `<th>${opt[0]}</th>`;
+  h += "</tr></thead><tbody>";
+
+  for (const mv of moves) {
+    h += `<tr><td>${mv[0]}</td>`;
+    const movimento = { d: mv[2] * mv[3] };
+    for (const opt of options) {
+      const lider = { d: 0 };
+      const transposicao = { d: opt[2] * opt[3] };
+      const intervalo = calcularIntervalo(lider, transposicao, movimento);
+      h += `<td><span class="iv ${cls(intervalo)}">${label(intervalo)}</span></td>`;
+    }
+    h += "</tr>";
+  }
+  refTable.innerHTML = h + "</tbody></table></div>";
+}
+
+// Alternância de abas
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  };
+});
+
 voices.onchange = () => { setup(); calc(); };
 setup();
 calc();
+buildReferenceTable();
 </script>
 </body>
 </html>
