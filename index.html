@@ -16,6 +16,7 @@ label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:
 .viable{padding:20px;border:1px solid #274554;border-radius:12px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:20px}
 .moves{display:flex;gap:9px;flex-wrap:wrap}.move{padding:8px 13px;border:1px solid #285060;border-radius:7px;background:#13232c;color:#8cf0ff;font-weight:650}.none{color:var(--red);font-weight:600}
 
+/* Tabs (área principal) */
 .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line)}
 .tab-btn{padding:11px 20px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
 .tab-btn:hover{color:var(--text)}
@@ -23,16 +24,19 @@ label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
+/* Alternância de modo (barra lateral) */
 .mode-switch{display:flex;gap:6px}
 .mode-btn{flex:1;padding:9px 6px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
 .mode-btn:hover{color:var(--text)}
 .mode-btn.active{color:#04141c;background:var(--cyan);border-color:var(--cyan)}
 
+/* Painel de classificação de Classes de Intervalo (modo Atonal) */
 .ic-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .ic-chip{padding:7px 10px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid transparent;font-family:inherit}
 .ic-chip.desired{color:var(--green);border-color:#4dff9a55;background:#4dff9a12}
 .ic-chip.undesired{color:var(--red);border-color:#ff4f7255;background:#ff4f7212}
 
+/* Tabelas: largura pelo conteúdo, sem esticar nem quebrar linha */
 .wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
 table{width:auto;border-collapse:collapse;background:#0f141c;font-size:12px}
 th,td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
@@ -41,14 +45,17 @@ td:first-child,th:first-child{text-align:left;min-width:50px}
 tr:last-child td{border-bottom:0}
 .iv{display:inline-block;min-width:40px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}.desired{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.undesired{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
 
+/* Tabela de Referência compacta — usada só no modo Atonal (colunas mais
+   estreitas, linhas mais baixas, célula só com o número da CI) */
 table.compact th,table.compact td{padding:1px 4px;line-height:1.2}
 table.compact td:first-child,table.compact th:first-child{min-width:70px}
 table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 @media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}}
 
+/* ===================== Tela de Experimentação ===================== */
 .exp-open-btn{width:100%;padding:9px 6px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
 .exp-open-btn:hover{border-color:var(--cyan)}
-.exp-panel{position:fixed;top:70px;left:60px;width:820px;max-width:94vw;background:#0d1219;border:1px solid #2a3442;border-radius:12px;box-shadow:0 18px 50px #000a;z-index:500;display:none;flex-direction:column;overflow:hidden}
+.exp-panel{position:fixed;top:70px;left:60px;width:720px;max-width:94vw;background:#0d1219;border:1px solid #2a3442;border-radius:12px;box-shadow:0 18px 50px #000a;z-index:500;display:none;flex-direction:column;overflow:hidden}
 .exp-panel.open{display:flex}
 .exp-titlebar{padding:10px 14px;background:#171e29;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
 .exp-titlebar b{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--cyan)}
@@ -66,22 +73,16 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-octave b{color:var(--text);min-width:12px;text-align:center}
 .exp-actionbtn{padding:6px 11px;background:#1c1015;border:1px solid #4a2530;border-radius:6px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .exp-hint{color:var(--muted);font-size:11px;margin-bottom:10px;line-height:1.5}
-
-/* Layout do canvas compartilhado */
-.exp-canvas-wrapper{display:flex;gap:0;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
-.exp-controls-column{flex:0 0 110px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#111722;padding:4px 0}
-.exp-control-row{height:54px;display:flex;align-items:center;padding:0 10px;gap:6px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
-.exp-control-row:last-child{border-bottom:0}
-.exp-control-row .label{flex:1;font-weight:600;font-size:10px;color:var(--text)}
-.exp-control-row .label.editable{color:var(--green)}
-.exp-control-row input[type=number]{width:36px;padding:2px 3px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:10px;text-align:center}
-.exp-control-row .delay-fixed{font-size:10px;color:var(--muted);min-width:20px;text-align:center}
-.exp-canvas-area{flex:1;overflow:auto;padding:4px 0 4px 8px;min-height:0;background:#f5f0e8}
-.exp-canvas-area svg{cursor:crosshair;display:block}
-.exp-canvas-area svg text{fill:#000!important}
-.exp-canvas-area svg path{stroke:#000!important}
-.exp-canvas-area svg .vf-stavenote text{fill:#000!important}
-
+.exp-staves{display:flex;flex-direction:column;gap:2px;margin-bottom:14px;background:#0f141c;border:1px solid var(--line);border-radius:8px;padding:6px 2px;overflow-x:auto}
+.exp-stave-row{display:flex;align-items:center;gap:8px}
+.exp-vlabel{width:96px;flex:0 0 auto;font-size:11px;color:var(--muted);text-align:right;padding-right:4px}
+.exp-vlabel.editable{color:var(--green);font-weight:700}
+.exp-stave-row.editable{background:#4dff9a0a}
+.exp-delay{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.exp-delay input{width:38px;padding:3px 4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:5px;font-size:11px;text-align:center}
+.exp-delay label{margin:0;font-size:10px;color:var(--muted)}
+.exp-svgwrap{flex:1 1 auto}
+.exp-svgwrap svg{cursor:crosshair}
 .exp-results .title{font-size:11px}
 </style>
 </head>
@@ -165,12 +166,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <button class="exp-actionbtn" id="expClearBtn" type="button">Limpar</button>
     </div>
     <p class="exp-hint">Clique na pauta editável (destacada em verde) para inserir uma nota na altura correspondente à posição clicada, ou digite as letras no teclado (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava do teclado é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓). Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável é definida automaticamente pelas transposições configuradas ao lado.</p>
-    
-    <div class="exp-canvas-wrapper">
-      <div class="exp-controls-column" id="expControlsColumn"></div>
-      <div class="exp-canvas-area" id="expCanvasArea"></div>
-    </div>
-    
+    <div class="exp-staves" id="expStaves"></div>
     <div class="exp-results">
       <div class="title">Classificação dos intervalos resultantes</div>
       <div id="expResultsTable"></div>
@@ -250,6 +246,9 @@ function calcularResultado(val1, val2, valMovimento) {
 // =====================================================================
 // Configuração das Imitações (barra lateral)
 // =====================================================================
+// Ciclo de valores padrão do modo tonal para até 5 Imitações (6 vozes).
+// No modo Atonal o padrão é sempre "0" (uníssono), que já é a primeira
+// opção da lista — não precisa de atribuição explícita.
 const defaultsTonal = ["5ª ↑", "4ª ↓", "5ª ↑", "4ª ↓", "5ª ↑"];
 
 function setup() {
@@ -266,6 +265,8 @@ function setup() {
       if (idx >= 0) document.getElementById("c" + k).value = idx;
     }
   }
+  // Escopo restrito a "#controls select": não sobrescreve o onchange do
+  // próprio "#voices".
   document.querySelectorAll("#controls select").forEach(x => x.onchange = calc);
 }
 
@@ -298,6 +299,9 @@ function calc() {
     if (ok) good.push(mv);
   }
 
+  // Ordena os badges de "Movimentos Viáveis": do mais ascendente (maior
+  // valor sinalizado) para o mais descendente. A ordem das linhas na
+  // tabela ("rows") permanece a original.
   good.sort((a, b) => b[1] - a[1]);
 
   movesBox(good);
@@ -329,7 +333,9 @@ function tableBox(rows, n) {
 }
 
 // =====================================================================
-// Tabela de Referência (aba inicial)
+// Tabela de Referência (aba inicial): grade estática — todos os
+// movimentos do Líder × todas as transposições possíveis do modo ativo.
+// Reaproveita a mesma calcularResultado() usada em "Movimentos viáveis".
 // =====================================================================
 function buildReferenceTable() {
   const opts = currentOptions();
@@ -408,12 +414,12 @@ calc();
 buildReferenceTable();
 
 // =====================================================================
-// EXPERIMENTAÇÃO — Linhas melódicas em tempo real (CANVAS COMPARTILHADO)
+// EXPERIMENTAÇÃO — Linhas melódicas em tempo real
 // =====================================================================
 (function () {
   const VF = Vex.Flow;
 
-  // --- Teoria ---
+  // --- Teoria: armaduras, transposição diatônica (tonal) e cromática (atonal) ---
   const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
   const PITCH_CLASS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   const SHARP_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B'];
@@ -450,6 +456,8 @@ buildReferenceTable();
     const newAcc = keyDefaultAcc(newLetter, key) + deviation;
     return { letter: newLetter, acc: newAcc, octave: newOctave };
   }
+  // Espelhamento cromático fixo (sustenidos) — usado no modo Atonal, que
+  // não tem armadura; cada classe de altura tem grafia única.
   const CHROMA_SPELL = [
     ['C', 0], ['C', 1], ['D', 0], ['D', 1], ['E', 0], ['F', 0],
     ['F', 1], ['G', 0], ['G', 1], ['A', 0], ['A', 1], ['B', 0]
@@ -478,11 +486,11 @@ buildReferenceTable();
   // --- Estado ---
   const expState = {
     open: false,
-    notes: [],
+    notes: [],           // melodia da voz editável: [{letter,acc,octave}]
     keySig: 'C',
-    pendingAcc: null,
+    pendingAcc: null,     // -1, 0, 1 ou null
     octave: 4,
-    delays: {}
+    delays: {}            // {voiceIndex: atraso em posições de semibreve}
   };
 
   // --- Painel: abrir/fechar/arrastar ---
@@ -511,7 +519,7 @@ buildReferenceTable();
     window.addEventListener('mouseup', () => dragging = false);
   })();
 
-  // --- Toolbar ---
+  // --- Toolbar: tonalidade ---
   function populateKeySelect() {
     const sel = document.getElementById('expKeySig');
     sel.innerHTML = Object.keys(KEY_LABELS).map(k => `<option value="${k}">${KEY_LABELS[k]}</option>`).join('');
@@ -520,6 +528,7 @@ buildReferenceTable();
   }
   document.getElementById('expKeySig').onchange = (e) => { expState.keySig = e.target.value; expRender(); };
 
+  // --- Toolbar: acidentes ---
   function setPendingAcc(val) {
     expState.pendingAcc = (expState.pendingAcc === val) ? null : val;
     document.querySelectorAll('.acc-btn').forEach(b => b.classList.toggle('active', +b.dataset.acc === expState.pendingAcc));
@@ -528,9 +537,11 @@ buildReferenceTable();
   document.getElementById('accFlat').onclick = () => setPendingAcc(-1);
   document.getElementById('accNatural').onclick = () => setPendingAcc(0);
 
+  // --- Toolbar: oitava ---
   function setOctave(v) { expState.octave = Math.max(0, Math.min(8, v)); document.getElementById('octVal').textContent = expState.octave; }
   document.getElementById('octUp').onclick = () => setOctave(expState.octave + 1);
   document.getElementById('octDown').onclick = () => setOctave(expState.octave - 1);
+
   document.getElementById('expClearBtn').onclick = () => { expState.notes = []; expRender(); };
 
   // --- Entrada de notas ---
@@ -556,10 +567,27 @@ buildReferenceTable();
     if (k === 'Backspace') { expState.notes.pop(); expRender(); e.preventDefault(); return; }
   });
 
-  // --- Dedução da voz editável ---
+  // --- Clique na pauta: converte coordenada Y em nota (linha/espaço mais
+  // próximo), considerando a clave da voz (Sol, Sol-8 ou Fá). ---
+  function yToPitch(stave, y, clefInfo) {
+    const topLineY = stave.getYForLine(0);
+    const stepPx = stave.getSpacingBetweenLines() / 2; // cada grau = meio espaço
+    const stepsFromTop = Math.round((y - topLineY) / stepPx);
+    // Nota da linha superior por clave (Fá: A3; Sol/Sol-8: F5 visualmente).
+    const topLetter = clefInfo.clef === 'bass' ? 'A' : 'F';
+    const topOctave = clefInfo.clef === 'bass' ? 3 : 5;
+    const topDi = topOctave * 7 + LETTERS.indexOf(topLetter);
+    const di = topDi - stepsFromTop;
+    let octave = Math.floor(di / 7);
+    const letter = LETTERS[((di % 7) + 7) % 7];
+    if (clefInfo.ann === '8vb') octave -= 1; // soa uma oitava abaixo do escrito
+    return { letter, octave };
+  }
+
+  // --- Dedução da voz editável e transposições de cada voz ---
   function computeVoiceValues() {
     const n = +voices.value;
-    const vals = [0];
+    const vals = [0]; // Líder
     for (let k = 1; k < n; k++) {
       const idx = +document.getElementById('c' + k).value;
       vals.push(currentOptions()[idx][1]);
@@ -567,22 +595,28 @@ buildReferenceTable();
     return vals;
   }
   function editableIndex(vals) {
+    // vals[0] = Líder (sempre 0); vals[1..] = transposição de cada Imitação
+    // (todas relativas ao Líder, não em cadeia).
     const imitVals = vals.slice(1);
     const asc = imitVals.filter(v => v > 0);
     const desc = imitVals.filter(v => v < 0);
     if (desc.length === 0 && asc.length > 0) {
+      // Todas ascendentes -> editável é a pauta inferior (menor valor).
       return vals.reduce((mi, v, i) => v < vals[mi] ? i : mi, 0);
     }
     if (asc.length === 0 && desc.length > 0) {
+      // Todas descendentes -> editável é a pauta superior (maior valor).
       return vals.reduce((mi, v, i) => v > vals[mi] ? i : mi, 0);
     }
     if (asc.length > 0 && desc.length > 0) {
+      // Mistura -> editável fica abaixo de todas as ascendentes e acima
+      // de todas as descendentes (normalmente o próprio Líder, val=0).
       const minAsc = Math.min(...asc);
       const maxDesc = Math.max(...desc);
       const idx = vals.findIndex(v => v < minAsc && v > maxDesc);
       if (idx >= 0) return idx;
     }
-    return 0;
+    return 0; // fallback: Líder (sem Imitações, ou caso degenerado)
   }
   function getDelay(i) {
     if (i === 0) return 0;
@@ -590,7 +624,7 @@ buildReferenceTable();
     return expState.delays[i];
   }
 
-  // --- Classificação de intervalo ---
+  // --- Classificação de intervalo a partir de semitons reais ---
   function clsFromSemitones(diff) {
     const mod = ((diff % 12) + 12) % 12;
     if (modo === 'tonal') {
@@ -611,23 +645,6 @@ buildReferenceTable();
     }
   }
 
-  // --- yToPitch corrigido ---
-  function yToPitch(stave, y, clefInfo) {
-    const topLineY = stave.getYForLine(0);
-    const bottomLineY = stave.getYForLine(4);
-    const stepPx = (bottomLineY - topLineY) / 4;
-    
-    const stepsFromTop = Math.round((y - topLineY) / stepPx);
-    const topLetter = clefInfo.clef === 'bass' ? 'A' : 'F';
-    const topOctave = clefInfo.clef === 'bass' ? 3 : 5;
-    const topDi = topOctave * 7 + LETTERS.indexOf(topLetter);
-    const di = topDi - stepsFromTop;
-    let octave = Math.floor(di / 7);
-    const letter = LETTERS[((di % 7) + 7) % 7];
-    if (clefInfo.ann === '8vb') octave -= 1;
-    return { letter, octave };
-  }
-
   // --- Render principal ---
   function expRender() {
     if (!expState.open) return;
@@ -636,6 +653,7 @@ buildReferenceTable();
     const edIdx = editableIndex(vals);
     const edVal = vals[edIdx];
 
+    // Notas de cada voz (mesma forma melódica, transposta) + atraso próprio.
     const voiceNotes = [];
     for (let i = 0; i < n; i++) {
       const delta = vals[i] - edVal;
@@ -650,190 +668,117 @@ buildReferenceTable();
       voiceNotes.push(seq);
     }
 
-    const delays = [];
-    for (let i = 0; i < n; i++) delays.push(getDelay(i));
+    // Escolha de clave por voz (mediana das alturas reais; se sem notas, usa a nota-base c/oitava atual transposta).
+    const clefs = [];
+    for (let i = 0; i < n; i++) {
+      let pitches = voiceNotes[i].map(noteToMidi);
+      if (!pitches.length) {
+        const delta = vals[i] - edVal;
+        const base = { letter: 'C', acc: 0, octave: expState.octave };
+        const placeholder = modo === 'tonal' ? transposeDiatonic(base, expState.keySig, delta) : transposeChromatic(base, delta);
+        pitches = [noteToMidi(placeholder)];
+      }
+      const sorted = [...pitches].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      clefs.push(chooseClef(median));
+    }
 
-    const sortedIndices = Array.from({ length: n }, (_, i) => i)
-      .sort((a, b) => vals[b] - vals[a]);
-    
-    const sortedData = sortedIndices.map(i => ({
-      index: i,
-      label: i === 0 ? 'Líder' : `Imitação ${i}`,
-      transposicao: vals[i],
-      notas: voiceNotes[i],
-      delay: delays[i],
-      isEditable: i === edIdx,
-      clef: chooseClef(voiceNotes[i].length ? Math.max(...voiceNotes[i].map(noteToMidi)) : null)
-    }));
-
-    renderControlsColumn(sortedData);
-    renderSharedCanvas(sortedData);
-    renderResultsTable(n, voiceNotes, delays);
+    renderStaves(n, vals, edIdx, voiceNotes, clefs);
+    renderResultsTable(n, voiceNotes);
   }
 
-  function renderControlsColumn(sortedData) {
-    const col = document.getElementById('expControlsColumn');
-    col.innerHTML = '';
-    sortedData.forEach((d) => {
+  function renderStaves(n, vals, edIdx, voiceNotes, clefs) {
+    const box = document.getElementById('expStaves');
+    box.innerHTML = '';
+
+    const maxLen = expState.notes.length;
+    const staveWidth = Math.max(220, 60 + maxLen * 62);
+
+    for (let i = 0; i < n; i++) {
       const row = document.createElement('div');
-      row.className = 'exp-control-row';
-      
-      const label = document.createElement('span');
-      label.className = 'label' + (d.isEditable ? ' editable' : '');
-      label.textContent = d.label + (d.isEditable ? ' ✎' : '');
+      row.className = 'exp-stave-row' + (i === edIdx ? ' editable' : '');
+
+      const label = document.createElement('div');
+      label.className = 'exp-vlabel' + (i === edIdx ? ' editable' : '');
+      label.textContent = (i === 0 ? 'Líder' : 'Imitação ' + i) + (i === edIdx ? ' ✎' : '');
       row.appendChild(label);
-      
-      if (d.index === 0) {
-        const fixed = document.createElement('span');
-        fixed.className = 'delay-fixed';
-        fixed.textContent = '0';
-        row.appendChild(fixed);
+
+      const delayWrap = document.createElement('div');
+      delayWrap.className = 'exp-delay';
+      if (i === 0) {
+        delayWrap.innerHTML = `<label>atraso 0</label>`;
       } else {
         const inp = document.createElement('input');
-        inp.type = 'number';
-        inp.min = '0';
-        inp.value = d.delay;
-        inp.onchange = (e) => {
-          expState.delays[d.index] = Math.max(0, +e.target.value || 0);
-          expRender();
-        };
-        row.appendChild(inp);
+        inp.type = 'number'; inp.min = '0'; inp.value = getDelay(i);
+        inp.onchange = (e) => { expState.delays[i] = Math.max(0, +e.target.value || 0); expRender(); };
+        const lab = document.createElement('label'); lab.textContent = 'atraso';
+        delayWrap.appendChild(lab); delayWrap.appendChild(inp);
       }
-      col.appendChild(row);
-    });
+      row.appendChild(delayWrap);
+
+      const svgWrap = document.createElement('div');
+      svgWrap.className = 'exp-svgwrap';
+      row.appendChild(svgWrap);
+      box.appendChild(row);
+
+      drawSingleStave(svgWrap, voiceNotes[i], getDelay(i), maxLen, clefs[i], staveWidth, i === edIdx);
+    }
   }
 
-  function renderSharedCanvas(sortedData) {
-    const area = document.getElementById('expCanvasArea');
-    area.innerHTML = '';
-    
-    const VF = Vex.Flow;
-    const n = sortedData.length;
-    const maxLen = expState.notes.length;
-    
-    let maxTotal = 0;
-    sortedData.forEach(d => {
-      const total = d.delay + d.notas.length;
-      if (total > maxTotal) maxTotal = total;
-    });
-    if (maxTotal === 0) maxTotal = 1;
-    
-    // Pauta ainda mais compacta
-    const staveHeight = 80
-    const staveGap = 10
-    const totalHeight = n * (staveHeight + staveGap) + 5
-    const staveWidth = Math.max(300, 80 + maxTotal * 5);
-    
-    const renderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
-    renderer.resize(staveWidth + 60, totalHeight);
+  function drawSingleStave(container, notes, delay, maxLen, clefInfo, width, isEditable) {
+    const totalCols = delay + maxLen;
+    const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+    const height = 100;
+    renderer.resize(width + 40, height);
     const ctx = renderer.getContext();
-    const escala = 0.7;  // 0.6 = 60% do tamanho original (mais fino e compacto)
-    ctx.scale(escala, escala);
-    // Ajustar o tamanho da fonte proporcionalmente
-    ctx.setFont('Arial', 7 / escala);
+    const stave = new VF.Stave(4, 6, width + 30);
+    stave.setBegBarType(VF.Barline.type.NONE);
+    stave.setEndBarType(VF.Barline.type.NONE);
+    if (clefInfo.ann) stave.addClef(clefInfo.clef, 'default', clefInfo.ann);
+    else stave.addClef(clefInfo.clef);
+    if (modo === 'tonal') stave.addKeySignature(expState.keySig);
+    stave.setContext(ctx).draw();
 
-    
-    // Fundo creme já aplicado via CSS na div .exp-canvas-area
-    
-    sortedData.forEach((d, idx) => {
-      const yPos = 6 + idx * (staveHeight + staveGap);
-      
-      const stave = new VF.Stave(4, yPos, staveWidth + 8);
-      stave.setBegBarType(VF.Barline.type.NONE);
-      stave.setEndBarType(VF.Barline.type.NONE);
-      if (d.clef.ann) stave.addClef(d.clef.clef, 'default', d.clef.ann);
-      else stave.addClef(d.clef.clef);
-      if (modo === 'tonal') stave.addKeySignature(expState.keySig);
-      stave.setContext(ctx).draw();
-      
-      // Destaque da pauta editável - apenas borda verde fina, sem retângulo preenchido
-      // if (d.isEditable) {
-      //   ctx.save();
-      //   ctx.setStrokeStyle('#4dff9a66');
-      //   ctx.setLineWidth(1.5);
-      //   ctx.rect(2, yPos - 1, staveWidth + 12, staveHeight + 2);
-      //   ctx.stroke();
-      //   ctx.restore();
-      // }
-      
-      const vfNotes = [];
-      for (let c = 0; c < d.delay; c++) {
-        vfNotes.push(new VF.StaveNote({ 
-          clef: d.clef.clef, 
-          keys: ['b/4'], 
-          duration: 'wr' 
-        }));
-      }
-      d.notas.forEach((nt) => {
-        const sn = new VF.StaveNote({ 
-          clef: d.clef.clef, 
-          keys: [vfKey(nt)], 
-          duration: 'w' 
-        });
-        const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
-        if (sym) sn.addModifier(new VF.Accidental(sym), 0);
-        vfNotes.push(sn);
-      });
-      const remaining = maxTotal - (d.delay + d.notas.length);
-      for (let c = 0; c < remaining; c++) {
-        vfNotes.push(new VF.StaveNote({ 
-          clef: d.clef.clef, 
-          keys: ['b/4'], 
-          duration: 'wr' 
-        }));
-      }
-      
-      if (vfNotes.length > 0) {
-        const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 1 });
-        voice.setStrict(false);
-        voice.addTickables(vfNotes);
-        new VF.Formatter().joinVoices([voice]).format([voice], staveWidth - 4);
-        voice.draw(ctx, stave);
-      }
+    const vfNotes = [];
+    for (let c = 0; c < delay; c++) {
+      vfNotes.push(new VF.StaveNote({ clef: clefInfo.clef, keys: ['b/4'], duration: 'wr' }));
+    }
+    notes.forEach((nt) => {
+      const sn = new VF.StaveNote({ clef: clefInfo.clef, keys: [vfKey(nt)], duration: 'w' });
+      const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
+      if (sym) sn.addModifier(new VF.Accidental(sym), 0);
+      vfNotes.push(sn);
     });
-    
-    // Listener de clique corrigido
-    const svgEl = area.querySelector('svg');
-    if (svgEl) {
+    if (!totalCols) {
+      vfNotes.push(new VF.StaveNote({ clef: clefInfo.clef, keys: ['b/4'], duration: 'wr' }));
+    }
+
+    const beatCount = Math.max(1, vfNotes.length);
+    const voice = new VF.Voice({ num_beats: beatCount, beat_value: 1 });
+    voice.setStrict(false);
+    voice.addTickables(vfNotes);
+    new VF.Formatter().joinVoices([voice]).format([voice], width - 20);
+    voice.draw(ctx, stave);
+
+    if (isEditable) {
+      const svgEl = container.querySelector('svg');
       svgEl.addEventListener('click', (e) => {
         const rect = svgEl.getBoundingClientRect();
-        const svgWidth = parseFloat(svgEl.getAttribute('width')) || staveWidth + 20;
-        const svgHeight = parseFloat(svgEl.getAttribute('height')) || totalHeight;
-        const scaleX = svgWidth / rect.width;
-        const scaleY = svgHeight / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
-        
-        let targetStave = null;
-        let targetData = null;
-        sortedData.forEach((d, idx) => {
-          const yPos = 6 + idx * (staveHeight + staveGap);
-          if (y >= yPos && y <= yPos + staveHeight) {
-            targetStave = { yPos, clef: d.clef };
-            targetData = d;
-          }
-        });
-        
-        if (targetStave && targetData && targetData.isEditable) {
-          const stave = new VF.Stave(4, targetStave.yPos, 10);
-          stave.setContext(new VF.Renderer(area, VF.Renderer.Backends.SVG).getContext());
-          const localY = y - targetStave.yPos;
-          const { letter, octave } = yToPitch(stave, localY, targetStave.clef);
-          addNote(letter, octave);
-        }
+        const y = (e.clientY - rect.top) * (height / rect.height);
+        const { letter, octave } = yToPitch(stave, y, clefInfo);
+        addNote(letter, octave);
       });
     }
   }
 
-  function renderResultsTable(n, voiceNotes, delays) {
+  // --- Tabela de classificação dos intervalos entre vozes consecutivas ---
+  function renderResultsTable(n, voiceNotes) {
     const box = document.getElementById('expResultsTable');
-    if (!expState.notes.length) {
-      box.innerHTML = `<p class="note">Insira notas na pauta editável para ver a classificação dos intervalos.</p>`;
-      return;
-    }
+    if (!expState.notes.length) { box.innerHTML = `<p class="note">Insira notas na pauta editável para ver a classificação dos intervalos.</p>`; return; }
 
+    const delays = []; for (let i = 0; i < n; i++) delays.push(getDelay(i));
     const totalCols = Math.max(...delays.map((d, i) => d + voiceNotes[i].length));
-    
+
     let h = "<div class='wrap'><table><thead><tr><th>Posição</th>";
     for (let k = 1; k < n; k++) h += `<th>${k === 1 ? 'Líder→Imit.1' : 'Imit.' + (k - 1) + '→Imit.' + k}</th>`;
     h += "</tr></thead><tbody>";
@@ -855,22 +800,11 @@ buildReferenceTable();
     box.innerHTML = h + "</tbody></table></div>";
   }
 
-  // --- Sincronização ---
+  // Reagir a mudanças de modo/configuração feitas na barra lateral.
   const _origSetup = setup, _origCalc = calc;
   window.setup = function () { _origSetup(); if (expState.open) { populateKeySelect(); expRender(); } };
   window.calc = function () { _origCalc(); if (expState.open) expRender(); };
-  
-  document.addEventListener('change', (e) => {
-    if (e.target.id && e.target.id.startsWith('c') && expState.open) {
-      expRender();
-    }
-  });
-  
-  document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (expState.open) { populateKeySelect(); expRender(); }
-    });
-  });
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => { if (expState.open) { populateKeySelect(); expRender(); } }));
 })();
 </script>
 </body>
