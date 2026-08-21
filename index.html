@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stretto Fuga</title>
+<script src="vexflow-min.js"></script>
 <style>
 :root{--bg:#090c12;--panel:#111722;--panel2:#171e2a;--line:#2a3442;--text:#edf3fa;--muted:#93a0b1;--cyan:#62e9ff;--blue:#35a9ff;--green:#4dff9a;--red:#ff4f72}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% 0,#152536 0,#090c12 38%);color:var(--text);font:14px "Segoe UI",Arial,sans-serif}
@@ -50,6 +51,40 @@ table.compact th,table.compact td{padding:1px 4px;line-height:1.2}
 table.compact td:first-child,table.compact th:first-child{min-width:70px}
 table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 @media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}}
+
+/* ===================== Tela de Experimentação ===================== */
+.exp-open-btn{width:100%;padding:9px 6px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
+.exp-open-btn:hover{border-color:var(--cyan)}
+.exp-panel{position:fixed;top:70px;left:60px;width:720px;max-width:94vw;background:#0d1219;border:1px solid #2a3442;border-radius:12px;box-shadow:0 18px 50px #000a;z-index:500;display:none;flex-direction:column;overflow:hidden}
+.exp-panel.open{display:flex}
+.exp-titlebar{padding:10px 14px;background:#171e29;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
+.exp-titlebar b{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--cyan)}
+.exp-close{background:transparent;border:0;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:5px}
+.exp-close:hover{color:var(--red);background:#ff4f7212}
+.exp-body{padding:14px 16px 16px;overflow:auto;max-height:78vh}
+.exp-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.exp-toolbar select{width:auto;padding:6px 8px;font-size:12px}
+.exp-toolbar label{margin:0;font-size:11px;color:var(--muted)}
+.exp-tgroup{display:flex;align-items:center;gap:6px}
+.acc-btn{padding:6px 11px;background:var(--panel2);border:1px solid #394657;border-radius:6px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.acc-btn.active{color:#04141c;background:var(--cyan);border-color:var(--cyan)}
+.exp-octave{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.exp-octave button{width:22px;height:22px;background:var(--panel2);border:1px solid #394657;border-radius:5px;color:var(--text);cursor:pointer;font-family:inherit;font-size:12px}
+.exp-octave b{color:var(--text);min-width:12px;text-align:center}
+.exp-actionbtn{padding:6px 11px;background:#1c1015;border:1px solid #4a2530;border-radius:6px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.exp-hint{color:var(--muted);font-size:11px;margin-bottom:10px;line-height:1.5}
+.exp-staves{display:grid;grid-template-columns:118px 1fr;align-items:start;column-gap:6px;margin-bottom:14px;background:#0f141c;border:1px solid var(--line);border-radius:8px;padding:4px 2px;overflow-x:auto}
+.exp-stave-controls{display:flex;flex-direction:column}
+.exp-stave-control{height:76px;display:flex;align-items:center;justify-content:flex-end;gap:4px;padding-right:4px}
+.exp-vlabel{width:96px;flex:0 0 auto;font-size:11px;color:var(--muted);text-align:right}
+.exp-vlabel.editable{color:var(--green);font-weight:700}
+.exp-stave-control.editable{background:#4dff9a0a}
+.exp-delay{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.exp-delay input{width:38px;padding:3px 4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:5px;font-size:11px;text-align:center}
+.exp-delay label{margin:0;font-size:10px;color:var(--muted)}
+.exp-system{min-width:220px}
+.exp-system svg{cursor:crosshair}
+.exp-results .title{font-size:11px}
 </style>
 </head>
 <body>
@@ -85,6 +120,8 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </div>
 
 <div class="note">A 1ª Imitação entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
+
+<div class="field"><button class="exp-open-btn" id="expOpenBtn" type="button">🎹 Abrir Experimentação</button></div>
 </aside>
 <main>
 <div class="tabs">
@@ -105,6 +142,39 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </div>
 </main>
 </div>
+
+<div class="exp-panel" id="expPanel">
+  <div class="exp-titlebar" id="expTitlebar">
+    <b>Experimentação — Linhas Melódicas</b>
+    <button class="exp-close" id="expCloseBtn" type="button" title="Fechar">✕</button>
+  </div>
+  <div class="exp-body">
+    <div class="exp-toolbar">
+      <div class="exp-tgroup" id="expKeyGroup">
+        <label for="expKeySig">Tonalidade</label>
+        <select id="expKeySig"></select>
+      </div>
+      <div class="exp-tgroup">
+        <button class="acc-btn" data-acc="1" id="accSharp" type="button" title="Sustenido (+)">♯</button>
+        <button class="acc-btn" data-acc="-1" id="accFlat" type="button" title="Bemol (-)">♭</button>
+        <button class="acc-btn" data-acc="0" id="accNatural" type="button" title="Bequadro (0)">♮</button>
+      </div>
+      <div class="exp-octave">
+        <button id="octDown" type="button" title="Oitava abaixo (seta ↓)">−</button>
+        <span>Oitava</span><b id="octVal">4</b>
+        <button id="octUp" type="button" title="Oitava acima (seta ↑)">+</button>
+      </div>
+      <button class="exp-actionbtn" id="expClearBtn" type="button">Limpar</button>
+    </div>
+    <p class="exp-hint">Clique na pauta editável (destacada em verde) para inserir uma nota na altura correspondente à posição clicada, ou digite as letras no teclado (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava do teclado é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓). Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável é definida automaticamente pelas transposições configuradas ao lado.</p>
+    <div class="exp-staves" id="expStaves"></div>
+    <div class="exp-results">
+      <div class="title">Classificação dos intervalos resultantes</div>
+      <div id="expResultsTable"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // =====================================================================
 // MODO TONAL — intervalos diatônicos (grau 0-indexado + direção embutida
@@ -343,6 +413,485 @@ renderIcPanel();
 setup();
 calc();
 buildReferenceTable();
+
+// =====================================================================
+// EXPERIMENTAÇÃO — Linhas melódicas em tempo real
+// =====================================================================
+(function () {
+  const VF = Vex.Flow;
+
+  // --- Teoria: armaduras, transposição diatônica (tonal) e cromática (atonal) ---
+  const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const PITCH_CLASS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const SHARP_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B'];
+  const FLAT_ORDER = ['B', 'E', 'A', 'D', 'G', 'C', 'F'];
+  const KEY_INFO = {
+    'C': { n: 0, type: 'sharp' }, 'G': { n: 1, type: 'sharp' }, 'D': { n: 2, type: 'sharp' },
+    'A': { n: 3, type: 'sharp' }, 'E': { n: 4, type: 'sharp' }, 'B': { n: 5, type: 'sharp' },
+    'F#': { n: 6, type: 'sharp' }, 'C#': { n: 7, type: 'sharp' },
+    'F': { n: 1, type: 'flat' }, 'Bb': { n: 2, type: 'flat' }, 'Eb': { n: 3, type: 'flat' },
+    'Ab': { n: 4, type: 'flat' }, 'Db': { n: 5, type: 'flat' }, 'Gb': { n: 6, type: 'flat' }, 'Cb': { n: 7, type: 'flat' }
+  };
+  const KEY_LABELS = {
+    'C': 'Dó M / Lá m', 'G': 'Sol M / Mi m', 'D': 'Ré M / Si m', 'A': 'Lá M / Fá#m',
+    'E': 'Mi M / Dó#m', 'B': 'Si M / Sol#m', 'F#': 'Fá# M / Ré#m', 'C#': 'Dó# M / Lá#m',
+    'F': 'Fá M / Ré m', 'Bb': 'Sib M / Sol m', 'Eb': 'Mib M / Dó m', 'Ab': 'Láb M / Fá m',
+    'Db': 'Réb M / Sib m', 'Gb': 'Solb M / Mib m', 'Cb': 'Dób M / Láb m'
+  };
+  const VF_ACC = { 2: '##', 1: '#', 0: 'n', '-1': 'b', '-2': 'bb' };
+
+  function keyDefaultAcc(letter, key) {
+    const info = KEY_INFO[key] || { n: 0, type: 'sharp' };
+    if (info.n === 0) return 0;
+    const order = info.type === 'sharp' ? SHARP_ORDER : FLAT_ORDER;
+    const idx = order.indexOf(letter);
+    return (idx >= 0 && idx < info.n) ? (info.type === 'sharp' ? 1 : -1) : 0;
+  }
+  function noteToMidi(n) { return PITCH_CLASS[n.letter] + n.acc + 12 * (n.octave + 1); }
+  function transposeDiatonic(note, key, deltaSteps) {
+    const idx = LETTERS.indexOf(note.letter);
+    const rawIdx = idx + deltaSteps;
+    const newLetter = LETTERS[((rawIdx % 7) + 7) % 7];
+    const newOctave = note.octave + Math.floor(rawIdx / 7);
+    const deviation = note.acc - keyDefaultAcc(note.letter, key);
+    const newAcc = keyDefaultAcc(newLetter, key) + deviation;
+    return { letter: newLetter, acc: newAcc, octave: newOctave };
+  }
+  // Espelhamento cromático fixo (sustenidos) — usado no modo Atonal, que
+  // não tem armadura; cada classe de altura tem grafia única.
+  const CHROMA_SPELL = [
+    ['C', 0], ['C', 1], ['D', 0], ['D', 1], ['E', 0], ['F', 0],
+    ['F', 1], ['G', 0], ['G', 1], ['A', 0], ['A', 1], ['B', 0]
+  ];
+  function transposeChromatic(note, deltaSemitones) {
+    const midi = noteToMidi(note) + deltaSemitones;
+    const pc = ((midi % 12) + 12) % 12;
+    const octave = Math.floor(midi / 12) - 1;
+    const [letter, acc] = CHROMA_SPELL[pc];
+    return { letter, acc, octave };
+  }
+  function accSymbol(letter, acc, key) {
+    const def = modo === 'tonal' ? keyDefaultAcc(letter, key) : 0;
+    if (acc === def) return null;
+    return VF_ACC[acc] || null;
+  }
+  function vfKey(note) { return note.letter.toLowerCase() + '/' + note.octave; }
+
+  function chooseClef(midiMedian) {
+    if (midiMedian === null) return { clef: 'treble', ann: null };
+    if (midiMedian >= 60) return { clef: 'treble', ann: null };
+    if (midiMedian < 48) return { clef: 'bass', ann: null };
+    return { clef: 'treble', ann: '8vb' };
+  }
+
+  // --- Estado ---
+  const expState = {
+    open: false,
+    notes: [],           // melodia da voz editável: [{letter,acc,octave}]
+    keySig: 'C',
+    pendingAcc: null,     // -1, 0, 1 ou null
+    octave: 4,
+    delays: {}            // {voiceIndex: atraso em posições de semibreve}
+  };
+
+  // --- Painel: abrir/fechar/arrastar ---
+  const expPanel = document.getElementById('expPanel');
+  document.getElementById('expOpenBtn').onclick = () => {
+    expPanel.classList.add('open');
+    expState.open = true;
+    populateKeySelect();
+    expRender();
+  };
+  document.getElementById('expCloseBtn').onclick = () => expPanel.classList.remove('open');
+  (function makeDraggable() {
+    const bar = document.getElementById('expTitlebar');
+    let dragging = false, ox = 0, oy = 0;
+    bar.addEventListener('mousedown', (e) => {
+      dragging = true;
+      const r = expPanel.getBoundingClientRect();
+      ox = e.clientX - r.left; oy = e.clientY - r.top;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      expPanel.style.left = Math.max(0, e.clientX - ox) + 'px';
+      expPanel.style.top = Math.max(0, e.clientY - oy) + 'px';
+    });
+    window.addEventListener('mouseup', () => dragging = false);
+  })();
+
+  // --- Toolbar: tonalidade ---
+  function populateKeySelect() {
+    const sel = document.getElementById('expKeySig');
+    sel.innerHTML = Object.keys(KEY_LABELS).map(k => `<option value="${k}">${KEY_LABELS[k]}</option>`).join('');
+    sel.value = expState.keySig;
+    document.getElementById('expKeyGroup').style.display = modo === 'tonal' ? 'flex' : 'none';
+  }
+  document.getElementById('expKeySig').onchange = (e) => { expState.keySig = e.target.value; expRender(); };
+
+  // --- Toolbar: acidentes ---
+  function setPendingAcc(val) {
+    expState.pendingAcc = (expState.pendingAcc === val) ? null : val;
+    document.querySelectorAll('.acc-btn').forEach(b => b.classList.toggle('active', +b.dataset.acc === expState.pendingAcc));
+  }
+  document.getElementById('accSharp').onclick = () => setPendingAcc(1);
+  document.getElementById('accFlat').onclick = () => setPendingAcc(-1);
+  document.getElementById('accNatural').onclick = () => setPendingAcc(0);
+
+  // --- Toolbar: oitava ---
+  function setOctave(v) { expState.octave = Math.max(0, Math.min(8, v)); document.getElementById('octVal').textContent = expState.octave; }
+  document.getElementById('octUp').onclick = () => setOctave(expState.octave + 1);
+  document.getElementById('octDown').onclick = () => setOctave(expState.octave - 1);
+
+  document.getElementById('expClearBtn').onclick = () => { expState.notes = []; expRender(); };
+
+  // --- Entrada de notas ---
+  function addNote(letter, octaveOverride) {
+    const octave = octaveOverride !== undefined ? octaveOverride : expState.octave;
+    const acc = expState.pendingAcc !== null ? expState.pendingAcc : (modo === 'tonal' ? keyDefaultAcc(letter, expState.keySig) : 0);
+    expState.notes.push({ letter, acc, octave });
+    expState.pendingAcc = null;
+    document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('active'));
+    expRender();
+  }
+  const LETTER_KEYS = { c: 'C', d: 'D', e: 'E', f: 'F', g: 'G', a: 'A', b: 'B' };
+  window.addEventListener('keydown', (e) => {
+    if (!expState.open) return;
+    if (document.activeElement && ['SELECT', 'INPUT'].includes(document.activeElement.tagName)) return;
+    const k = e.key;
+    if (LETTER_KEYS[k.toLowerCase()]) { addNote(LETTER_KEYS[k.toLowerCase()]); return; }
+    if (k === '+' || k === '=') { setPendingAcc(1); return; }
+    if (k === '-') { setPendingAcc(-1); return; }
+    if (k === '0') { setPendingAcc(0); return; }
+    if (k === 'ArrowUp') { setOctave(expState.octave + 1); e.preventDefault(); return; }
+    if (k === 'ArrowDown') { setOctave(expState.octave - 1); e.preventDefault(); return; }
+    if (k === 'Backspace') { expState.notes.pop(); expRender(); e.preventDefault(); return; }
+  });
+
+  // --- Clique na pauta: converte coordenada Y em nota (linha/espaço mais
+  // próximo), considerando a clave da voz (Sol, Sol-8 ou Fá). ---
+  function yToPitch(stave, y, clefInfo) {
+    const topLineY = stave.getYForLine(0);
+    const stepPx = stave.getSpacingBetweenLines() / 2; // cada grau = meio espaço
+    const stepsFromTop = Math.round((y - topLineY) / stepPx);
+    // Nota da linha superior por clave (Fá: A3; Sol/Sol-8: F5 visualmente).
+    const topLetter = clefInfo.clef === 'bass' ? 'A' : 'F';
+    const topOctave = clefInfo.clef === 'bass' ? 3 : 5;
+    const topDi = topOctave * 7 + LETTERS.indexOf(topLetter);
+    const di = topDi - stepsFromTop;
+    let octave = Math.floor(di / 7);
+    const letter = LETTERS[((di % 7) + 7) % 7];
+    if (clefInfo.ann === '8vb') octave -= 1; // soa uma oitava abaixo do escrito
+    return { letter, octave };
+  }
+
+  // --- Dedução da voz editável e transposições de cada voz ---
+  function computeVoiceValues() {
+    const n = +voices.value;
+    const vals = [0]; // Líder
+    for (let k = 1; k < n; k++) {
+      const idx = +document.getElementById('c' + k).value;
+      vals.push(currentOptions()[idx][1]);
+    }
+    return vals;
+  }
+  function editableIndex(vals) {
+    // vals[0] = Líder (sempre 0); vals[1..] = transposição de cada Imitação
+    // (todas relativas ao Líder, não em cadeia).
+    const imitVals = vals.slice(1);
+    const asc = imitVals.filter(v => v > 0);
+    const desc = imitVals.filter(v => v < 0);
+    if (desc.length === 0 && asc.length > 0) {
+      // Todas ascendentes -> editável é a pauta inferior (menor valor).
+      return vals.reduce((mi, v, i) => v < vals[mi] ? i : mi, 0);
+    }
+    if (asc.length === 0 && desc.length > 0) {
+      // Todas descendentes -> editável é a pauta superior (maior valor).
+      return vals.reduce((mi, v, i) => v > vals[mi] ? i : mi, 0);
+    }
+    if (asc.length > 0 && desc.length > 0) {
+      // Mistura -> editável fica abaixo de todas as ascendentes e acima
+      // de todas as descendentes (normalmente o próprio Líder, val=0).
+      const minAsc = Math.min(...asc);
+      const maxDesc = Math.max(...desc);
+      const idx = vals.findIndex(v => v < minAsc && v > maxDesc);
+      if (idx >= 0) return idx;
+    }
+    return 0; // fallback: Líder (sem Imitações, ou caso degenerado)
+  }
+  function getDelay(i) {
+    if (i === 0) return 0;
+    if (expState.delays[i] === undefined) expState.delays[i] = i;
+    return expState.delays[i];
+  }
+
+  // --- Classificação de intervalo a partir de semitons reais ---
+  function clsFromSemitones(diff) {
+    const mod = ((diff % 12) + 12) % 12;
+    if (modo === 'tonal') {
+      return [0, 7].includes(mod) ? 'perfect' : [3, 4, 8, 9].includes(mod) ? 'imperfect' : 'dissonant';
+    } else {
+      const ic = Math.min(mod, 12 - mod);
+      return clsAtonal(ic);
+    }
+  }
+  function labelFromSemitones(diff) {
+    const mod = Math.abs(diff) % 12;
+    if (modo === 'tonal') {
+      const names = { 0: 'U', 1: '2m', 2: '2M', 3: '3m', 4: '3M', 5: '4J', 6: '4A', 7: '5J', 8: '6m', 9: '6M', 10: '7m', 11: '7M' };
+      return names[mod];
+    } else {
+      const ic = Math.min(mod, 12 - mod);
+      return 'IC' + ic;
+    }
+  }
+
+  // --- Render principal ---
+  function expRender() {
+    if (!expState.open) return;
+    const n = +voices.value;
+    const vals = computeVoiceValues();
+    const edIdx = editableIndex(vals);
+    const edVal = vals[edIdx];
+
+    // Notas de cada voz (mesma forma melódica, transposta) + atraso próprio.
+    const voiceNotes = [];
+    for (let i = 0; i < n; i++) {
+      const delta = vals[i] - edVal;
+      let seq;
+      if (i === edIdx) {
+        seq = expState.notes;
+      } else if (modo === 'tonal') {
+        seq = expState.notes.map(nt => transposeDiatonic(nt, expState.keySig, delta));
+      } else {
+        seq = expState.notes.map(nt => transposeChromatic(nt, delta));
+      }
+      voiceNotes.push(seq);
+    }
+
+    // Escolha de clave por voz (mediana das alturas reais; se sem notas, usa a nota-base c/oitava atual transposta).
+    const clefs = [];
+    for (let i = 0; i < n; i++) {
+      let pitches = voiceNotes[i].map(noteToMidi);
+      if (!pitches.length) {
+        const delta = vals[i] - edVal;
+        const base = { letter: 'C', acc: 0, octave: expState.octave };
+        const placeholder = modo === 'tonal' ? transposeDiatonic(base, expState.keySig, delta) : transposeChromatic(base, delta);
+        pitches = [noteToMidi(placeholder)];
+      }
+      const sorted = [...pitches].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      clefs.push(chooseClef(median));
+    }
+
+    renderStaves(n, vals, edIdx, voiceNotes, clefs);
+    renderResultsTable(n, voiceNotes);
+  }
+
+  function renderStaves(n, vals, edIdx, voiceNotes, clefs) {
+    const box = document.getElementById('expStaves');
+    box.innerHTML = '';
+
+    // Ordenação visual: do mais agudo para o mais grave.
+    // O índice lógico da voz permanece inalterado.
+    const visualOrder = Array.from({ length: n }, (_, i) => i)
+      .sort((a, b) => {
+        const d = vals[b] - vals[a];
+        return d !== 0 ? d : a - b;
+      });
+
+    const maxDelay = Math.max(...visualOrder.map(i => getDelay(i)), 0);
+    const maxLen = expState.notes.length;
+    const totalCols = Math.max(1, maxDelay + maxLen);
+
+    // Todos os controles ficam fora do SVG.
+    const controls = document.createElement('div');
+    controls.className = 'exp-stave-controls';
+
+    visualOrder.forEach(i => {
+      const control = document.createElement('div');
+      control.className = 'exp-stave-control' + (i === edIdx ? ' editable' : '');
+
+      const label = document.createElement('div');
+      label.className = 'exp-vlabel' + (i === edIdx ? ' editable' : '');
+      label.textContent = (i === 0 ? 'Líder' : 'Imitação ' + i) + (i === edIdx ? ' ✎' : '');
+      control.appendChild(label);
+
+      const delayWrap = document.createElement('div');
+      delayWrap.className = 'exp-delay';
+
+      if (i === 0) {
+        delayWrap.innerHTML = `<label>atraso 0</label>`;
+      } else {
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.min = '0';
+        inp.value = getDelay(i);
+        inp.onchange = (e) => {
+          expState.delays[i] = Math.max(0, +e.target.value || 0);
+          expRender();
+        };
+        const lab = document.createElement('label');
+        lab.textContent = 'atraso';
+        delayWrap.appendChild(lab);
+        delayWrap.appendChild(inp);
+      }
+
+      control.appendChild(delayWrap);
+      controls.appendChild(control);
+    });
+
+    box.appendChild(controls);
+
+    const systemWrap = document.createElement('div');
+    systemWrap.className = 'exp-system';
+    box.appendChild(systemWrap);
+
+    drawSystem(systemWrap, visualOrder, vals, edIdx, voiceNotes, clefs, totalCols);
+  }
+
+  function drawSystem(container, visualOrder, vals, edIdx, voiceNotes, clefs, totalCols) {
+    const VF_HEIGHT = 76;
+    const STAVE_HEIGHT = 76;
+    const staveX = 4;
+    const staveWidth = Math.max(220, 52 + totalCols * 58);
+
+    const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+    renderer.resize(staveWidth + 12, VF_HEIGHT * visualOrder.length + 8);
+
+    const ctx = renderer.getContext();
+    const staves = [];
+    const voices = [];
+
+    visualOrder.forEach((i, row) => {
+      const y = 2 + row * STAVE_HEIGHT;
+
+      const stave = new VF.Stave(staveX, y, staveWidth);
+      stave.setBegBarType(VF.Barline.type.NONE);
+      stave.setEndBarType(VF.Barline.type.NONE);
+      stave.setSpacingBetweenLines(8);
+      ctx.setLineWidth(0.8);
+
+      if (clefs[i].ann) stave.addClef(clefs[i].clef, 'default', clefs[i].ann);
+      else stave.addClef(clefs[i].clef);
+
+      if (modo === 'tonal') stave.addKeySignature(expState.keySig);
+
+      stave.setContext(ctx).draw();
+      staves.push({ stave, voiceIndex: i, clefInfo: clefs[i], row });
+
+      const vfNotes = [];
+      const delay = getDelay(i);
+      const notes = voiceNotes[i];
+
+      // Silêncios iniciais: uma posição temporal para cada unidade de atraso.
+      for (let c = 0; c < delay; c++) {
+        vfNotes.push(new VF.StaveNote({
+          clef: clefs[i].clef,
+          keys: ['b/4'],
+          duration: 'wr'
+        }));
+      }
+
+      notes.forEach(nt => {
+        const sn = new VF.StaveNote({
+          clef: clefs[i].clef,
+          keys: [vfKey(nt)],
+          duration: 'w'
+        });
+        const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
+        if (sym) sn.addModifier(new VF.Accidental(sym), 0);
+        vfNotes.push(sn);
+      });
+
+      // Completa a voz até o mesmo número de posições temporais.
+      while (vfNotes.length < totalCols) {
+        vfNotes.push(new VF.StaveNote({
+          clef: clefs[i].clef,
+          keys: ['b/4'],
+          duration: 'wr'
+        }));
+      }
+
+      const voice = new VF.Voice({
+        num_beats: totalCols,
+        beat_value: 1
+      });
+      voice.setStrict(false);
+      voice.addTickables(vfNotes);
+      voices.push(voice);
+    });
+
+    // Um único Formatter para todas as vozes.
+    const formatter = new VF.Formatter();
+    formatter.joinVoices(voices).format(voices, staveWidth - 24);
+
+    voices.forEach((voice, row) => {
+      voice.draw(ctx, staves[row].stave);
+    });
+
+    // O clique é tratado no SVG único e identifica primeiro a faixa vertical.
+    if (edIdx >= 0) {
+      const svgEl = container.querySelector('svg');
+      svgEl.addEventListener('click', (e) => {
+        const rect = svgEl.getBoundingClientRect();
+
+        // Converte para as coordenadas internas do renderer.
+        const scaleY = (VF_HEIGHT * visualOrder.length + 8) / rect.height;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        const row = Math.floor((y - 2) / STAVE_HEIGHT);
+        if (row < 0 || row >= visualOrder.length) return;
+
+        const voiceIndex = visualOrder[row];
+
+        // Só a faixa da pauta editável responde ao clique.
+        if (voiceIndex !== edIdx) return;
+
+        const info = staves[row];
+        const localY = y - info.stave.getY();
+        const { letter, octave } = yToPitch(info.stave, localY + info.stave.getY(), info.clefInfo);
+
+        addNote(letter, octave);
+      });
+    }
+  }
+
+  // --- Tabela de classificação dos intervalos entre vozes consecutivas ---
+  function renderResultsTable(n, voiceNotes) {
+    const box = document.getElementById('expResultsTable');
+    if (!expState.notes.length) { box.innerHTML = `<p class="note">Insira notas na pauta editável para ver a classificação dos intervalos.</p>`; return; }
+
+    const delays = []; for (let i = 0; i < n; i++) delays.push(getDelay(i));
+    const totalCols = Math.max(...delays.map((d, i) => d + voiceNotes[i].length));
+
+    let h = "<div class='wrap'><table><thead><tr><th>Posição</th>";
+    for (let k = 1; k < n; k++) h += `<th>${k === 1 ? 'Líder→Imit.1' : 'Imit.' + (k - 1) + '→Imit.' + k}</th>`;
+    h += "</tr></thead><tbody>";
+
+    for (let col = 0; col < totalCols; col++) {
+      h += `<tr><td>${col + 1}</td>`;
+      for (let k = 1; k < n; k++) {
+        const a = voiceNotes[k - 1][col - delays[k - 1]];
+        const b = voiceNotes[k][col - delays[k]];
+        if (a && b) {
+          const diff = noteToMidi(b) - noteToMidi(a);
+          h += `<td><span class="iv ${clsFromSemitones(diff)}">${labelFromSemitones(diff)}</span></td>`;
+        } else {
+          h += `<td>—</td>`;
+        }
+      }
+      h += "</tr>";
+    }
+    box.innerHTML = h + "</tbody></table></div>";
+  }
+
+  // Reagir a mudanças de modo/configuração feitas na barra lateral.
+  const _origSetup = setup, _origCalc = calc;
+  window.setup = function () { _origSetup(); if (expState.open) { populateKeySelect(); expRender(); } };
+  window.calc = function () { _origCalc(); if (expState.open) expRender(); };
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => { if (expState.open) { populateKeySelect(); expRender(); } }));
+})();
 </script>
 </body>
 </html>
