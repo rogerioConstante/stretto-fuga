@@ -70,7 +70,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 /* Layout do canvas compartilhado */
 .exp-canvas-wrapper{display:flex;gap:0;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
 .exp-controls-column{flex:0 0 110px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#111722;padding:4px 0}
-.exp-control-row{display:flex;align-items:center;padding:0 10px;gap:6px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
+.exp-control-row{height:54px;display:flex;align-items:center;padding:0 10px;gap:6px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
 .exp-control-row:last-child{border-bottom:0}
 .exp-control-row .label{flex:1;font-weight:600;font-size:10px;color:var(--text)}
 .exp-control-row .label.editable{color:var(--green)}
@@ -661,34 +661,7 @@ buildReferenceTable();
     document.getElementById('expToggleKbBtn').textContent = kbOpen ? '🎹 Ocultar teclado' : '🎹 Mostrar teclado';
   };
 
-  // =====================================================================
-  // FUNÇÕES COMPARTILHADAS PARA CÁLCULO DE ALTURA
-  // =====================================================================
-  const STAVE_HEIGHT = 80;
-  
-  function computeGaps(n) {
-    const gaps = [];
-    for (let i = 0; i < n; i++) {
-      const numPairs = n - i - 1;
-      if (numPairs === 0) gaps.push(16);
-      else gaps.push(26 + (numPairs - 1) * 11);
-    }
-    return gaps;
-  }
-
-  function computeYPositions(gaps) {
-    const yPositions = [];
-    let yAcc = 6;
-    for (let i = 0; i < gaps.length; i++) {
-      yPositions.push(yAcc);
-      yAcc += STAVE_HEIGHT + gaps[i];
-    }
-    return { yPositions, totalHeight: yAcc + 5 };
-  }
-
-  // =====================================================================
-  // RENDER PRINCIPAL
-  // =====================================================================
+  // --- Render principal ---
   function expRender() {
     if (!expState.open) return;
     const n = +voices.value;
@@ -726,32 +699,16 @@ buildReferenceTable();
       clef: chooseClef(voiceNotes[i].length ? Math.max(...voiceNotes[i].map(noteToMidi)) : null)
     }));
 
-    // Calcular gaps e posições Y
-    const gaps = computeGaps(n);
-    const { yPositions, totalHeight } = computeYPositions(gaps);
-
-    // Renderizar controles com altura dinâmica
-    renderControlsColumn(sortedData, gaps);
-    
-    // Renderizar canvas
-    renderSharedCanvas(sortedData, gaps, yPositions, totalHeight);
+    renderControlsColumn(sortedData);
+    renderSharedCanvas(sortedData);
   }
 
-  // =====================================================================
-  // RENDER CONTROLES (com altura dinâmica)
-  // =====================================================================
-  function renderControlsColumn(sortedData, gaps) {
+  function renderControlsColumn(sortedData) {
     const col = document.getElementById('expControlsColumn');
     col.innerHTML = '';
-    
-    sortedData.forEach((d, idx) => {
+    sortedData.forEach((d) => {
       const row = document.createElement('div');
       row.className = 'exp-control-row';
-      
-      // Altura = staveHeight + gap (em pixels reais, sem escala pois o SVG já está escalado)
-      // O SVG é escalado por 0.7, então precisamos ajustar a altura para corresponder
-      const heightPx = (STAVE_HEIGHT + gaps[idx]) * 0.7;
-      row.style.height = Math.round(heightPx) + 'px';
       
       const label = document.createElement('span');
       label.className = 'label' + (d.isEditable ? ' editable' : '');
@@ -778,13 +735,13 @@ buildReferenceTable();
     });
   }
 
-  // =====================================================================
-  // RENDER SHARED CANVAS (com formatação conjunta)
-  // =====================================================================
-  const FIXED_COL_WIDTH = 60;
+  const FIXED_COL_WIDTH = 60; // px fixos por posição de semibreve
   const INTERVAL_COLORS = { perfect: '#35a9ff', imperfect: '#4dff9a', dissonant: '#ff4f72', desired: '#4dff9a', undesired: '#ff4f72' };
 
-  function renderSharedCanvas(sortedData, gaps, yPositions, totalHeight) {
+  // =====================================================================
+  // RENDERIZAÇÃO DOS INTERVALOS NÃO-ADJACENTES EMPILHADOS
+  // =====================================================================
+  function renderSharedCanvas(sortedData) {
     const area = document.getElementById('expCanvasArea');
     area.innerHTML = '';
 
@@ -798,6 +755,34 @@ buildReferenceTable();
     });
     if (maxTotal === 0) maxTotal = 1;
 
+    const staveHeight = 80;
+    // Altura do vão agora é dinâmica: depende de quantos pares serão desenhados naquele vão
+    // Para cada voz i (índice no sortedData), o vão abaixo dela terá (n - i - 1) pares
+    // Ex: voz 0 (topo) terá (n-1) pares, voz 1 terá (n-2), ..., última voz 0 pares
+    const getStaveGap = (i) => {
+      const numPairs = n - i - 1;
+      if (numPairs === 0) return 16; // vão mínimo sem intervalos
+      // 26px base + 11px por camada adicional (a primeira camada já está inclusa nos 26px)
+      return 26 + (numPairs - 1) * 11;
+    };
+
+    // Pré-calcular alturas acumuladas
+    const gaps = [];
+    let currentY = 6;
+    for (let i = 0; i < n; i++) {
+      const gap = getStaveGap(i);
+      gaps.push(gap);
+    }
+
+    // Recalcular posições Y com gaps dinâmicos
+    const yPositions = [];
+    let yAcc = 6;
+    for (let i = 0; i < n; i++) {
+      yPositions.push(yAcc);
+      yAcc += staveHeight + gaps[i];
+    }
+    const totalHeight = yAcc + 5;
+
     const staveWidth = 80 + maxTotal * FIXED_COL_WIDTH;
 
     const renderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
@@ -807,10 +792,7 @@ buildReferenceTable();
     ctx.scale(escala, escala);
     ctx.setFont('Arial', 7 / escala);
 
-    // --- Preparar todas as vozes ---
-    const allVoices = [];
-    const allStaves = [];
-
+    // Desenhar pautas e notas
     sortedData.forEach((d, idx) => {
       const yPos = yPositions[idx];
 
@@ -824,15 +806,10 @@ buildReferenceTable();
 
       const vfNotes = [];
       const colNoteRefs = [];
-      
-      // Notas de silêncio (delay)
       for (let c = 0; c < d.delay; c++) {
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: ['b/4'], duration: 'wr' });
-        vfNotes.push(sn);
+        vfNotes.push(new VF.StaveNote({ clef: d.clef.clef, keys: ['b/4'], duration: 'wr' }));
         colNoteRefs.push(null);
       }
-      
-      // Notas reais
       d.notas.forEach((nt) => {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: 'w' });
         const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
@@ -840,57 +817,57 @@ buildReferenceTable();
         vfNotes.push(sn);
         colNoteRefs.push(sn);
       });
-      
-      // Preencher até maxTotal com silêncios
       const remaining = maxTotal - (d.delay + d.notas.length);
       for (let c = 0; c < remaining; c++) {
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: ['b/4'], duration: 'wr' });
-        vfNotes.push(sn);
+        vfNotes.push(new VF.StaveNote({ clef: d.clef.clef, keys: ['b/4'], duration: 'wr' }));
         colNoteRefs.push(null);
       }
 
       const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 1 });
       voice.setStrict(false);
       voice.addTickables(vfNotes);
-      
-      allVoices.push(voice);
-      allStaves.push(stave);
-      d._colNoteRefs = colNoteRefs;
+      new VF.Formatter().joinVoices([voice]).format([voice], staveWidth - 4);
+      voice.draw(ctx, stave);
+
       d._stave = stave;
+      d._colNoteRefs = colNoteRefs;
       d._yPos = yPos;
     });
 
-    // --- Formatação conjunta de todas as vozes ---
-    new VF.Formatter().joinVoices(allVoices).format(allVoices, staveWidth - 4);
-    
-    // --- Desenhar todas as vozes ---
-    allVoices.forEach((voice, idx) => {
-      voice.draw(ctx, allStaves[idx]);
-    });
-
-    // --- Desenhar intervalos empilhados ---
+    // --- Desenhar todos os pares de intervalos (incluindo não-adjacentes) ---
     for (let i = 0; i < n; i++) {
       const rowA = sortedData[i];
       const yA = rowA._yPos;
+      const staveA = rowA._stave;
       
+      // Para cada voz j abaixo de i (j > i)
       for (let j = i + 1; j < n; j++) {
         const rowB = sortedData[j];
-        const distance = j - i;
-        const layer = distance - 1;
+        const distance = j - i; // 1 = adjacente, 2 = uma voz no meio, etc.
         
-        const staveBottom = yA + STAVE_HEIGHT;
+        // Determinar a posição Y para este par: empilhado no vão abaixo da voz i
+        // Camada 0 (adjacente): mais próxima da pauta superior
+        // Camada 1 (distância 2): um pouco abaixo, etc.
+        const layer = distance - 1;
+        const gap = gaps[i];
+        // Posição Y do vão: da linha inferior da pauta i até a linha superior da pauta j
+        const staveBottom = yA + staveHeight;
         const staveTopNext = rowB._yPos;
         const gapCenter = (staveBottom + staveTopNext) / 2;
-        const offsetY = layer * 9;
-        const textY = gapCenter + offsetY - 3;
+        // Empilhar a partir do centro, com deslocamento para baixo a cada camada
+        const offsetY = layer * 15 + 30; // 9px entre camadas
+        const textY = staveBottom + offsetY;
         
-        const fontSize = Math.max(6, 11 - layer * 1.2);
+        // Tamanho da fonte: diminui com a distância
+        const fontSize = Math.max(6, 11 - layer * 1.1);
         
+        // Percorrer colunas
         for (let col = 0; col < maxTotal; col++) {
           const noteA = rowA._colNoteRefs[col];
           const noteB = rowB._colNoteRefs[col];
           if (!noteA || !noteB) continue;
           
+          // Verificar se ambas as notas existem (não são rests)
           const idxA = col - rowA.delay;
           const idxB = col - rowB.delay;
           if (idxA < 0 || idxA >= rowA.notas.length || idxB < 0 || idxB >= rowB.notas.length) continue;
