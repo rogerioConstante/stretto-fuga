@@ -872,7 +872,8 @@ buildReferenceTable();
     // com acidentes), o que produz espaçamento desigual entre colunas. Aqui
     // sobrescrevemos a posição X de cada nota/silêncio para um valor fixo por
     // coluna, igual em todas as vozes, garantindo espaçamento constante.
-    const noteStartX = Math.max(...allStaves.map(s => s.getNoteStartX()));
+    const noteStartX = Math.max(...allStaves.map(s => s.getNoteStartX())) * 1.6;
+
     sortedData.forEach((d) => {
       d._vfNotes.forEach((note, col) => {
         const targetX = noteStartX + col * FIXED_COL_WIDTH;
@@ -898,7 +899,7 @@ buildReferenceTable();
         // (gaps[i], já dimensionado para caber todas as camadas dessa linha),
         // nunca da posição real da pauta B — é isso que evita invadir pautas
         // intermediárias em pares não-adjacentes.
-        const textY = gapTop + 13 + layer * 11;
+        const textY = gapTop + 17 + layer * 11;
 
         for (let col = 0; col < maxTotal; col++) {
           const noteA = rowA._colNoteRefs[col];
@@ -915,7 +916,9 @@ buildReferenceTable();
           const cls = clsFromSemitones(diff);
           const label = labelFromSemitones(diff);
 
-          const x = (noteA.getAbsoluteX() + noteB.getAbsoluteX()) / 2;
+          // Posicionamento horizontal baseado na mesma grade fixa das notas.
+          // Isso faz os intervalos acompanharem exatamente as colunas musicais.
+          const x = (noteStartX * 2) + col * FIXED_COL_WIDTH;
           drawIntervalLabel(area, x, textY, label, cls, fontSize, escala);
         }
       }
