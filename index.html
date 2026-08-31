@@ -927,16 +927,25 @@ buildReferenceTable();
   // regra CSS que força as notas/claves a ficarem pretas (contra o fundo
   // creme da pauta) usa !important e sobrescreveria qualquer cor definida
   // via ctx.setFillStyle().
+  //
+  // Importante: o VexFlow aplica a escala via o atributo viewBox do próprio
+  // <svg> (não via <g transform="scale(...)">), então QUALQUER filho desse
+  // <svg> — inclusive estes elementos — já é remapeado automaticamente pelo
+  // navegador. As coordenadas x/y devem ser usadas em unidades "pré-escala"
+  // (as mesmas de getAbsoluteX()/yPositions), sem multiplicar por escala;
+  // só o font-size precisa ser dividido por escala, no mesmo padrão que o
+  // VexFlow usa (ctx.setFont(..., tamanho/escala)) para o tamanho visual
+  // final ficar constante.
   function drawIntervalLabel(area, xPre, yPre, label, cls, fontSizePre, escala) {
     const svgEl = area.querySelector('svg');
     if (!svgEl) return;
     const NS = 'http://www.w3.org/2000/svg';
     const t = document.createElementNS(NS, 'text');
-    t.setAttribute('x', (xPre * escala).toFixed(1));
-    t.setAttribute('y', (yPre * escala).toFixed(1));
+    t.setAttribute('x', xPre.toFixed(1));
+    t.setAttribute('y', yPre.toFixed(1));
     t.setAttribute('font-family', 'Arial');
     t.setAttribute('font-weight', 'bold');
-    t.setAttribute('font-size', fontSizePre.toFixed(1));
+    t.setAttribute('font-size', (fontSizePre / escala).toFixed(1));
     t.setAttribute('text-anchor', 'middle');
     t.setAttribute('class', 'iv-num iv-' + cls);
     t.textContent = label;
