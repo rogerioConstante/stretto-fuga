@@ -632,8 +632,18 @@ buildReferenceTable();
     // 8 = oitava; 8' = 15ª; 3' = 10ª etc.
     const octaveCount = Math.floor(diatonicSteps / 7);
     const simpleNumber = ((number - 1) % 7) + 1;
-    const apostrophes = "'".repeat(Math.max(0, octaveCount - 1));
-    const label = String(simpleNumber) + apostrophes;
+
+    // A 1ª dentro da mesma oitava é "1"; a partir da oitava,
+    // o grau 1 passa a ser grafado como 8. Cada oitava adicional
+    // acrescenta um apóstrofo: 8, 8', 8''...
+    // Para os demais graus, cada oitava adicional acrescenta um
+    // apóstrofo: 3, 3', 3''...; assim, a 10ª é 3'.
+    let label;
+    if (simpleNumber === 1 && octaveCount >= 1) {
+      label = '8' + "'".repeat(octaveCount - 1);
+    } else {
+      label = String(simpleNumber) + "'".repeat(octaveCount);
+    }
 
     const semitones = highMidi - lowMidi;
     const mod = semitones % 12;
@@ -924,10 +934,6 @@ buildReferenceTable();
     new VF.Formatter().joinVoices(allVoices).format(allVoices, staveWidth - 4);
 
     // --- Realinhamento em colunas de largura fixa ---
-    // O format() acima justifica proporcionalmente (larguras de glifo variam
-    // com acidentes), o que produz espaçamento desigual entre colunas. Aqui
-    // sobrescrevemos a posição X de cada nota/silêncio para um valor fixo por
-    // coluna, igual em todas as vozes, garantindo espaçamento constante.
     const noteStartX = Math.max(...allStaves.map(s => s.getNoteStartX())) * 1.6;
 
     sortedData.forEach((d) => {
@@ -951,11 +957,8 @@ buildReferenceTable();
         const rowB = sortedData[j];
         const layer = j - i - 1; // 0 = par adjacente (mais perto da pauta A)
         const fontSize = Math.max(6, 11 - layer * 1.2);
-        // Posição vertical depende só do vão alocado abaixo da pauta A
-        // (gaps[i], já dimensionado para caber todas as camadas dessa linha),
-        // nunca da posição real da pauta B — é isso que evita invadir pautas
-        // intermediárias em pares não-adjacentes.
-        const textY = gapTop + 17 + layer * 11;
+
+        const textY = gapTop + 30 + layer * 13;
 
         for (let col = 0; col < maxTotal; col++) {
           const noteA = rowA._colNoteRefs[col];
@@ -989,20 +992,6 @@ buildReferenceTable();
     }
   }
 
-  // Desenha o número do intervalo como um <text> SVG próprio (não passa pelo
-  // ctx do VexFlow), marcado com uma classe de cor — necessário porque a
-  // regra CSS que força as notas/claves a ficarem pretas (contra o fundo
-  // creme da pauta) usa !important e sobrescreveria qualquer cor definida
-  // via ctx.setFillStyle().
-  //
-  // Importante: o VexFlow aplica a escala via o atributo viewBox do próprio
-  // <svg> (não via <g transform="scale(...)">), então QUALQUER filho desse
-  // <svg> — inclusive estes elementos — já é remapeado automaticamente pelo
-  // navegador. As coordenadas x/y devem ser usadas em unidades "pré-escala"
-  // (as mesmas de getAbsoluteX()/yPositions), sem multiplicar por escala;
-  // só o font-size precisa ser dividido por escala, no mesmo padrão que o
-  // VexFlow usa (ctx.setFont(..., tamanho/escala)) para o tamanho visual
-  // final ficar constante.
   function drawIntervalLabel(area, xPre, yPre, label, cls, fontSizePre, escala) {
     const svgEl = area.querySelector('svg');
     if (!svgEl) return;
