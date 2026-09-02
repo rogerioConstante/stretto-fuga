@@ -39,7 +39,7 @@ th,td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:center;whit
 th{background:#171e29;color:#cbd5e1;font-size:12px}
 td:first-child,th:first-child{text-align:left;min-width:50px}
 tr:last-child td{border-bottom:0}
-.iv{display:inline-block;min-width:40px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}.desired{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.undesired{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
+.iv{display:inline-block;min-width:40px;padding:2px 5px;border-radius:4px;font-weight:700;font-size:11px}.perfect{color:var(--blue);border:1px solid #35a9ff55;background:#35a9ff12}.imperfect{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.special-consonant{color:#ffe45c;border:1px solid #ffe45c55;background:#ffe45c12}.dissonant{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}.desired{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}.undesired{color:var(--red);border:1px solid #ff4f7255;background:#ff4f7212}
 
 table.compact th,table.compact td{padding:1px 4px;line-height:1.2}
 table.compact td:first-child,table.compact th:first-child{min-width:70px}
@@ -81,7 +81,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-canvas-area svg text{fill:#000!important}
 .exp-canvas-area svg path{stroke:#000!important}
 .exp-canvas-area svg .vf-stavenote text{fill:#000!important}
-.exp-canvas-area svg text.iv-num.iv-perfect{fill:#35a9ff!important}
+.exp-canvas-area svg text.iv-num.iv-perfect{fill:#35a9ff!important}.exp-canvas-area svg text.iv-num.iv-special-consonant{fill:#ffe45c!important}
 .exp-canvas-area svg text.iv-num.iv-imperfect,.exp-canvas-area svg text.iv-num.iv-desired{fill:#4dff9a!important}
 .exp-canvas-area svg text.iv-num.iv-dissonant,.exp-canvas-area svg text.iv-num.iv-undesired{fill:#ff4f72!important}
 
@@ -605,16 +605,72 @@ buildReferenceTable();
     return expState.delays[i];
   }
 
-  // --- Classificação de intervalo ---
+  // --- Classificação e rotulagem de intervalos ---
+  // No modo tonal, a classificação considera a distância diatônica e
+  // a posição das vozes. 4ª justa/trítono são "consonâncias especiais"
+  // quando o par NÃO envolve a voz mais grave.
+  function intervalInfoFromNotes(noteA, noteB, lowestMidi) {
+    if (modo !== 'tonal') {
+      const diff = noteB ? noteToMidi(noteB) - noteToMidi(noteA) : 0;
+      const mod = ((diff % 12) + 12) % 12;
+      const ic = Math.min(mod, 12 - mod);
+      return { label: String(ic), cls: clsAtonal(ic) };
+    }
+
+    const midiA = noteToMidi(noteA);
+    const midiB = noteToMidi(noteB);
+    const lowMidi = Math.min(midiA, midiB);
+    const highMidi = Math.max(midiA, midiB);
+
+    // Distância diatônica absoluta, contando a própria nota.
+    const letterA = LETTERS.indexOf(noteA.letter);
+    const letterB = LETTERS.indexOf(noteB.letter);
+    const diatonicSteps = Math.abs((noteB.octave - noteA.octave) * 7 + (letterB - letterA));
+    const number = diatonicSteps + 1;
+
+    // Quantidade de oitavas completas acima da oitava simples.
+    // 8 = oitava; 8' = 15ª; 3' = 10ª etc.
+    const octaveCount = Math.floor(diatonicSteps / 7);
+    const simpleNumber = ((number - 1) % 7) + 1;
+    const apostrophes = "'".repeat(Math.max(0, octaveCount - 1));
+    const label = String(simpleNumber) + apostrophes;
+
+    const semitones = highMidi - lowMidi;
+    const mod = semitones % 12;
+
+    let cls;
+    if ([0, 7].includes(mod)) {
+      // 1ª, 5ª e suas oitavas compostas; 8ª/15ª/etc. permanecem perfeitas.
+      cls = 'perfect';
+    } else if ([3, 4, 8, 9].includes(mod)) {
+      // 3ª/6ª e seus compostos.
+      cls = 'imperfect';
+    } else if ([5, 6].includes(mod)) {
+      // 4ª justa / trítono: consonantes somente se não envolverem
+      // a voz mais grave da textura.
+      const involvesLowest = (lowMidi === lowestMidi);
+      cls = involvesLowest ? 'dissonant' : 'special-consonant';
+    } else {
+      cls = 'dissonant';
+    }
+
+    return { label, cls };
+  }
+
   function clsFromSemitones(diff) {
+    // Mantida para compatibilidade com chamadas existentes; sem contexto
+    // de vozes, aplica apenas a classificação tonal básica.
     const mod = ((diff % 12) + 12) % 12;
     if (modo === 'tonal') {
-      return [0, 7].includes(mod) ? 'perfect' : [3, 4, 8, 9].includes(mod) ? 'imperfect' : 'dissonant';
+      return [0, 7].includes(mod) ? 'perfect' :
+             [3, 4, 8, 9].includes(mod) ? 'imperfect' :
+             'dissonant';
     } else {
       const ic = Math.min(mod, 12 - mod);
       return clsAtonal(ic);
     }
   }
+
   function labelFromSemitones(diff) {
     const mod = Math.abs(diff) % 12;
     if (modo === 'tonal') {
@@ -912,9 +968,17 @@ buildReferenceTable();
 
           const midiA = noteToMidi(rowA.notas[idxA]);
           const midiB = noteToMidi(rowB.notas[idxB]);
-          const diff = midiB - midiA;
-          const cls = clsFromSemitones(diff);
-          const label = labelFromSemitones(diff);
+
+          // A voz mais grave é determinada pela posição real das pautas,
+          // independentemente de qual par está sendo analisado.
+          const lowestMidi = Math.min(...sortedData.map(v => {
+            const vi = col - v.delay;
+            return (vi >= 0 && vi < v.notas.length) ? noteToMidi(v.notas[vi]) : Infinity;
+          }));
+
+          const info = intervalInfoFromNotes(rowA.notas[idxA], rowB.notas[idxB], lowestMidi);
+          const cls = info.cls;
+          const label = info.label;
 
           // Posicionamento horizontal baseado na mesma grade fixa das notas.
           // Isso faz os intervalos acompanharem exatamente as colunas musicais.
