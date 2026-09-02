@@ -65,7 +65,14 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-octave button{width:22px;height:22px;background:var(--panel2);border:1px solid #394657;border-radius:5px;color:var(--text);cursor:pointer;font-family:inherit;font-size:12px}
 .exp-octave b{color:var(--text);min-width:12px;text-align:center}
 .exp-actionbtn{padding:6px 11px;background:#1c1015;border:1px solid #4a2530;border-radius:6px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
-.exp-hint{color:var(--muted);font-size:11px;margin-bottom:10px;line-height:1.5}
+.exp-viable-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.exp-viable{padding:10px 12px;margin-bottom:12px}
+.exp-viable .move{padding:5px 10px;font-size:12px}
+
+.exp-canvas-wrapper{position:relative}
+.exp-tooltip-icon{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#171e29;border:1px solid var(--line);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:21;cursor:help}
+.exp-tooltip{position:absolute;top:8px;right:8px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
+.exp-canvas-wrapper:hover .exp-tooltip{opacity:1;visibility:visible}
 
 /* Layout do canvas compartilhado */
 .exp-canvas-wrapper{display:flex;gap:0;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
@@ -180,7 +187,9 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <button class="exp-actionbtn" id="expClearBtn" type="button">Limpar</button>
       <button class="exp-kbtoggle" id="expToggleKbBtn" type="button">🎹 Mostrar teclado</button>
     </div>
-    <p class="exp-hint">Digite as letras no teclado do computador (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓) ou use o teclado de piano virtual. Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável é definida automaticamente pelas transposições configuradas ao lado.</p>
+
+    <div class="exp-viable-title">Movimentos viáveis para a próxima nota <span id="expEditableLabel"></span></div>
+    <section class="viable exp-viable"><div id="expMoves" class="moves"></div></section>
 
     <div class="exp-keyboard-wrap" id="expKeyboardWrap">
       <div class="exp-keyboard" id="expKeyboard"></div>
@@ -189,6 +198,8 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
     <div class="exp-canvas-wrapper">
       <div class="exp-controls-column" id="expControlsColumn"></div>
       <div class="exp-canvas-area" id="expCanvasArea"></div>
+      <div class="exp-tooltip-icon">ⓘ</div>
+      <div class="exp-tooltip">Digite as letras no teclado do computador (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓) ou use o teclado de piano virtual. Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável (destacada) é definida automaticamente pelas transposições configuradas ao lado.</div>
     </div>
   </div>
 </div>
@@ -483,11 +494,47 @@ buildReferenceTable();
   }
   function vfKey(note) { return note.letter.toLowerCase() + '/' + note.octave; }
 
-  function chooseClef(midiMedian) {
-    if (midiMedian === null) return { clef: 'treble', ann: null };
-    if (midiMedian >= 60) return { clef: 'treble', ann: null };
-    if (midiMedian < 48) return { clef: 'bass', ann: null };
-    return { clef: 'treble', ann: '8vb' };
+  // --- Escolha automática de clave por penalização de linhas suplementares ---
+  // Testa 4 claves candidatas e soma, para cada nota já inserida na voz, uma
+  // penalidade crescente (quadrática) por linha suplementar necessária.
+  // Linhas suplementares ABAIXO pesam mais que ACIMA, pois é embaixo que fica
+  // o espaço reservado aos números de intervalo. Escolhe a clave de menor
+  // penalidade total.
+  const CLEF_CANDIDATES = [
+    { clef: 'treble', ann: null, bottomL: 'E', bottomO: 4, topL: 'F', topO: 5 }, // Sol
+    { clef: 'treble', ann: '8vb', bottomL: 'E', bottomO: 4, topL: 'F', topO: 5 }, // Sol-8
+    { clef: 'alto', ann: null, bottomL: 'F', bottomO: 3, topL: 'G', topO: 4 }, // Dó na 3ª linha
+    { clef: 'bass', ann: null, bottomL: 'G', bottomO: 2, topL: 'A', topO: 3 } // Fá
+  ];
+  const LEDGER_BELOW_WEIGHT = 1.6;
+  const LEDGER_ABOVE_WEIGHT = 1.0;
+
+  function diatonicIndex(letter, octave) { return octave * 7 + LETTERS.indexOf(letter); }
+
+  function ledgerLinesFor(letter, octave, spec) {
+    // Na clave Sol-8, o que soa é uma oitava abaixo do que está escrito, então
+    // a posição na pauta (para fins de linha suplementar) usa a oitava+1.
+    const wOctave = spec.ann === '8vb' ? octave + 1 : octave;
+    const di = diatonicIndex(letter, wOctave);
+    const bottomIdx = diatonicIndex(spec.bottomL, spec.bottomO);
+    const topIdx = diatonicIndex(spec.topL, spec.topO);
+    if (di < bottomIdx) return { below: Math.ceil((bottomIdx - di) / 2), above: 0 };
+    if (di > topIdx) return { below: 0, above: Math.ceil((di - topIdx) / 2) };
+    return { below: 0, above: 0 };
+  }
+
+  function chooseClefForNotes(notesArr) {
+    let best = null;
+    for (const spec of CLEF_CANDIDATES) {
+      let penalty = 0;
+      notesArr.forEach((nt) => {
+        const { below, above } = ledgerLinesFor(nt.letter, nt.octave, spec);
+        if (below) penalty += LEDGER_BELOW_WEIGHT * below * below;
+        if (above) penalty += LEDGER_ABOVE_WEIGHT * above * above;
+      });
+      if (!best || penalty < best.penalty - 1e-9) best = { spec, penalty };
+    }
+    return { clef: best.spec.clef, ann: best.spec.ann };
   }
 
   // --- Estado ---
@@ -758,6 +805,40 @@ buildReferenceTable();
   // =====================================================================
   // RENDER PRINCIPAL
   // =====================================================================
+  function placeholderNote(delta) {
+    const base = { letter: 'C', acc: 0, octave: expState.octave };
+    return modo === 'tonal' ? transposeDiatonic(base, expState.keySig, delta) : transposeChromatic(base, delta);
+  }
+
+  // --- Movimentos viáveis para a próxima nota da voz editável ---
+  // Generaliza a lógica do painel principal (calc()): em vez de assumir
+  // sempre o Líder como referência que se move, usa a voz editável (a
+  // deduzida a partir das transposições) como referência, e verifica o
+  // intervalo resultante contra CADA outra voz (não só a consecutiva).
+  function renderExpViableMoves(vals, edIdx) {
+    const relVals = vals.map(v => v - vals[edIdx]);
+    const moves = currentMoves();
+    const good = [];
+    for (const mv of moves) {
+      const mVal = mv[1];
+      let ok = true;
+      for (let k = 0; k < vals.length; k++) {
+        if (k === edIdx) continue;
+        const r = calcularResultado(0, relVals[k], mVal);
+        if (r.cls === 'dissonant' || r.cls === 'undesired') { ok = false; break; }
+      }
+      if (ok) good.push(mv);
+    }
+    const el = document.getElementById('expMoves');
+    if (good.length) {
+      el.innerHTML = good.map(x => `<span class="move">${x[0]}</span>`).join('');
+    } else {
+      el.innerHTML = `<span class="none">Nenhum movimento atende simultaneamente aos critérios ${modo === 'tonal' ? 'consonantes' : 'desejados'}.</span>`;
+    }
+    const labelEl = document.getElementById('expEditableLabel');
+    if (labelEl) labelEl.textContent = '(' + (edIdx === 0 ? 'Líder' : 'Imitação ' + edIdx) + ')';
+  }
+
   function expRender() {
     if (!expState.open) return;
     const n = +voices.value;
@@ -779,6 +860,11 @@ buildReferenceTable();
       voiceNotes.push(seq);
     }
 
+    // Movimentos viáveis para a próxima nota da voz editável (mesma lógica
+    // do painel principal, generalizada para a voz editável ao invés do
+    // Líder).
+    renderExpViableMoves(vals, edIdx);
+
     const delays = [];
     for (let i = 0; i < n; i++) delays.push(getDelay(i));
 
@@ -792,7 +878,7 @@ buildReferenceTable();
       notas: voiceNotes[i],
       delay: delays[i],
       isEditable: i === edIdx,
-      clef: chooseClef(voiceNotes[i].length ? Math.max(...voiceNotes[i].map(noteToMidi)) : null)
+      clef: chooseClefForNotes(voiceNotes[i].length ? voiceNotes[i] : [placeholderNote(vals[i] - edVal)])
     }));
 
     // Calcular gaps e posições Y
@@ -934,6 +1020,10 @@ buildReferenceTable();
     new VF.Formatter().joinVoices(allVoices).format(allVoices, staveWidth - 4);
 
     // --- Realinhamento em colunas de largura fixa ---
+    // O format() acima justifica proporcionalmente (larguras de glifo variam
+    // com acidentes), o que produz espaçamento desigual entre colunas. Aqui
+    // sobrescrevemos a posição X de cada nota/silêncio para um valor fixo por
+    // coluna, igual em todas as vozes, garantindo espaçamento constante.
     const noteStartX = Math.max(...allStaves.map(s => s.getNoteStartX())) * 1.6;
 
     sortedData.forEach((d) => {
