@@ -9,10 +9,26 @@
 :root{--bg:#090c12;--panel:#111722;--panel2:#171e2a;--line:#2a3442;--text:#edf3fa;--muted:#93a0b1;--cyan:#62e9ff;--blue:#35a9ff;--green:#4dff9a;--red:#ff4f72}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% 0,#152536 0,#090c12 38%);color:var(--text);font:14px "Segoe UI",Arial,sans-serif}
 header{padding:28px 38px;border-bottom:1px solid var(--line);background:#0b1017e8}h1{margin:0 0 7px;font-size:27px}header p{margin:0;color:var(--muted);max-width:1050px;line-height:1.5}
-.app{display:grid;grid-template-columns:285px 1fr;min-height:calc(100vh - 110px)}aside{padding:24px;border-right:1px solid var(--line);background:#0d1219}.field,.comes{margin-bottom:18px}
-label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}select{width:100%;padding:10px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:7px;outline:0}select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #62e9ff20}
-.comes{padding:13px;border:1px solid var(--line);border-radius:9px;background:#10151e}.ct{margin-bottom:9px;color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1.2px}
-.note{color:var(--muted);font-size:12px;line-height:1.5}main{padding:28px 34px 45px;overflow:auto}.title{margin-bottom:12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+.app{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 110px)}
+aside{padding:24px;border-right:1px solid var(--line);background:#0d1219;overflow-y:auto;max-height:calc(100vh - 110px)}
+.field,.comes{margin-bottom:18px}
+label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}
+select{width:100%;padding:10px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:7px;outline:0;font-family:inherit}
+select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #62e9ff20}
+.comes{padding:13px;border:1px solid var(--line);border-radius:9px;background:#10151e;margin-bottom:14px}
+.comes:last-child{margin-bottom:0}
+.ct{margin-bottom:9px;color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
+.comes .transp-label{font-size:11px;color:var(--muted);margin:8px 0 4px;display:block}
+.comes .transp-select{width:100%;padding:8px 10px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:6px;font-size:12px;outline:0;font-family:inherit}
+.comes .transp-select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #62e9ff20}
+.comes .ctrl-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.comes .ctrl-row .ctrl-group{display:flex;align-items:center;gap:5px}
+.comes .ctrl-row label{font-size:11px;color:var(--muted);cursor:pointer;user-select:none;margin:0;display:inline-flex;align-items:center;gap:4px}
+.comes .ctrl-row input[type=number]{width:40px;padding:4px 3px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:11px;text-align:center;font-family:inherit}
+.comes .ctrl-row input[type=checkbox]{width:12px;height:12px;margin:0;accent-color:var(--cyan);cursor:pointer;flex:0 0 auto}
+.comes .delay-label{font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+.note{color:var(--muted);font-size:12px;line-height:1.5}
+main{padding:28px 34px 45px;overflow:auto}.title{margin-bottom:12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
 .viable{padding:20px;border:1px solid #274554;border-radius:12px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:20px}
 .moves{display:flex;gap:9px;flex-wrap:wrap}.move{padding:8px 13px;border:1px solid #285060;border-radius:7px;background:#13232c;color:#8cf0ff;font-weight:650}.none{color:var(--red);font-weight:600}
 
@@ -44,7 +60,7 @@ tr:last-child td{border-bottom:0}
 table.compact th,table.compact td{padding:1px 4px;line-height:1.2}
 table.compact td:first-child,table.compact th:first-child{min-width:70px}
 table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
-@media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}}
+@media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line);max-height:none}main{padding:22px}}
 
 .exp-body{padding:4px 0 16px;overflow:visible;max-height:none}
 .exp-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
@@ -57,6 +73,18 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-octave button{width:22px;height:22px;background:var(--panel2);border:1px solid #394657;border-radius:5px;color:var(--text);cursor:pointer;font-family:inherit;font-size:12px}
 .exp-octave b{color:var(--text);min-width:12px;text-align:center}
 .exp-actionbtn{padding:6px 11px;background:#1c1015;border:1px solid #4a2530;border-radius:6px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.exp-kbtoggle{padding:6px 11px;background:var(--panel2);border:1px solid #394657;border-radius:6px;color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.exp-kbtoggle:hover{border-color:var(--cyan)}
+.exp-keyboard-wrap{display:none;overflow-x:auto;margin-bottom:14px;background:#0f141c;border:1px solid var(--line);border-radius:8px;padding:10px}
+.exp-keyboard-wrap.open{display:block}
+.exp-keyboard{position:relative;user-select:none}
+.wkey{position:absolute;top:0;background:#eef3f8;border:1px solid #0a0d12;border-radius:0 0 4px 4px;cursor:pointer}
+.wkey:hover{background:#c9e8ff}
+.wkey:active{background:var(--cyan)}
+.bkey{position:absolute;top:0;background:#0c1016;border:1px solid #000;border-radius:0 0 3px 3px;cursor:pointer;z-index:2}
+.bkey:hover{background:#233043}
+.bkey:active{background:var(--cyan)}
+
 .exp-viable-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 .exp-viable{padding:10px 12px;margin-bottom:12px}
 .exp-viable .move{padding:5px 10px;font-size:12px}
@@ -66,7 +94,6 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-tooltip{position:absolute;top:8px;left:34px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
 .exp-tooltip-icon:hover + .exp-tooltip{opacity:1;visibility:visible}
 
-/* Layout do canvas compartilhado */
 .exp-canvas-wrapper{display:flex;gap:0;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
 .exp-controls-column{flex:0 0 110px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#111722;padding:4px 0}
 .exp-control-row{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
@@ -74,7 +101,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-control-row .label{font-weight:600;font-size:11px;color:var(--text)}
 .exp-control-row .label.editable{color:var(--green)}
 .exp-control-row .ctrl-line{display:flex;align-items:center;gap:5px}
-.exp-control-row .ctrl-xform-group{display:flex;flex-direction:column;gap:1px}
+.exp-control-row .delay-fixed{font-size:10px;color:var(--muted);min-width:20px;text-align:center}
 .exp-control-row input[type=number]{width:36px;padding:2px 3px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:10px;text-align:center}
 .exp-control-row .delay-fixed{font-size:10px;color:var(--muted);min-width:20px;text-align:center}
 .exp-control-row input[type=checkbox]{width:11px;height:11px;margin:0;accent-color:var(--cyan);cursor:pointer;flex:0 0 auto}
@@ -88,20 +115,6 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-canvas-area svg text.iv-num.iv-perfect{fill:#35a9ff!important}.exp-canvas-area svg text.iv-num.iv-special-consonant{fill:#ffe45c!important}
 .exp-canvas-area svg text.iv-num.iv-imperfect,.exp-canvas-area svg text.iv-num.iv-desired{fill:#4dff9a!important}
 .exp-canvas-area svg text.iv-num.iv-dissonant,.exp-canvas-area svg text.iv-num.iv-undesired{fill:#ff4f72!important}
-
-.exp-kbtoggle{padding:6px 11px;background:var(--panel2);border:1px solid #394657;border-radius:6px;color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
-.exp-kbtoggle:hover{border-color:var(--cyan)}
-.exp-keyboard-wrap{display:none;overflow-x:auto;margin-bottom:14px;background:#0f141c;border:1px solid var(--line);border-radius:8px;padding:10px}
-.exp-keyboard-wrap.open{display:block}
-.exp-keyboard{position:relative;user-select:none}
-.wkey{position:absolute;top:0;background:#eef3f8;border:1px solid #0a0d12;border-radius:0 0 4px 4px;cursor:pointer}
-.wkey:hover{background:#c9e8ff}
-.wkey:active{background:var(--cyan)}
-.bkey{position:absolute;top:0;background:#0c1016;border:1px solid #000;border-radius:0 0 3px 3px;cursor:pointer;z-index:2}
-.bkey:hover{background:#233043}
-.bkey:active{background:var(--cyan)}
-
-.exp-results .title{font-size:11px}
 </style>
 </head>
 <body>
@@ -264,7 +277,45 @@ function calcularResultado(val1, val2, valMovimento) {
 }
 
 // =====================================================================
-// Configuração das Imitações (barra lateral)
+// ESTADO GLOBAL DAS CONFIGURAÇÕES DAS IMITAÇÕES
+// =====================================================================
+// delays: atraso de cada voz (0 = sem atraso)
+// inversion: se a voz é invertida melodicamente
+// retrograde: se a voz é retrogradada
+// transposition: índice da opção selecionada no select de transposição
+const imitationState = {
+  delays: {},
+  inversion: {},
+  retrograde: {},
+  transposition: {}
+};
+
+function getDelay(i) {
+  if (i === 0) return 0;
+  if (imitationState.delays[i] === undefined) imitationState.delays[i] = i;
+  return imitationState.delays[i];
+}
+
+function getInversion(i) {
+  if (i === 0) return false;
+  if (imitationState.inversion[i] === undefined) imitationState.inversion[i] = false;
+  return imitationState.inversion[i];
+}
+
+function getRetrograde(i) {
+  if (i === 0) return false;
+  if (imitationState.retrograde[i] === undefined) imitationState.retrograde[i] = false;
+  return imitationState.retrograde[i];
+}
+
+function getTransposition(i) {
+  if (i === 0) return 0;
+  if (imitationState.transposition[i] === undefined) imitationState.transposition[i] = i - 1; // padrão: 1ª imitação = 1ª opção
+  return imitationState.transposition[i];
+}
+
+// =====================================================================
+// Configuração das Imitações (barra lateral) — com todos os controles
 // =====================================================================
 const defaultsTonal = ["5ª ↑", "4ª ↓", "5ª ↑", "4ª ↓", "5ª ↑"];
 
@@ -272,17 +323,91 @@ function setup() {
   const n = +voices.value;
   const opts = currentOptions();
   controls.innerHTML = "";
+  
   for (let k = 1; k < n; k++) {
     const optsHtml = opts.map((x, i) => `<option value="${i}">${x[0]}</option>`).join("");
-    controls.innerHTML += `<div class="comes"><div class="ct">${k}ª Imitação</div><select id="c${k}">${optsHtml}</select></div>`;
+    const defaultIdx = modo === "tonal" 
+      ? opts.findIndex(x => x[0] === defaultsTonal[k - 1]) 
+      : Math.min(k - 1, opts.length - 1);
+    const currentTransp = getTransposition(k);
+    
+    const div = document.createElement('div');
+    div.className = 'comes';
+    div.innerHTML = `
+      <div class="ct">${k}ª Imitação</div>
+      <span class="transp-label">Transposição</span>
+      <select class="transp-select" id="c${k}">${optsHtml}</select>
+      <div class="ctrl-row">
+        <span class="delay-label">
+          <label>Atraso</label>
+          <input type="number" min="0" id="delay${k}" value="${getDelay(k)}">
+        </span>
+        <span class="ctrl-group">
+          <label><input type="checkbox" id="inv${k}" ${getInversion(k) ? 'checked' : ''}> Inversão</label>
+        </span>
+        <span class="ctrl-group">
+          <label><input type="checkbox" id="ret${k}" ${getRetrograde(k) ? 'checked' : ''}> Retrogradação</label>
+        </span>
+      </div>
+    `;
+    controls.appendChild(div);
+    
+    const sel = div.querySelector('.transp-select');
+    sel.value = currentTransp < opts.length ? currentTransp : 0;
+    sel.onchange = (e) => {
+      imitationState.transposition[k] = +e.target.value;
+      calc();
+      if (window._expState && window._expState.open) window.expRender();
+    };
+    
+    const delayInput = div.querySelector(`#delay${k}`);
+    delayInput.onchange = (e) => {
+      imitationState.delays[k] = Math.max(0, +e.target.value || 0);
+      if (window._expState && window._expState.open) window.expRender();
+    };
+    
+    const invCheck = div.querySelector(`#inv${k}`);
+    invCheck.onchange = (e) => {
+      imitationState.inversion[k] = e.target.checked;
+      if (window._expState && window._expState.open) window.expRender();
+    };
+    
+    const retCheck = div.querySelector(`#ret${k}`);
+    retCheck.onchange = (e) => {
+      imitationState.retrograde[k] = e.target.checked;
+      if (window._expState && window._expState.open) window.expRender();
+    };
   }
-  if (modo === "tonal") {
-    for (let k = 1; k < n; k++) {
-      const idx = opts.findIndex(x => x[0] === defaultsTonal[k - 1]);
-      if (idx >= 0) document.getElementById("c" + k).value = idx;
+  
+  // Atualizar os selects de transposição se o modo mudar
+  document.querySelectorAll('#controls .transp-select').forEach(sel => {
+    const idx = sel.id.replace('c', '');
+    if (imitationState.transposition[idx] === undefined) {
+      const defIdx = modo === "tonal" 
+        ? opts.findIndex(x => x[0] === defaultsTonal[idx - 1]) 
+        : Math.min(idx - 1, opts.length - 1);
+      imitationState.transposition[idx] = defIdx >= 0 ? defIdx : 0;
     }
-  }
-  document.querySelectorAll("#controls select").forEach(x => x.onchange = calc);
+    // Reconstruir opções
+    const optsHtml = opts.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('');
+    sel.innerHTML = optsHtml;
+    sel.value = Math.min(imitationState.transposition[idx] || 0, opts.length - 1);
+  });
+  
+  document.querySelectorAll("#controls input[type=number]").forEach(inp => {
+    if (!inp.onchange) inp.onchange = () => { if (window._expState && window._expState.open) window.expRender(); };
+  });
+  document.querySelectorAll("#controls input[type=checkbox]").forEach(cb => {
+    if (!cb.onchange) cb.onchange = () => { if (window._expState && window._expState.open) window.expRender(); };
+  });
+  
+  // Sincronizar valores iniciais
+  document.querySelectorAll('#controls .transp-select').forEach(sel => {
+    const idx = +sel.id.replace('c', '');
+    if (imitationState.transposition[idx] !== undefined) {
+      sel.value = Math.min(imitationState.transposition[idx], opts.length - 1);
+    }
+  });
 }
 
 // =====================================================================
@@ -295,8 +420,11 @@ function calc() {
   const t = [0]; // Líder sempre parte de 0
 
   for (let k = 1; k < n; k++) {
-    const idx = +document.getElementById("c" + k).value;
+    const sel = document.getElementById("c" + k);
+    if (!sel) { t.push(0); continue; }
+    const idx = +sel.value;
     t.push(currentOptions()[idx][1]);
+    imitationState.transposition[k] = idx;
   }
 
   let rows = [];
@@ -405,6 +533,10 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
     setup();
     calc();
     buildReferenceTable();
+    if (window._expState && window._expState.open) {
+      populateKeySelect();
+      window.expRender();
+    }
   };
 });
 
@@ -417,6 +549,14 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "experimentacao") {
+      if (!window._expState) window._expState = { open: true };
+      window._expState.open = true;
+      populateKeySelect();
+      window.expRender();
+    } else {
+      if (window._expState) window._expState.open = false;
+    }
   };
 });
 
@@ -481,11 +621,6 @@ buildReferenceTable();
     return { letter, acc, octave };
   }
 
-  // --- Inversão melódica: espelha a nota em torno de "first" (sempre a
-  // primeira nota da voz editável, mesmo eixo independente de retrogradação).
-  // Tonal: espelha em graus diatônicos, preservando o desvio cromático
-  // explícito de cada nota (mesma mecânica de transposeDiatonic).
-  // Atonal: espelha a altura em semitons (novaAltura = 2×eixo − nota).
   function invertDiatonic(note, first, key) {
     const targetIdx = 2 * diatonicIndex(first.letter, first.octave) - diatonicIndex(note.letter, note.octave);
     const newLetter = LETTERS[((targetIdx % 7) + 7) % 7];
@@ -508,24 +643,16 @@ buildReferenceTable();
   }
   function vfKey(note) { return note.letter.toLowerCase() + '/' + note.octave; }
 
-  // Posição da pausa de semibreve: usa a linha central de cada clave, já
-  // que 'b/4' (linha central do Sol) fica fora de posição nas demais.
   function restKeyFor(clef) {
     if (clef === 'bass') return 'd/3';
     if (clef === 'alto') return 'c/4';
     return 'b/4';
   }
 
-  // --- Escolha automática de clave por penalização de linhas suplementares ---
-  // Testa 4 claves candidatas e soma, para cada nota já inserida na voz, uma
-  // penalidade crescente (quadrática) por linha suplementar necessária.
-  // Linhas suplementares ABAIXO pesam mais que ACIMA, pois é embaixo que fica
-  // o espaço reservado aos números de intervalo. Escolhe a clave de menor
-  // penalidade total.
   const CLEF_CANDIDATES = [
-    { clef: 'treble', ann: null, bottomL: 'E', bottomO: 4, topL: 'F', topO: 5 }, // Sol
-    { clef: 'alto', ann: null, bottomL: 'F', bottomO: 3, topL: 'G', topO: 4 }, // Dó na 3ª linha
-    { clef: 'bass', ann: null, bottomL: 'G', bottomO: 2, topL: 'A', topO: 3 } // Fá
+    { clef: 'treble', ann: null, bottomL: 'E', bottomO: 4, topL: 'F', topO: 5 },
+    { clef: 'alto', ann: null, bottomL: 'F', bottomO: 3, topL: 'G', topO: 4 },
+    { clef: 'bass', ann: null, bottomL: 'G', bottomO: 2, topL: 'A', topO: 3 }
   ];
   const LEDGER_BELOW_WEIGHT = 1.6;
   const LEDGER_ABOVE_WEIGHT = 1.0;
@@ -533,8 +660,6 @@ buildReferenceTable();
   function diatonicIndex(letter, octave) { return octave * 7 + LETTERS.indexOf(letter); }
 
   function ledgerLinesFor(letter, octave, spec) {
-    // Na clave Sol-8, o que soa é uma oitava abaixo do que está escrito, então
-    // a posição na pauta (para fins de linha suplementar) usa a oitava+1.
     const wOctave = spec.ann === '8vb' ? octave + 1 : octave;
     const di = diatonicIndex(letter, wOctave);
     const bottomIdx = diatonicIndex(spec.bottomL, spec.bottomO);
@@ -558,20 +683,15 @@ buildReferenceTable();
     return { clef: best.spec.clef, ann: best.spec.ann };
   }
 
-  // --- Estado ---
+  // --- Estado da experimentação ---
   const expState = {
     open: false,
     notes: [],
     keySig: 'C',
     pendingAcc: null,
-    octave: 4,
-    delays: {},
-    inversion: {},
-    retrograde: {}
+    octave: 4
   };
-
-  // A abertura/fechamento agora é feita pela troca de abas (hook adicionado
-  // mais abaixo, junto com o wrapping de calc()/setup()).
+  window._expState = expState;
 
   // --- Toolbar ---
   function populateKeySelect() {
@@ -623,11 +743,13 @@ buildReferenceTable();
     const n = +voices.value;
     const vals = [0];
     for (let k = 1; k < n; k++) {
-      const idx = +document.getElementById('c' + k).value;
+      const sel = document.getElementById("c" + k);
+      const idx = sel ? +sel.value : 0;
       vals.push(currentOptions()[idx][1]);
     }
     return vals;
   }
+  
   function editableIndex(vals) {
     const imitVals = vals.slice(1);
     const asc = imitVals.filter(v => v > 0);
@@ -646,24 +768,8 @@ buildReferenceTable();
     }
     return 0;
   }
-  function getDelay(i) {
-    if (i === 0) return 0;
-    if (expState.delays[i] === undefined) expState.delays[i] = i;
-    return expState.delays[i];
-  }
-  function getInversion(i) {
-    if (expState.inversion[i] === undefined) expState.inversion[i] = false;
-    return expState.inversion[i];
-  }
-  function getRetrograde(i) {
-    if (expState.retrograde[i] === undefined) expState.retrograde[i] = false;
-    return expState.retrograde[i];
-  }
 
   // --- Classificação e rotulagem de intervalos ---
-  // No modo tonal, a classificação considera a distância diatônica e
-  // a posição das vozes. 4ª justa/trítono são "consonâncias especiais"
-  // quando o par NÃO envolve a voz mais grave.
   function intervalInfoFromNotes(noteA, noteB, lowestMidi) {
     if (modo !== 'tonal') {
       const diff = noteB ? noteToMidi(noteB) - noteToMidi(noteA) : 0;
@@ -677,22 +783,14 @@ buildReferenceTable();
     const lowMidi = Math.min(midiA, midiB);
     const highMidi = Math.max(midiA, midiB);
 
-    // Distância diatônica absoluta, contando a própria nota.
     const letterA = LETTERS.indexOf(noteA.letter);
     const letterB = LETTERS.indexOf(noteB.letter);
     const diatonicSteps = Math.abs((noteB.octave - noteA.octave) * 7 + (letterB - letterA));
     const number = diatonicSteps + 1;
 
-    // Quantidade de oitavas completas acima da oitava simples.
-    // 8 = oitava; 8' = 15ª; 3' = 10ª etc.
     const octaveCount = Math.floor(diatonicSteps / 7);
     const simpleNumber = ((number - 1) % 7) + 1;
 
-    // A 1ª dentro da mesma oitava é "1"; a partir da oitava,
-    // o grau 1 passa a ser grafado como 8. Cada oitava adicional
-    // acrescenta um apóstrofo: 8, 8', 8''...
-    // Para os demais graus, cada oitava adicional acrescenta um
-    // apóstrofo: 3, 3', 3''...; assim, a 10ª é 3'.
     let label;
     if (simpleNumber === 1 && octaveCount >= 1) {
       label = '8' + "'".repeat(octaveCount - 1);
@@ -705,14 +803,10 @@ buildReferenceTable();
 
     let cls;
     if ([0, 7].includes(mod)) {
-      // 1ª, 5ª e suas oitavas compostas; 8ª/15ª/etc. permanecem perfeitas.
       cls = 'perfect';
     } else if ([3, 4, 8, 9].includes(mod)) {
-      // 3ª/6ª e seus compostos.
       cls = 'imperfect';
     } else if ([5, 6].includes(mod)) {
-      // 4ª justa / trítono: consonantes somente se não envolverem
-      // a voz mais grave da textura.
       const involvesLowest = (lowMidi === lowestMidi);
       cls = involvesLowest ? 'dissonant' : 'special-consonant';
     } else {
@@ -722,32 +816,7 @@ buildReferenceTable();
     return { label, cls };
   }
 
-  function clsFromSemitones(diff) {
-    // Mantida para compatibilidade com chamadas existentes; sem contexto
-    // de vozes, aplica apenas a classificação tonal básica.
-    const mod = ((diff % 12) + 12) % 12;
-    if (modo === 'tonal') {
-      return [0, 7].includes(mod) ? 'perfect' :
-             [3, 4, 8, 9].includes(mod) ? 'imperfect' :
-             'dissonant';
-    } else {
-      const ic = Math.min(mod, 12 - mod);
-      return clsAtonal(ic);
-    }
-  }
-
-  function labelFromSemitones(diff) {
-    const mod = Math.abs(diff) % 12;
-    if (modo === 'tonal') {
-      const nums = { 0: '1', 1: '2', 2: '2', 3: '3', 4: '3', 5: '4', 6: '4', 7: '5', 8: '6', 9: '6', 10: '7', 11: '7' };
-      return nums[mod];
-    } else {
-      const ic = Math.min(mod, 12 - mod);
-      return String(ic);
-    }
-  }
-
-  // --- Teclado virtual de piano (C2–B5), oculto por padrão ---
+  // --- Teclado virtual de piano ---
   function buildVirtualKeyboard() {
     const kb = document.getElementById('expKeyboard');
     kb.innerHTML = '';
@@ -818,8 +887,6 @@ buildReferenceTable();
     return modo === 'tonal' ? transposeDiatonic(base, expState.keySig, delta) : transposeChromatic(base, delta);
   }
 
-  // --- Movimentos viáveis: apenas espelha o que já foi calculado no painel
-  // principal (lastGoodMoves), sem recalcular nada aqui.
   function mirrorViableMoves() {
     const el = document.getElementById('expMoves');
     if (lastGoodMoves.length) {
@@ -856,7 +923,6 @@ buildReferenceTable();
       voiceNotes.push(seq);
     }
 
-    // Movimentos viáveis: espelha os já calculados no painel principal.
     mirrorViableMoves();
 
     const delays = [];
@@ -875,19 +941,16 @@ buildReferenceTable();
       clef: chooseClefForNotes(voiceNotes[i].length ? voiceNotes[i] : [placeholderNote(vals[i] - edVal)])
     }));
 
-    // Calcular gaps e posições Y
     const gaps = computeGaps(n);
     const { yPositions, totalHeight } = computeYPositions(gaps);
 
-    // Renderizar controles com altura dinâmica
     renderControlsColumn(sortedData, gaps);
-    
-    // Renderizar canvas
     renderSharedCanvas(sortedData, gaps, yPositions, totalHeight);
   }
+  window.expRender = expRender;
 
   // =====================================================================
-  // RENDER CONTROLES (com altura dinâmica)
+  // RENDER CONTROLES
   // =====================================================================
   function renderControlsColumn(sortedData, gaps) {
     const col = document.getElementById('expControlsColumn');
@@ -897,9 +960,6 @@ buildReferenceTable();
       const row = document.createElement('div');
       row.className = 'exp-control-row';
 
-      // Altura exata (sem arredondar): arredondar linha a linha acumula um
-      // erro progressivo que desalinha as últimas pautas da coluna de
-      // controles em relação ao canvas (que usa coordenadas exatas).
       const heightPx = (STAVE_HEIGHT + gaps[idx]) * 0.7;
       row.style.height = heightPx.toFixed(3) + 'px';
 
@@ -920,7 +980,9 @@ buildReferenceTable();
         inp.min = '0';
         inp.value = d.delay;
         inp.onchange = (e) => {
-          expState.delays[d.index] = Math.max(0, +e.target.value || 0);
+          imitationState.delays[d.index] = Math.max(0, +e.target.value || 0);
+          const delayInput = document.getElementById('delay' + d.index);
+          if (delayInput) delayInput.value = imitationState.delays[d.index];
           expRender();
         };
         delayLine.appendChild(lab);
@@ -928,9 +990,6 @@ buildReferenceTable();
       }
       row.appendChild(delayLine);
 
-      // Inversão/Retrogradação só fazem sentido para Imitações (o Líder é
-      // a forma original, não se transforma). Ficam num grupo próprio,
-      // bem mais próximas entre si do que do restante da linha.
       if (d.index !== 0) {
         const transformGroup = document.createElement('div');
         transformGroup.className = 'ctrl-transform-group';
@@ -943,7 +1002,9 @@ buildReferenceTable();
         invCb.id = invId;
         invCb.checked = getInversion(d.index);
         invCb.onchange = (e) => {
-          expState.inversion[d.index] = e.target.checked;
+          imitationState.inversion[d.index] = e.target.checked;
+          const invCheck = document.getElementById('inv' + d.index);
+          if (invCheck) invCheck.checked = imitationState.inversion[d.index];
           expRender();
         };
         const invLab = document.createElement('label');
@@ -961,7 +1022,9 @@ buildReferenceTable();
         retCb.id = retId;
         retCb.checked = getRetrograde(d.index);
         retCb.onchange = (e) => {
-          expState.retrograde[d.index] = e.target.checked;
+          imitationState.retrograde[d.index] = e.target.checked;
+          const retCheck = document.getElementById('ret' + d.index);
+          if (retCheck) retCheck.checked = imitationState.retrograde[d.index];
           expRender();
         };
         const retLab = document.createElement('label');
@@ -979,10 +1042,9 @@ buildReferenceTable();
   }
 
   // =====================================================================
-  // RENDER SHARED CANVAS (com formatação conjunta)
+  // RENDER SHARED CANVAS
   // =====================================================================
   const FIXED_COL_WIDTH = 60;
-  const INTERVAL_COLORS = { perfect: '#35a9ff', imperfect: '#4dff9a', dissonant: '#ff4f72', desired: '#4dff9a', undesired: '#ff4f72' };
 
   function renderSharedCanvas(sortedData, gaps, yPositions, totalHeight) {
     const area = document.getElementById('expCanvasArea');
@@ -1007,7 +1069,6 @@ buildReferenceTable();
     ctx.scale(escala, escala);
     ctx.setFont('Arial', 7 / escala);
 
-    // --- Preparar todas as vozes ---
     const allVoices = [];
     const allStaves = [];
 
@@ -1025,14 +1086,12 @@ buildReferenceTable();
       const vfNotes = [];
       const colNoteRefs = [];
       
-      // Notas de silêncio (delay)
       for (let c = 0; c < d.delay; c++) {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
         vfNotes.push(sn);
         colNoteRefs.push(null);
       }
       
-      // Notas reais
       d.notas.forEach((nt) => {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: 'w' });
         const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
@@ -1041,7 +1100,6 @@ buildReferenceTable();
         colNoteRefs.push(sn);
       });
       
-      // Preencher até maxTotal com silêncios
       const remaining = maxTotal - (d.delay + d.notas.length);
       for (let c = 0; c < remaining; c++) {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
@@ -1061,14 +1119,8 @@ buildReferenceTable();
       d._yPos = yPos;
     });
 
-    // --- Formatação conjunta de todas as vozes (necessária para hastes/acidentes) ---
     new VF.Formatter().joinVoices(allVoices).format(allVoices, staveWidth - 4);
 
-    // --- Realinhamento em colunas de largura fixa ---
-    // O format() acima justifica proporcionalmente (larguras de glifo variam
-    // com acidentes), o que produz espaçamento desigual entre colunas. Aqui
-    // sobrescrevemos a posição X de cada nota/silêncio para um valor fixo por
-    // coluna, igual em todas as vozes, garantindo espaçamento constante.
     const noteStartX = Math.max(...allStaves.map(s => s.getNoteStartX())) * 1.6;
 
     sortedData.forEach((d) => {
@@ -1078,24 +1130,18 @@ buildReferenceTable();
       });
     });
 
-    // --- Desenhar todas as vozes ---
     allVoices.forEach((voice, idx) => {
       voice.draw(ctx, allStaves[idx]);
     });
 
-    // --- Desenhar intervalos empilhados (confinados ao vão abaixo da pauta A) ---
     for (let i = 0; i < n; i++) {
       const rowA = sortedData[i];
       const gapTop = rowA._yPos + STAVE_HEIGHT;
 
       for (let j = i + 1; j < n; j++) {
         const rowB = sortedData[j];
-        const layer = j - i - 1; // 0 = par adjacente (mais perto da pauta A)
+        const layer = j - i - 1;
         const fontSize = Math.max(6, 11 - layer * 1.2);
-        // Posição vertical depende só do vão alocado abaixo da pauta A
-        // (gaps[i], já dimensionado para caber todas as camadas dessa linha),
-        // nunca da posição real da pauta B — é isso que evita invadir pautas
-        // intermediárias em pares não-adjacentes.
         const textY = gapTop + 17 + layer * 11;
 
         for (let col = 0; col < maxTotal; col++) {
@@ -1110,8 +1156,6 @@ buildReferenceTable();
           const midiA = noteToMidi(rowA.notas[idxA]);
           const midiB = noteToMidi(rowB.notas[idxB]);
 
-          // A voz mais grave é determinada pela posição real das pautas,
-          // independentemente de qual par está sendo analisado.
           const lowestMidi = Math.min(...sortedData.map(v => {
             const vi = col - v.delay;
             return (vi >= 0 && vi < v.notas.length) ? noteToMidi(v.notas[vi]) : Infinity;
@@ -1121,8 +1165,6 @@ buildReferenceTable();
           const cls = info.cls;
           const label = info.label;
 
-          // Posicionamento horizontal baseado na mesma grade fixa das notas.
-          // Isso faz os intervalos acompanharem exatamente as colunas musicais.
           const x = (noteStartX * 2) + col * FIXED_COL_WIDTH;
           drawIntervalLabel(area, x, textY, label, cls, fontSize, escala);
         }
@@ -1130,20 +1172,6 @@ buildReferenceTable();
     }
   }
 
-  // Desenha o número do intervalo como um <text> SVG próprio (não passa pelo
-  // ctx do VexFlow), marcado com uma classe de cor — necessário porque a
-  // regra CSS que força as notas/claves a ficarem pretas (contra o fundo
-  // creme da pauta) usa !important e sobrescreveria qualquer cor definida
-  // via ctx.setFillStyle().
-  //
-  // Importante: o VexFlow aplica a escala via o atributo viewBox do próprio
-  // <svg> (não via <g transform="scale(...)">), então QUALQUER filho desse
-  // <svg> — inclusive estes elementos — já é remapeado automaticamente pelo
-  // navegador. As coordenadas x/y devem ser usadas em unidades "pré-escala"
-  // (as mesmas de getAbsoluteX()/yPositions), sem multiplicar por escala;
-  // só o font-size precisa ser dividido por escala, no mesmo padrão que o
-  // VexFlow usa (ctx.setFont(..., tamanho/escala)) para o tamanho visual
-  // final ficar constante.
   function drawIntervalLabel(area, xPre, yPre, label, cls, fontSizePre, escala) {
     const svgEl = area.querySelector('svg');
     if (!svgEl) return;
@@ -1177,9 +1205,14 @@ buildReferenceTable();
     });
   });
 
-  // --- Aba "Experimentação": ativa/desativa a captura de teclado e
-  // recalcula ao entrar na aba (a troca de aba em si já é feita pelo
-  // handler original em .tab-btn; aqui só ligamos/desligamos o estado). ---
+  // Inicialização: se a aba experimentação já estiver ativa ao carregar
+  if (document.querySelector('#tab-experimentacao.active')) {
+    expState.open = true;
+    populateKeySelect();
+    expRender();
+  }
+
+  // Hook para abrir/ativar a aba experimentação
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.tab === 'experimentacao') {
