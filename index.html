@@ -89,25 +89,8 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-viable{padding:10px 12px;margin-bottom:12px}
 .exp-viable .move{padding:5px 10px;font-size:12px}
 
-.exp-canvas-wrapper{position:relative}
-.exp-tooltip-icon{position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:50%;background:#171e29;border:1px solid var(--line);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:21;cursor:help}
-.exp-tooltip{position:absolute;top:8px;left:34px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
-.exp-tooltip-icon:hover + .exp-tooltip{opacity:1;visibility:visible}
-
-.exp-canvas-wrapper{display:flex;gap:0;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
-.exp-controls-column{flex:0 0 110px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:#111722;padding:4px 0}
-.exp-control-row{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
-.exp-control-row:last-child{border-bottom:0}
-.exp-control-row .label{font-weight:600;font-size:11px;color:var(--text)}
-.exp-control-row .label.editable{color:var(--green)}
-.exp-control-row .ctrl-line{display:flex;align-items:center;gap:5px}
-.exp-control-row .delay-fixed{font-size:10px;color:var(--muted);min-width:20px;text-align:center}
-.exp-control-row input[type=number]{width:36px;padding:2px 3px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:10px;text-align:center}
-.exp-control-row .delay-fixed{font-size:10px;color:var(--muted);min-width:20px;text-align:center}
-.exp-control-row input[type=checkbox]{width:11px;height:11px;margin:0;accent-color:var(--cyan);cursor:pointer;flex:0 0 auto}
-.exp-control-row .ctrl-line label{font-size:10px;color:var(--muted);cursor:pointer;user-select:none}
-.exp-control-row .ctrl-transform-group{display:flex;flex-direction:column;gap:0}
-.exp-canvas-area{flex:1;overflow:auto;padding:4px 0 4px 8px;min-height:0;min-width:0;background:#f5f0e8}
+.exp-canvas-wrapper{position:relative;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.exp-canvas-area{overflow:auto;padding:4px 8px;min-height:0;background:#f5f0e8}
 .exp-canvas-area svg{display:block}
 .exp-canvas-area svg text{fill:#000!important}
 .exp-canvas-area svg path{stroke:#000!important}
@@ -115,6 +98,31 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-canvas-area svg text.iv-num.iv-perfect{fill:#35a9ff!important}.exp-canvas-area svg text.iv-num.iv-special-consonant{fill:#ffe45c!important}
 .exp-canvas-area svg text.iv-num.iv-imperfect,.exp-canvas-area svg text.iv-num.iv-desired{fill:#4dff9a!important}
 .exp-canvas-area svg text.iv-num.iv-dissonant,.exp-canvas-area svg text.iv-num.iv-undesired{fill:#ff4f72!important}
+.exp-tooltip-icon{position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:50%;background:#171e29;border:1px solid var(--line);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:21;cursor:help}
+.exp-tooltip{position:absolute;top:8px;left:34px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
+.exp-tooltip-icon:hover + .exp-tooltip{opacity:1;visibility:visible}
+
+/* Análise de imitações viáveis */
+.exp-analysis{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}
+.exp-analysis-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.exp-analysis-header .title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:0}
+.exp-analyze-btn{padding:8px 20px;background:var(--cyan);border:none;border-radius:7px;color:#04141c;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.exp-analyze-btn:hover{opacity:.85}
+.exp-analyze-btn:disabled{opacity:.4;cursor:not-allowed}
+.exp-analysis-count{font-size:13px;color:var(--muted)}
+.exp-analysis-count b{color:var(--text)}
+.exp-analysis-results{overflow:auto;max-height:240px}
+.exp-analysis-results table{width:100%;font-size:12px}
+.exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29;padding:6px 10px}
+.exp-analysis-results td{padding:5px 10px;border-bottom:1px solid var(--line)}
+.exp-analysis-results .apply-btn{padding:3px 12px;background:var(--panel2);border:1px solid #394657;border-radius:4px;color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit}
+.exp-analysis-results .apply-btn:hover{background:var(--panel);border-color:var(--cyan)}
+.exp-analysis-empty{color:var(--muted);font-size:13px;padding:12px 0}
+.exp-analysis .status-ok{color:var(--green)}
+.exp-analysis .status-fail{color:var(--red)}
+.exp-analysis .badge{display:inline-block;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.exp-analysis .badge-yes{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}
+.exp-analysis .badge-no{color:var(--muted);border:1px solid #39465755;background:#171e29}
 </style>
 </head>
 <body>
@@ -198,10 +206,19 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   </div>
 
   <div class="exp-canvas-wrapper">
-    <div class="exp-controls-column" id="expControlsColumn"></div>
     <div class="exp-canvas-area" id="expCanvasArea"></div>
     <div class="exp-tooltip-icon">ⓘ</div>
     <div class="exp-tooltip">Digite as letras no teclado do computador (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓) ou use o teclado de piano virtual. Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável (destacada) é definida automaticamente pelas transposições configuradas ao lado.</div>
+  </div>
+
+  <!-- Seção de análise de imitações viáveis -->
+  <div class="exp-analysis">
+    <div class="exp-analysis-header">
+      <span class="title">🔍 Análise de imitações viáveis</span>
+      <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar</button>
+      <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
+    </div>
+    <div id="expAnalysisResults" class="exp-analysis-results"></div>
   </div>
 </div>
 </main>
@@ -222,11 +239,8 @@ const optionsTonal = [
   ...intervalosTonal.map(x => [x[1] === 0 ? "U" : x[0] + " ↑", x[1]]),
   ...intervalosTonal.slice(1).map(x => [x[0] + " ↓", -x[1]])
 ];
-const movesTonal = optionsTonal; // mesmo domínio: "quanto se desloca, em graus"
+const movesTonal = optionsTonal;
 
-// Classificação tonal: 4ª tratada como dissonante (convenção do
-// contraponto de espécies). Só U/8ª/15ª (g=0) e 5ª/12ª/19ª (g=4) são
-// perfeitas; 3ª/6ª (g=2,5) imperfeitas; o restante, dissonante.
 function clsTonal(intervalNum) {
   const g = (intervalNum - 1) % 7;
   if (g === 0 || g === 4) return "perfect";
@@ -242,28 +256,20 @@ const optionsAtonal = [
   ...Array.from({ length: 11 }, (_, i) => i + 1).map(n => [n + " ↑", n]),
   ...Array.from({ length: 11 }, (_, i) => i + 1).map(n => [n + " ↓", -n])
 ];
-const movesAtonal = optionsAtonal; // mesmo domínio: "quanto se desloca, em semitons"
+const movesAtonal = optionsAtonal;
 
-// Classificação atônica: definida manualmente pelo usuário por classe de
-// intervalo (IC0 a IC6). Todas começam "indesejadas" (vermelho) até serem
-// marcadas como "desejadas" (verde) no painel da barra lateral.
 const icDesired = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
 function clsAtonal(ic) {
   return icDesired[ic] ? "desired" : "undesired";
 }
 
 // =====================================================================
-// Estado de modo e acesso genérico aos dados do modo ativo
+// Estado de modo e acesso genérico
 // =====================================================================
 let modo = "tonal";
 function currentOptions() { return modo === "tonal" ? optionsTonal : optionsAtonal; }
 function currentMoves() { return modo === "tonal" ? movesTonal : movesAtonal; }
 
-// Calcula o resultado (rótulo + classificação) entre duas transposições e
-// um movimento, já abstraindo qual modo está ativo. "val1"/"val2"/"valMov"
-// são sempre valores numéricos sinalizados (graus no tonal, semitons no
-// Atonal) — a mesma mecânica de "voz anterior deslocada vs. voz seguinte
-// parada" de sempre.
 function calcularResultado(val1, val2, valMovimento) {
   const delta = val2 - val1 - valMovimento;
   if (modo === "tonal") {
@@ -279,10 +285,6 @@ function calcularResultado(val1, val2, valMovimento) {
 // =====================================================================
 // ESTADO GLOBAL DAS CONFIGURAÇÕES DAS IMITAÇÕES
 // =====================================================================
-// delays: atraso de cada voz (0 = sem atraso)
-// inversion: se a voz é invertida melodicamente
-// retrograde: se a voz é retrogradada
-// transposition: índice da opção selecionada no select de transposição
 const imitationState = {
   delays: {},
   inversion: {},
@@ -310,12 +312,12 @@ function getRetrograde(i) {
 
 function getTransposition(i) {
   if (i === 0) return 0;
-  if (imitationState.transposition[i] === undefined) imitationState.transposition[i] = i - 1; // padrão: 1ª imitação = 1ª opção
+  if (imitationState.transposition[i] === undefined) imitationState.transposition[i] = i - 1;
   return imitationState.transposition[i];
 }
 
 // =====================================================================
-// Configuração das Imitações (barra lateral) — com todos os controles
+// Configuração das Imitações (barra lateral)
 // =====================================================================
 const defaultsTonal = ["5ª ↑", "4ª ↓", "5ª ↑", "4ª ↓", "5ª ↑"];
 
@@ -379,7 +381,6 @@ function setup() {
     };
   }
   
-  // Atualizar os selects de transposição se o modo mudar
   document.querySelectorAll('#controls .transp-select').forEach(sel => {
     const idx = sel.id.replace('c', '');
     if (imitationState.transposition[idx] === undefined) {
@@ -388,25 +389,9 @@ function setup() {
         : Math.min(idx - 1, opts.length - 1);
       imitationState.transposition[idx] = defIdx >= 0 ? defIdx : 0;
     }
-    // Reconstruir opções
     const optsHtml = opts.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('');
     sel.innerHTML = optsHtml;
     sel.value = Math.min(imitationState.transposition[idx] || 0, opts.length - 1);
-  });
-  
-  document.querySelectorAll("#controls input[type=number]").forEach(inp => {
-    if (!inp.onchange) inp.onchange = () => { if (window._expState && window._expState.open) window.expRender(); };
-  });
-  document.querySelectorAll("#controls input[type=checkbox]").forEach(cb => {
-    if (!cb.onchange) cb.onchange = () => { if (window._expState && window._expState.open) window.expRender(); };
-  });
-  
-  // Sincronizar valores iniciais
-  document.querySelectorAll('#controls .transp-select').forEach(sel => {
-    const idx = +sel.id.replace('c', '');
-    if (imitationState.transposition[idx] !== undefined) {
-      sel.value = Math.min(imitationState.transposition[idx], opts.length - 1);
-    }
   });
 }
 
@@ -417,7 +402,7 @@ let lastGoodMoves = [];
 
 function calc() {
   const n = +voices.value;
-  const t = [0]; // Líder sempre parte de 0
+  const t = [0];
 
   for (let k = 1; k < n; k++) {
     const sel = document.getElementById("c" + k);
@@ -476,7 +461,7 @@ function tableBox(rows, n) {
 }
 
 // =====================================================================
-// Tabela de Referência (aba inicial)
+// Tabela de Referência
 // =====================================================================
 function buildReferenceTable() {
   const opts = currentOptions();
@@ -522,7 +507,7 @@ function renderIcPanel() {
 }
 
 // =====================================================================
-// Alternância de modo (Tonal / Atonal)
+// Alternância de modo
 // =====================================================================
 document.querySelectorAll(".mode-btn").forEach(btn => {
   btn.onclick = () => {
@@ -567,7 +552,7 @@ calc();
 buildReferenceTable();
 
 // =====================================================================
-// EXPERIMENTAÇÃO — Linhas melódicas em tempo real (CANVAS COMPARTILHADO)
+// EXPERIMENTAÇÃO
 // =====================================================================
 (function () {
   const VF = Vex.Flow;
@@ -642,7 +627,6 @@ buildReferenceTable();
     return VF_ACC[acc] || null;
   }
   function vfKey(note) { return note.letter.toLowerCase() + '/' + note.octave; }
-
   function restKeyFor(clef) {
     if (clef === 'bass') return 'd/3';
     if (clef === 'alto') return 'c/4';
@@ -816,7 +800,11 @@ buildReferenceTable();
     return { label, cls };
   }
 
-  // --- Teclado virtual de piano ---
+  function isValidInterval(cls) {
+    return cls !== 'dissonant' && cls !== 'undesired';
+  }
+
+  // --- Teclado virtual ---
   function buildVirtualKeyboard() {
     const kb = document.getElementById('expKeyboard');
     kb.innerHTML = '';
@@ -855,10 +843,11 @@ buildReferenceTable();
   };
 
   // =====================================================================
-  // FUNÇÕES COMPARTILHADAS PARA CÁLCULO DE ALTURA
+  // FUNÇÕES DE RENDERIZAÇÃO DA PARTITURA
   // =====================================================================
   const STAVE_HEIGHT = 80;
-  
+  const FIXED_COL_WIDTH = 60;
+
   function computeGaps(n) {
     const gaps = [];
     for (let i = 0; i < n; i++) {
@@ -879,9 +868,6 @@ buildReferenceTable();
     return { yPositions, totalHeight: yAcc + 5 };
   }
 
-  // =====================================================================
-  // RENDER PRINCIPAL
-  // =====================================================================
   function placeholderNote(delta) {
     const base = { letter: 'C', acc: 0, octave: expState.octave };
     return modo === 'tonal' ? transposeDiatonic(base, expState.keySig, delta) : transposeChromatic(base, delta);
@@ -894,6 +880,22 @@ buildReferenceTable();
     } else {
       el.innerHTML = `<span class="none">Nenhum movimento atende simultaneamente aos critérios ${modo === 'tonal' ? 'consonantes' : 'desejados'}.</span>`;
     }
+  }
+
+  function drawIntervalLabel(area, xPre, yPre, label, cls, fontSizePre, escala) {
+    const svgEl = area.querySelector('svg');
+    if (!svgEl) return;
+    const NS = 'http://www.w3.org/2000/svg';
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', xPre.toFixed(1));
+    t.setAttribute('y', yPre.toFixed(1));
+    t.setAttribute('font-family', 'Arial');
+    t.setAttribute('font-weight', 'bold');
+    t.setAttribute('font-size', (fontSizePre / escala).toFixed(1));
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('class', 'iv-num iv-' + cls);
+    t.textContent = label;
+    svgEl.appendChild(t);
   }
 
   function expRender() {
@@ -944,109 +946,11 @@ buildReferenceTable();
     const gaps = computeGaps(n);
     const { yPositions, totalHeight } = computeYPositions(gaps);
 
-    renderControlsColumn(sortedData, gaps);
-    renderSharedCanvas(sortedData, gaps, yPositions, totalHeight);
+    renderCanvas(sortedData, gaps, yPositions, totalHeight);
   }
   window.expRender = expRender;
 
-  // =====================================================================
-  // RENDER CONTROLES
-  // =====================================================================
-  function renderControlsColumn(sortedData, gaps) {
-    const col = document.getElementById('expControlsColumn');
-    col.innerHTML = '';
-
-    sortedData.forEach((d, idx) => {
-      const row = document.createElement('div');
-      row.className = 'exp-control-row';
-
-      const heightPx = (STAVE_HEIGHT + gaps[idx]) * 0.7;
-      row.style.height = heightPx.toFixed(3) + 'px';
-
-      const label = document.createElement('span');
-      label.className = 'label' + (d.isEditable ? ' editable' : '');
-      label.textContent = d.label + (d.isEditable ? ' ✎' : '');
-      row.appendChild(label);
-
-      const delayLine = document.createElement('div');
-      delayLine.className = 'ctrl-line';
-      if (d.index === 0) {
-        delayLine.innerHTML = `<span>Atraso</span><span class="delay-fixed">0</span>`;
-      } else {
-        const lab = document.createElement('span');
-        lab.textContent = 'Atraso';
-        const inp = document.createElement('input');
-        inp.type = 'number';
-        inp.min = '0';
-        inp.value = d.delay;
-        inp.onchange = (e) => {
-          imitationState.delays[d.index] = Math.max(0, +e.target.value || 0);
-          const delayInput = document.getElementById('delay' + d.index);
-          if (delayInput) delayInput.value = imitationState.delays[d.index];
-          expRender();
-        };
-        delayLine.appendChild(lab);
-        delayLine.appendChild(inp);
-      }
-      row.appendChild(delayLine);
-
-      if (d.index !== 0) {
-        const transformGroup = document.createElement('div');
-        transformGroup.className = 'ctrl-transform-group';
-
-        const invLine = document.createElement('div');
-        invLine.className = 'ctrl-line';
-        const invId = 'exp-inv-' + d.index;
-        const invCb = document.createElement('input');
-        invCb.type = 'checkbox';
-        invCb.id = invId;
-        invCb.checked = getInversion(d.index);
-        invCb.onchange = (e) => {
-          imitationState.inversion[d.index] = e.target.checked;
-          const invCheck = document.getElementById('inv' + d.index);
-          if (invCheck) invCheck.checked = imitationState.inversion[d.index];
-          expRender();
-        };
-        const invLab = document.createElement('label');
-        invLab.htmlFor = invId;
-        invLab.textContent = 'Inversão';
-        invLine.appendChild(invCb);
-        invLine.appendChild(invLab);
-        transformGroup.appendChild(invLine);
-
-        const retLine = document.createElement('div');
-        retLine.className = 'ctrl-line';
-        const retId = 'exp-ret-' + d.index;
-        const retCb = document.createElement('input');
-        retCb.type = 'checkbox';
-        retCb.id = retId;
-        retCb.checked = getRetrograde(d.index);
-        retCb.onchange = (e) => {
-          imitationState.retrograde[d.index] = e.target.checked;
-          const retCheck = document.getElementById('ret' + d.index);
-          if (retCheck) retCheck.checked = imitationState.retrograde[d.index];
-          expRender();
-        };
-        const retLab = document.createElement('label');
-        retLab.htmlFor = retId;
-        retLab.textContent = 'Retrogradação';
-        retLine.appendChild(retCb);
-        retLine.appendChild(retLab);
-        transformGroup.appendChild(retLine);
-
-        row.appendChild(transformGroup);
-      }
-
-      col.appendChild(row);
-    });
-  }
-
-  // =====================================================================
-  // RENDER SHARED CANVAS
-  // =====================================================================
-  const FIXED_COL_WIDTH = 60;
-
-  function renderSharedCanvas(sortedData, gaps, yPositions, totalHeight) {
+  function renderCanvas(sortedData, gaps, yPositions, totalHeight) {
     const area = document.getElementById('expCanvasArea');
     area.innerHTML = '';
 
@@ -1172,23 +1076,209 @@ buildReferenceTable();
     }
   }
 
-  function drawIntervalLabel(area, xPre, yPre, label, cls, fontSizePre, escala) {
-    const svgEl = area.querySelector('svg');
-    if (!svgEl) return;
-    const NS = 'http://www.w3.org/2000/svg';
-    const t = document.createElementNS(NS, 'text');
-    t.setAttribute('x', xPre.toFixed(1));
-    t.setAttribute('y', yPre.toFixed(1));
-    t.setAttribute('font-family', 'Arial');
-    t.setAttribute('font-weight', 'bold');
-    t.setAttribute('font-size', (fontSizePre / escala).toFixed(1));
-    t.setAttribute('text-anchor', 'middle');
-    t.setAttribute('class', 'iv-num iv-' + cls);
-    t.textContent = label;
-    svgEl.appendChild(t);
+  // =====================================================================
+  // ANÁLISE DE IMITAÇÕES VIÁVEIS
+  // =====================================================================
+  function analisarImitacoesViaveis() {
+    const leaderNotes = expState.notes;
+    if (leaderNotes.length < 2) {
+      document.getElementById('expAnalysisResults').innerHTML = 
+        '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas no Líder para realizar a análise.</div>';
+      document.getElementById('expAnalysisNum').textContent = '0';
+      return;
+    }
+
+    const results = [];
+    const opts = currentOptions();
+    const delaysRange = [1, 2, 3];
+    const bools = [false, true];
+
+    for (const transp of opts) {
+      for (const delay of delaysRange) {
+        for (const inv of bools) {
+          for (const ret of bools) {
+            // Gerar sequência da imitação
+            let seq = leaderNotes.slice();
+            
+            // Aplicar inversão
+            if (inv && seq.length) {
+              const first = seq[0];
+              seq = seq.map(nt => modo === 'tonal' 
+                ? invertDiatonic(nt, first, expState.keySig) 
+                : invertChromatic(nt, first));
+            }
+            
+            // Aplicar retrogradação
+            if (ret) {
+              seq = seq.slice().reverse();
+            }
+            
+            // Aplicar transposição
+            seq = modo === 'tonal' 
+              ? seq.map(nt => transposeDiatonic(nt, expState.keySig, transp[1]))
+              : seq.map(nt => transposeChromatic(nt, transp[1]));
+            
+            // Verificar intervalos
+            let valid = true;
+            let intervalos = [];
+            const leaderLen = leaderNotes.length;
+            const imitLen = seq.length;
+            const maxLen = Math.max(leaderLen + delay, imitLen + delay);
+            
+            // Para cada posição de tempo
+            for (let pos = 0; pos < maxLen; pos++) {
+              const leaderIdx = pos;
+              const imitIdx = pos - delay;
+              
+              if (leaderIdx < leaderLen && imitIdx >= 0 && imitIdx < imitLen) {
+                const leaderNote = leaderNotes[leaderIdx];
+                const imitNote = seq[imitIdx];
+                
+                // Verificar se a imitação não está em silêncio (pausa)
+                if (imitNote) {
+                  const lowestMidi = Math.min(
+                    noteToMidi(leaderNote),
+                    noteToMidi(imitNote)
+                  );
+                  const info = intervalInfoFromNotes(leaderNote, imitNote, lowestMidi);
+                  intervalos.push(info);
+                  
+                  if (!isValidInterval(info.cls)) {
+                    valid = false;
+                    break;
+                  }
+                }
+              }
+            }
+            
+            if (valid && intervalos.length > 0) {
+              results.push({
+                transposicao: transp[0],
+                valor: transp[1],
+                delay: delay,
+                inversao: inv,
+                retrogradacao: ret,
+                intervalos: intervalos
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Ordenar resultados: primeiro por delay, depois por transposição
+    results.sort((a, b) => a.delay - b.delay || a.valor - b.valor);
+
+    document.getElementById('expAnalysisNum').textContent = results.length;
+    renderAnalysisResults(results);
   }
 
-  // --- Sincronização ---
+  function renderAnalysisResults(results) {
+    const container = document.getElementById('expAnalysisResults');
+    
+    if (results.length === 0) {
+      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma configuração de imitação viável encontrada para o Líder atual.</div>';
+      return;
+    }
+
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Transposição</th>
+            <th>Atraso</th>
+            <th>Inversão</th>
+            <th>Retrogradação</th>
+            <th>Intervalos</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    results.forEach((r, idx) => {
+      const invBadge = r.inversao 
+        ? '<span class="badge badge-yes">Sim</span>' 
+        : '<span class="badge badge-no">Não</span>';
+      const retBadge = r.retrogradacao 
+        ? '<span class="badge badge-yes">Sim</span>' 
+        : '<span class="badge badge-no">Não</span>';
+      
+      // Mostrar os primeiros 3 intervalos como exemplo
+      const intervalSummary = r.intervalos.slice(0, 3).map(i => 
+        `<span class="iv ${i.cls}" style="min-width:20px;padding:1px 3px;font-size:10px">${i.label}</span>`
+      ).join(' ');
+      const more = r.intervalos.length > 3 ? ` +${r.intervalos.length - 3}` : '';
+
+      html += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${r.transposicao}</strong></td>
+          <td>${r.delay}</td>
+          <td>${invBadge}</td>
+          <td>${retBadge}</td>
+          <td style="font-size:11px">${intervalSummary}${more}</td>
+          <td><button class="apply-btn" data-idx="${idx}">Aplicar</button></td>
+        </tr>
+      `;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    // Adicionar eventos aos botões "Aplicar"
+    container.querySelectorAll('.apply-btn').forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.idx;
+        aplicarConfiguracao(results[idx]);
+      };
+    });
+  }
+
+  function aplicarConfiguracao(config) {
+    // Encontrar o índice da transposição nas opções atuais
+    const opts = currentOptions();
+    const transpIdx = opts.findIndex(opt => opt[0] === config.transposicao);
+    
+    if (transpIdx === -1) {
+      alert('Transposição não encontrada nas opções atuais.');
+      return;
+    }
+
+    // Aplicar para a 1ª imitação (índice 1)
+    const voiceIdx = 1;
+    
+    // Atualizar estado
+    imitationState.transposition[voiceIdx] = transpIdx;
+    imitationState.delays[voiceIdx] = config.delay;
+    imitationState.inversion[voiceIdx] = config.inversao;
+    imitationState.retrograde[voiceIdx] = config.retrogradacao;
+
+    // Atualizar UI do menu lateral
+    const sel = document.getElementById('c' + voiceIdx);
+    if (sel) sel.value = transpIdx;
+    
+    const delayInput = document.getElementById('delay' + voiceIdx);
+    if (delayInput) delayInput.value = config.delay;
+    
+    const invCheck = document.getElementById('inv' + voiceIdx);
+    if (invCheck) invCheck.checked = config.inversao;
+    
+    const retCheck = document.getElementById('ret' + voiceIdx);
+    if (retCheck) retCheck.checked = config.retrogradacao;
+
+    // Recalcular e re-renderizar
+    calc();
+    expRender();
+  }
+
+  // Botão de análise
+  document.getElementById('expAnalyzeBtn').onclick = analisarImitacoesViaveis;
+
+  // =====================================================================
+  // INICIALIZAÇÃO
+  // =====================================================================
   const _origSetup = setup, _origCalc = calc;
   window.setup = function () { _origSetup(); if (expState.open) { populateKeySelect(); expRender(); } };
   window.calc = function () { _origCalc(); if (expState.open) expRender(); };
@@ -1205,14 +1295,12 @@ buildReferenceTable();
     });
   });
 
-  // Inicialização: se a aba experimentação já estiver ativa ao carregar
   if (document.querySelector('#tab-experimentacao.active')) {
     expState.open = true;
     populateKeySelect();
     expRender();
   }
 
-  // Hook para abrir/ativar a aba experimentação
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.tab === 'experimentacao') {
