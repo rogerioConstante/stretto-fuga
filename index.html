@@ -116,7 +116,11 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results th,.exp-analysis-results td{padding:6px 8px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis}
 .exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29}
 
-/* Ajuste específico de larguras das colunas na Análise */
+/* Destaque para a linha selecionada */
+.exp-analysis-results tr.selected-row{background:#132a3a!important}
+.exp-analysis-results tr.selected-row td{border-bottom-color:#2a5878;color:#fff}
+
+/* Larguras das colunas na Análise */
 .exp-analysis-results th.col-idx, .exp-analysis-results td.col-idx{width:35px;text-align:center}
 .exp-analysis-results th.col-transp, .exp-analysis-results td.col-transp{width:120px;text-align:left}
 .exp-analysis-results th.col-delay, .exp-analysis-results td.col-delay{width:60px;text-align:center}
@@ -127,6 +131,8 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 
 .exp-analysis-results .apply-btn{padding:4px 10px;background:var(--panel2);border:1px solid #394657;border-radius:4px;color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
 .exp-analysis-results .apply-btn:hover{background:var(--panel);border-color:var(--cyan)}
+.exp-analysis-results .apply-btn.active-applied{background:var(--cyan);color:#04141c;border-color:var(--cyan);font-weight:700}
+
 .exp-analysis-empty{color:var(--muted);font-size:13px;padding:16px 0}
 .exp-analysis .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
 .exp-analysis .badge-yes{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}
@@ -304,6 +310,8 @@ const imitationState = {
   transposition: {}
 };
 
+let appliedAnalysisIndex = null; // Guarda o índice da solução selecionada
+
 function getDelay(i) {
   if (i === 0) return 0;
   if (imitationState.delays[i] === undefined) imitationState.delays[i] = i;
@@ -370,6 +378,7 @@ function setup() {
     sel.value = currentTransp < opts.length ? currentTransp : 0;
     sel.onchange = (e) => {
       imitationState.transposition[k] = +e.target.value;
+      appliedAnalysisIndex = null;
       calc();
       if (window._expState && window._expState.open) window.expRender();
     };
@@ -377,18 +386,21 @@ function setup() {
     const delayInput = div.querySelector(`#delay${k}`);
     delayInput.onchange = (e) => {
       imitationState.delays[k] = Math.max(0, +e.target.value || 0);
+      appliedAnalysisIndex = null;
       if (window._expState && window._expState.open) window.expRender();
     };
     
     const invCheck = div.querySelector(`#inv${k}`);
     invCheck.onchange = (e) => {
       imitationState.inversion[k] = e.target.checked;
+      appliedAnalysisIndex = null;
       if (window._expState && window._expState.open) window.expRender();
     };
     
     const retCheck = div.querySelector(`#ret${k}`);
     retCheck.onchange = (e) => {
       imitationState.retrograde[k] = e.target.checked;
+      appliedAnalysisIndex = null;
       if (window._expState && window._expState.open) window.expRender();
     };
   }
@@ -527,6 +539,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
     btn.classList.add("active");
     modo = btn.dataset.modo;
     icPanel.style.display = modo === "atonal" ? "block" : "none";
+    appliedAnalysisIndex = null;
     setup();
     calc();
     buildReferenceTable();
@@ -557,7 +570,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
   };
 });
 
-voices.onchange = () => { setup(); calc(); };
+voices.onchange = () => { appliedAnalysisIndex = null; setup(); calc(); };
 renderIcPanel();
 setup();
 calc();
@@ -709,7 +722,7 @@ buildReferenceTable();
   function setOctave(v) { expState.octave = Math.max(0, Math.min(8, v)); document.getElementById('octVal').textContent = expState.octave; }
   document.getElementById('octUp').onclick = () => setOctave(expState.octave + 1);
   document.getElementById('octDown').onclick = () => setOctave(expState.octave - 1);
-  document.getElementById('expClearBtn').onclick = () => { expState.notes = []; expRender(); };
+  document.getElementById('expClearBtn').onclick = () => { expState.notes = []; appliedAnalysisIndex = null; expRender(); };
 
   // --- Entrada de notas ---
   function addNote(letter, octaveOverride) {
@@ -717,6 +730,7 @@ buildReferenceTable();
     const acc = expState.pendingAcc !== null ? expState.pendingAcc : (modo === 'tonal' ? keyDefaultAcc(letter, expState.keySig) : 0);
     expState.notes.push({ letter, acc, octave });
     expState.pendingAcc = null;
+    appliedAnalysisIndex = null;
     document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('active'));
     expRender();
   }
@@ -731,7 +745,7 @@ buildReferenceTable();
     if (k === '0') { setPendingAcc(0); return; }
     if (k === 'ArrowUp') { setOctave(expState.octave + 1); e.preventDefault(); return; }
     if (k === 'ArrowDown') { setOctave(expState.octave - 1); e.preventDefault(); return; }
-    if (k === 'Backspace') { expState.notes.pop(); expRender(); e.preventDefault(); return; }
+    if (k === 'Backspace') { expState.notes.pop(); appliedAnalysisIndex = null; expRender(); e.preventDefault(); return; }
   });
 
   // --- Dedução da voz editável ---
@@ -1088,12 +1102,16 @@ buildReferenceTable();
   // =====================================================================
   // ANÁLISE DE IMITAÇÕES VIÁVEIS (Múltiplas Vozes e Checagem de Paralelismo)
   // =====================================================================
+  let currentAnalysisResults = [];
+
   function analisarImitacoesViaveis() {
+    appliedAnalysisIndex = null;
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
       document.getElementById('expAnalysisResults').innerHTML = 
         '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
       document.getElementById('expAnalysisNum').textContent = '0';
+      currentAnalysisResults = [];
       return;
     }
 
@@ -1103,7 +1121,6 @@ buildReferenceTable();
     const delaysRange = [1, 2, 3];
     const bools = [false, true];
 
-    // Gera todas as variações de parâmetros para uma única imitação
     const singleConfigs = [];
     for (let t = 0; t < opts.length; t++) {
       for (const d of delaysRange) {
@@ -1115,7 +1132,6 @@ buildReferenceTable();
       }
     }
 
-    // Gerador de combinações para N imitações
     function generateCombos(depth, current) {
       if (depth === nImitations) return [current];
       let res = [];
@@ -1129,7 +1145,6 @@ buildReferenceTable();
     const validResults = [];
 
     for (const combo of allCombos) {
-      // Constrói notas e delays de todas as vozes (0 = Líder)
       const voicesNotes = [leaderNotes];
       const voicesDelays = [0];
 
@@ -1150,20 +1165,18 @@ buildReferenceTable();
           : seq.map(nt => transposeChromatic(nt, cfg.transpOpt[1]));
 
         voicesNotes.push(seq);
-        voicesDelays.push(cfg.delay);
-        //voicesDelays.push(cfg.delay + (k > 0 ? voicesDelays[k] : 0));
+        voicesDelays.push(cfg.delay); // Atraso relativo à pauta (sem cumular)
       }
 
       let comboValid = true;
       const pairsIntervals = {};
 
-      // Analisa pares de vozes (i < j)
       for (let i = 0; i < nVoices && comboValid; i++) {
         for (let j = i + 1; j < nVoices && comboValid; j++) {
           const pairKey = `${i}-${j}`;
           pairsIntervals[pairKey] = [];
 
-          let parallelCount = 0;
+          let parallelCount = 1;
           let lastSimpleNum = null;
           let lastMidiA = null;
           let lastMidiB = null;
@@ -1182,7 +1195,6 @@ buildReferenceTable();
               const noteA = voicesNotes[i][idxA];
               const noteB = voicesNotes[j][idxB];
 
-              // Encontra a nota mais grave entre todas as vozes ativas no pulso 'p'
               let lowestMidi = Infinity;
               for (let v = 0; v < nVoices; v++) {
                 const idxV = p - voicesDelays[v];
@@ -1194,13 +1206,11 @@ buildReferenceTable();
               const info = intervalInfoFromNotes(noteA, noteB, lowestMidi);
               pairsIntervals[pairKey].push(info);
 
-              // 1. Validação de Dissonância / Indesejado
               if (!isValidInterval(info.cls)) {
                 comboValid = false;
                 break;
               }
 
-              // 2. Validação Contrapontística de Movimento e Paralelismo
               const midiA = noteToMidi(noteA);
               const midiB = noteToMidi(noteB);
 
@@ -1208,17 +1218,17 @@ buildReferenceTable();
                 const moveA = midiA - lastMidiA;
                 const moveB = midiB - lastMidiB;
 
-                // Movimento Paralelo Estrito: ambas se movem na mesma direção pelo mesmo número de semitons
+                // Movimento Paralelo Estrito: ambas se movem na mesma direção pelo mesmo deslocamento
                 const isStrictParallel = (moveA !== 0) && (moveA === moveB);
 
                 if (isStrictParallel) {
-                  // Regra 1: Paralelismo proibido de Uníssono (1ª), 5ª ou 8ª
+                  // Regra 1: Proibição estrita de 1ª, 5ª ou 8ª paralelas
                   if (info.simpleNum === 1 || info.simpleNum === 5) {
                     comboValid = false;
                     break;
                   }
 
-                  // Regra 2: Limite de paralelismo de 3ª, 4ª e 6ª (máx. 3 seguidas)
+                  // Regra 2: Limite estrito de no máximo 3 ocorrências seguidas para 3ª, 4ª e 6ª
                   if ([3, 4, 6].includes(info.simpleNum)) {
                     if (info.simpleNum === lastSimpleNum) {
                       parallelCount++;
@@ -1230,10 +1240,10 @@ buildReferenceTable();
                       parallelCount = 1;
                     }
                   } else {
-                    parallelCount = 0;
+                    parallelCount = 1;
                   }
                 } else {
-                  parallelCount = 0;
+                  parallelCount = 1;
                 }
               }
 
@@ -1253,6 +1263,7 @@ buildReferenceTable();
       }
     }
 
+    currentAnalysisResults = validResults;
     document.getElementById('expAnalysisNum').textContent = validResults.length;
     renderAnalysisResults(validResults, nVoices);
   }
@@ -1282,6 +1293,9 @@ buildReferenceTable();
     `;
 
     results.forEach((r, idx) => {
+      const isSelected = (appliedAnalysisIndex === idx);
+      const rowClass = isSelected ? 'selected-row' : '';
+      
       const transpText = r.combo.map((c, i) => `${i + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
       const delayText = r.combo.map((c, i) => `${c.delay}`).join(' / ');
       const invText = r.combo.map(c => c.inv ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
@@ -1291,7 +1305,7 @@ buildReferenceTable();
       for (let i = 0; i < nVoices; i++) {
         for (let j = i + 1; j < nVoices; j++) {
           const pairKey = `${i}-${j}`;
-          const ivs = r.comboPairs ? r.comboPairs[pairKey] : r.pairsIntervals[pairKey];
+          const ivs = r.pairsIntervals[pairKey];
           if (ivs && ivs.length > 0) {
             const pairName = i === 0 ? `Líd×${j}ªIm` : `${i}ªIm×${j}ªIm`;
             const summary = ivs.map(iv => `<span class="iv ${iv.cls}" style="min-width:18px;padding:1px 3px;font-size:10px">${iv.label}</span>`).join(' ');
@@ -1300,15 +1314,18 @@ buildReferenceTable();
         }
       }
 
+      const btnLabel = isSelected ? '✓ Aplicado' : 'Aplicar nas Imitações';
+      const btnClass = isSelected ? 'apply-btn active-applied' : 'apply-btn';
+
       html += `
-        <tr>
+        <tr class="${rowClass}">
           <td class="col-idx">${idx + 1}</td>
           <td class="col-transp">${transpText}</td>
           <td class="col-delay">${delayText}</td>
           <td class="col-inv">${invText}</td>
           <td class="col-ret">${retText}</td>
           <td class="col-ivs">${ivLines}</td>
-          <td class="col-action"><button class="apply-btn" data-idx="${idx}">Aplicar nas Imitações</button></td>
+          <td class="col-action"><button class="${btnClass}" data-idx="${idx}">${btnLabel}</button></td>
         </tr>
       `;
     });
@@ -1319,12 +1336,14 @@ buildReferenceTable();
     container.querySelectorAll('.apply-btn').forEach(btn => {
       btn.onclick = () => {
         const idx = +btn.dataset.idx;
-        aplicarConfiguracaoMultipla(results[idx]);
+        aplicarConfiguracaoMultipla(results[idx], idx);
       };
     });
   }
 
-  function aplicarConfiguracaoMultipla(item) {
+  function aplicarConfiguracaoMultipla(item, idx) {
+    appliedAnalysisIndex = idx;
+
     item.combo.forEach((config, k) => {
       const voiceIdx = k + 1;
       imitationState.transposition[voiceIdx] = config.transpIdx;
@@ -1347,6 +1366,11 @@ buildReferenceTable();
 
     calc();
     if (expState.open) expRender();
+
+    // Re-renderiza a tabela de análise para atualizar o destaque visual da linha
+    if (currentAnalysisResults.length > 0) {
+      renderAnalysisResults(currentAnalysisResults, +voices.value);
+    }
 
     const expTabBtn = document.querySelector('.tab-btn[data-tab="experimentacao"]');
     if (expTabBtn) expTabBtn.click();
@@ -1385,6 +1409,11 @@ buildReferenceTable();
         expState.open = true;
         populateKeySelect();
         expRender();
+      } else if (btn.dataset.tab === 'analise') {
+        expState.open = false;
+        if (currentAnalysisResults.length > 0) {
+          renderAnalysisResults(currentAnalysisResults, +voices.value);
+        }
       } else {
         expState.open = false;
       }
