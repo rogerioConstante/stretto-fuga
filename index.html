@@ -1100,11 +1100,23 @@ buildReferenceTable();
   }
 
   // =====================================================================
-  // ANÁLISE DE IMITAÇÕES VIÁVEIS (Múltiplas Vozes e Checagem de Paralelismo)
+  // ANÁLISE DE IMITAÇÕES VIÁVEIS (Varredura Completa com Indicador Assíncrono)
   // =====================================================================
   let currentAnalysisResults = [];
 
-  function analisarImitacoesViaveis() {
+  // Validação dinâmica: exige pelo menos 2 notas simultâneas (sobreposição) com alguma voz ativa
+  function temSobreposicaoValida(novaDelay, novaLen, vozesAtivas) {
+    for (const v of vozesAtivas) {
+      let sobreposicao = 0;
+      const inicioComum = Math.max(novaDelay, v.delay);
+      const fimComum = Math.min(novaDelay + novaLen, v.delay + v.len);
+
+      if (fimComum - inicioComum >= 2) return true;
+    }
+    return false;
+  }
+
+  async function analisarImitacoesViaveis() {
     appliedAnalysisIndex = null;
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
@@ -1115,10 +1127,19 @@ buildReferenceTable();
       return;
     }
 
+    const analyzeBtn = document.getElementById('expAnalyzeBtn');
+    analyzeBtn.disabled = true;
+    analyzeBtn.style.opacity = '0.5';
+
     const nVoices = +voices.value;
     const nImitations = nVoices - 1;
     const opts = currentOptions();
-    const delaysRange = [1, 2, 3];
+    const maxPossibleDelay = Math.max(1, leaderNotes.length - 2);
+    
+    // Gerar todos os atrasos dinâmicos que satisfaçam a sobreposição mínima de 2 notas
+    const delaysRange = [];
+    for (let d = 1; d <= maxPossibleDelay; d++) delaysRange.push(d);
+
     const bools = [false, true];
 
     const singleConfigs = [];
@@ -1132,112 +1153,147 @@ buildReferenceTable();
       }
     }
 
-    function generateCombos(depth, current) {
-      if (depth === nImitations) return [current];
-      let res = [];
-      for (const cfg of singleConfigs) {
-        res = res.concat(generateCombos(depth + 1, [...current, cfg]));
-      }
-      return res;
-    }
+    // Calcula total de permutações combinatórias para o cálculo de progresso
+    const totalCombinacoes = Math.pow(singleConfigs.length, nImitations);
+    let combinacoesTestadas = 0;
 
-    const allCombos = generateCombos(0, []);
     const validResults = [];
 
-    for (const combo of allCombos) {
-      const voicesNotes = [leaderNotes];
-      const voicesDelays = [0];
-
-      for (let k = 0; k < nImitations; k++) {
-        const cfg = combo[k];
-        let seq = leaderNotes.slice();
-        if (cfg.inv && seq.length) {
-          const first = seq[0];
-          seq = seq.map(nt => modo === 'tonal' 
-            ? invertDiatonic(nt, first, expState.keySig) 
-            : invertChromatic(nt, first));
+    async function buscarCombos(depth, currentCombo, vozesAtivasInfo) {
+      if (depth === nImitations) {
+        // Validação completa de contraponto para o arranjo montado
+        const result = testarCombinacao(leaderNotes, currentCombo, nVoices);
+        if (result.valid) {
+          validResults.push(result.data);
         }
-        if (cfg.ret) {
-          seq = seq.slice().reverse();
-        }
-        seq = modo === 'tonal' 
-          ? seq.map(nt => transposeDiatonic(nt, expState.keySig, cfg.transpOpt[1]))
-          : seq.map(nt => transposeChromatic(nt, cfg.transpOpt[1]));
-
-        voicesNotes.push(seq);
-        voicesDelays.push(cfg.delay); // Atraso relativo à pauta (sem cumular)
+        return;
       }
 
-      let comboValid = true;
-      const pairsIntervals = {};
+      for (let i = 0; i < singleConfigs.length; i++) {
+        const cfg = singleConfigs[i];
 
-      for (let i = 0; i < nVoices && comboValid; i++) {
-        for (let j = i + 1; j < nVoices && comboValid; j++) {
-          const pairKey = `${i}-${j}`;
-          pairsIntervals[pairKey] = [];
+        // Regra do Limite Dinâmico: sobreposição mínima de 2 posições temporais
+        if (temSobreposicaoValida(cfg.delay, leaderNotes.length, vozesAtivasInfo)) {
+          const proximaVozInfo = { delay: cfg.delay, len: leaderNotes.length };
+          await buscarCombos(depth + 1, [...currentCombo, cfg], [...vozesAtivasInfo, proximaVozInfo]);
+        }
 
-          let parallelCount = 1;
-          let lastSimpleNum = null;
-          let lastMidiA = null;
-          let lastMidiB = null;
+        if (depth === 0) {
+          combinacoesTestadas += Math.pow(singleConfigs.length, nImitations - 1);
+          const percentual = Math.min(100, ((combinacoesTestadas / totalCombinacoes) * 100)).toFixed(1);
+          
+          document.getElementById('expAnalysisNum').textContent = `Calculando... ${percentual}%`;
+          
+          // Cede a thread a cada iteração do nível principal para atualizar a interface em tempo real
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+    }
 
-          const lenA = voicesNotes[i].length;
-          const lenB = voicesNotes[j].length;
-          const delayA = voicesDelays[i];
-          const delayB = voicesDelays[j];
-          const maxPulse = Math.max(delayA + lenA, delayB + lenB);
+    const vozesIniciais = [{ delay: 0, len: leaderNotes.length }];
+    await buscarCombos(0, [], vozesIniciais);
 
-          for (let p = 0; p < maxPulse; p++) {
-            const idxA = p - delayA;
-            const idxB = p - delayB;
+    analyzeBtn.disabled = false;
+    analyzeBtn.style.opacity = '1';
 
-            if (idxA >= 0 && idxA < lenA && idxB >= 0 && idxB < lenB) {
-              const noteA = voicesNotes[i][idxA];
-              const noteB = voicesNotes[j][idxB];
+    currentAnalysisResults = validResults;
+    document.getElementById('expAnalysisNum').textContent = validResults.length;
+    renderAnalysisResults(validResults, nVoices);
+  }
 
-              let lowestMidi = Infinity;
-              for (let v = 0; v < nVoices; v++) {
-                const idxV = p - voicesDelays[v];
-                if (idxV >= 0 && idxV < voicesNotes[v].length) {
-                  lowestMidi = Math.min(lowestMidi, noteToMidi(voicesNotes[v][idxV]));
+  function testarCombinacao(leaderNotes, combo, nVoices) {
+    const nImitations = nVoices - 1;
+    const voicesNotes = [leaderNotes];
+    const voicesDelays = [0];
+
+    for (let k = 0; k < nImitations; k++) {
+      const cfg = combo[k];
+      let seq = leaderNotes.slice();
+      if (cfg.inv && seq.length) {
+        const first = seq[0];
+        seq = seq.map(nt => modo === 'tonal' 
+          ? invertDiatonic(nt, first, expState.keySig) 
+          : invertChromatic(nt, first));
+      }
+      if (cfg.ret) {
+        seq = seq.slice().reverse();
+      }
+      seq = modo === 'tonal' 
+        ? seq.map(nt => transposeDiatonic(nt, expState.keySig, cfg.transpOpt[1]))
+        : seq.map(nt => transposeChromatic(nt, cfg.transpOpt[1]));
+
+      voicesNotes.push(seq);
+      voicesDelays.push(cfg.delay);
+    }
+
+    let comboValid = true;
+    const pairsIntervals = {};
+
+    // PARALELISMO TOTAL: Avalia TODOS os pares possíveis (i, j) sem exceção
+    for (let i = 0; i < nVoices && comboValid; i++) {
+      for (let j = i + 1; j < nVoices && comboValid; j++) {
+        const pairKey = `${i}-${j}`;
+        pairsIntervals[pairKey] = [];
+
+        let parallelCount = 1;
+        let lastSimpleNum = null;
+        let lastMidiA = null;
+        let lastMidiB = null;
+
+        const lenA = voicesNotes[i].length;
+        const lenB = voicesNotes[j].length;
+        const delayA = voicesDelays[i];
+        const delayB = voicesDelays[j];
+        const maxPulse = Math.max(delayA + lenA, delayB + lenB);
+
+        for (let p = 0; p < maxPulse; p++) {
+          const idxA = p - delayA;
+          const idxB = p - delayB;
+
+          if (idxA >= 0 && idxA < lenA && idxB >= 0 && idxB < lenB) {
+            const noteA = voicesNotes[i][idxA];
+            const noteB = voicesNotes[j][idxB];
+
+            let lowestMidi = Infinity;
+            for (let v = 0; v < nVoices; v++) {
+              const idxV = p - voicesDelays[v];
+              if (idxV >= 0 && idxV < voicesNotes[v].length) {
+                lowestMidi = Math.min(lowestMidi, noteToMidi(voicesNotes[v][idxV]));
+              }
+            }
+
+            const info = intervalInfoFromNotes(noteA, noteB, lowestMidi);
+            pairsIntervals[pairKey].push(info);
+
+            if (!isValidInterval(info.cls)) {
+              comboValid = false;
+              break;
+            }
+
+            const midiA = noteToMidi(noteA);
+            const midiB = noteToMidi(noteB);
+
+            if (lastMidiA !== null && lastMidiB !== null) {
+              const moveA = midiA - lastMidiA;
+              const moveB = midiB - lastMidiB;
+
+              // Movimento Paralelo Estrito (ambas as vozes sobem/descem juntas)
+              const isStrictParallel = (moveA !== 0) && (moveA === moveB);
+
+              if (isStrictParallel) {
+                // Proibição estrita de 1ª, 5ª ou 8ª paralelas entre QUALQUER par de vozes
+                if (info.simpleNum === 1 || info.simpleNum === 5) {
+                  comboValid = false;
+                  break;
                 }
-              }
 
-              const info = intervalInfoFromNotes(noteA, noteB, lowestMidi);
-              pairsIntervals[pairKey].push(info);
-
-              if (!isValidInterval(info.cls)) {
-                comboValid = false;
-                break;
-              }
-
-              const midiA = noteToMidi(noteA);
-              const midiB = noteToMidi(noteB);
-
-              if (lastMidiA !== null && lastMidiB !== null) {
-                const moveA = midiA - lastMidiA;
-                const moveB = midiB - lastMidiB;
-
-                // Movimento Paralelo Estrito: ambas se movem na mesma direção pelo mesmo deslocamento
-                const isStrictParallel = (moveA !== 0) && (moveA === moveB);
-
-                if (isStrictParallel) {
-                  // Regra 1: Proibição estrita de 1ª, 5ª ou 8ª paralelas
-                  if (info.simpleNum === 1 || info.simpleNum === 5) {
-                    comboValid = false;
-                    break;
-                  }
-
-                  // Regra 2: Limite estrito de no máximo 3 ocorrências seguidas para 3ª, 4ª e 6ª
-                  if ([3, 4, 6].includes(info.simpleNum)) {
-                    if (info.simpleNum === lastSimpleNum) {
-                      parallelCount++;
-                      if (parallelCount > 3) {
-                        comboValid = false;
-                        break;
-                      }
-                    } else {
-                      parallelCount = 1;
+                // Limite de no máximo 3 paralelas seguidas para consoantes imperfeitas
+                if ([3, 4, 6].includes(info.simpleNum)) {
+                  if (info.simpleNum === lastSimpleNum) {
+                    parallelCount++;
+                    if (parallelCount > 3) {
+                      comboValid = false;
+                      break;
                     }
                   } else {
                     parallelCount = 1;
@@ -1245,27 +1301,23 @@ buildReferenceTable();
                 } else {
                   parallelCount = 1;
                 }
+              } else {
+                parallelCount = 1;
               }
-
-              lastMidiA = midiA;
-              lastMidiB = midiB;
-              lastSimpleNum = info.simpleNum;
             }
+
+            lastMidiA = midiA;
+            lastMidiB = midiB;
+            lastSimpleNum = info.simpleNum;
           }
         }
       }
-
-      if (comboValid) {
-        validResults.push({
-          combo,
-          pairsIntervals
-        });
-      }
     }
 
-    currentAnalysisResults = validResults;
-    document.getElementById('expAnalysisNum').textContent = validResults.length;
-    renderAnalysisResults(validResults, nVoices);
+    return {
+      valid: comboValid,
+      data: { combo, pairsIntervals }
+    };
   }
 
   function renderAnalysisResults(results, nVoices) {
