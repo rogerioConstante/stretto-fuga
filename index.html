@@ -99,32 +99,40 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-canvas-area svg text.iv-num.iv-imperfect,.exp-canvas-area svg text.iv-num.iv-desired{fill:#4dff9a!important}
 .exp-canvas-area svg text.iv-num.iv-dissonant,.exp-canvas-area svg text.iv-num.iv-undesired{fill:#ff4f72!important}
 
-/* Ícone do Tooltip no canto superior direito */
 .exp-tooltip-icon{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#171e29;border:1px solid var(--line);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:21;cursor:help}
 .exp-tooltip{position:absolute;top:8px;right:34px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
 .exp-tooltip-icon:hover + .exp-tooltip{opacity:1;visibility:visible}
 
-/* Estilos da Seção de Análise de Imitações */
+/* Estilos e Largura das Colunas da Tabela de Análise */
 .exp-analysis{padding-top:4px}
 .exp-analysis-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
 .exp-analysis-header .title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:0}
 .exp-analyze-btn{padding:8px 20px;background:var(--cyan);border:none;border-radius:7px;color:#04141c;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .exp-analyze-btn:hover{opacity:.85}
-.exp-analyze-btn:disabled{opacity:.4;cursor:not-allowed}
 .exp-analysis-count{font-size:13px;color:var(--muted)}
 .exp-analysis-count b{color:var(--text)}
 .exp-analysis-results{overflow:auto}
-.exp-analysis-results table{width:100%;font-size:12px}
-.exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29;padding:8px 10px}
-.exp-analysis-results td{padding:6px 10px;border-bottom:1px solid var(--line)}
-.exp-analysis-results .apply-btn{padding:4px 12px;background:var(--panel2);border:1px solid #394657;border-radius:4px;color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
+.exp-analysis-results table{width:100%;font-size:12px;table-layout:fixed}
+.exp-analysis-results th,.exp-analysis-results td{padding:6px 8px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis}
+.exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29}
+
+/* Ajuste específico de larguras das colunas na Análise */
+.exp-analysis-results th.col-idx, .exp-analysis-results td.col-idx{width:35px;text-align:center}
+.exp-analysis-results th.col-transp, .exp-analysis-results td.col-transp{width:120px;text-align:left}
+.exp-analysis-results th.col-delay, .exp-analysis-results td.col-delay{width:60px;text-align:center}
+.exp-analysis-results th.col-inv, .exp-analysis-results td.col-inv{width:75px;text-align:center}
+.exp-analysis-results th.col-ret, .exp-analysis-results td.col-ret{width:75px;text-align:center}
+.exp-analysis-results th.col-action, .exp-analysis-results td.col-action{width:150px;text-align:center}
+.exp-analysis-results th.col-ivs, .exp-analysis-results td.col-ivs{width:auto;text-align:left;white-space:normal}
+
+.exp-analysis-results .apply-btn{padding:4px 10px;background:var(--panel2);border:1px solid #394657;border-radius:4px;color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
 .exp-analysis-results .apply-btn:hover{background:var(--panel);border-color:var(--cyan)}
 .exp-analysis-empty{color:var(--muted);font-size:13px;padding:16px 0}
-.exp-analysis .status-ok{color:var(--green)}
-.exp-analysis .status-fail{color:var(--red)}
-.exp-analysis .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.exp-analysis .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
 .exp-analysis .badge-yes{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}
 .exp-analysis .badge-no{color:var(--muted);border:1px solid #39465755;background:#171e29}
+.exp-analysis .pair-line{display:block;margin-bottom:3px;white-space:nowrap}
+.exp-analysis .pair-label{display:inline-block;width:70px;font-size:10px;color:var(--cyan);font-weight:700}
 </style>
 </head>
 <body>
@@ -763,7 +771,7 @@ buildReferenceTable();
       const diff = noteB ? noteToMidi(noteB) - noteToMidi(noteA) : 0;
       const mod = ((diff % 12) + 12) % 12;
       const ic = Math.min(mod, 12 - mod);
-      return { label: String(ic), cls: clsAtonal(ic) };
+      return { label: String(ic), cls: clsAtonal(ic), val: ic, simpleNum: ic };
     }
 
     const midiA = noteToMidi(noteA);
@@ -801,7 +809,7 @@ buildReferenceTable();
       cls = 'dissonant';
     }
 
-    return { label, cls };
+    return { label, cls, val: semitones, simpleNum: simpleNumber };
   }
 
   function isValidInterval(cls) {
@@ -1061,9 +1069,6 @@ buildReferenceTable();
           const idxB = col - rowB.delay;
           if (idxA < 0 || idxA >= rowA.notas.length || idxB < 0 || idxB >= rowB.notas.length) continue;
 
-          const midiA = noteToMidi(rowA.notas[idxA]);
-          const midiB = noteToMidi(rowB.notas[idxB]);
-
           const lowestMidi = Math.min(...sortedData.map(v => {
             const vi = col - v.delay;
             return (vi >= 0 && vi < v.notas.length) ? noteToMidi(v.notas[vi]) : Infinity;
@@ -1081,7 +1086,7 @@ buildReferenceTable();
   }
 
   // =====================================================================
-  // ANÁLISE DE IMITAÇÕES VIÁVEIS (Aba Dedicada)
+  // ANÁLISE DE IMITAÇÕES VIÁVEIS (Múltiplas Vozes e Checagem de Paralelismo)
   // =====================================================================
   function analisarImitacoesViaveis() {
     const leaderNotes = expState.notes;
@@ -1092,88 +1097,171 @@ buildReferenceTable();
       return;
     }
 
-    const results = [];
+    const nVoices = +voices.value;
+    const nImitations = nVoices - 1;
     const opts = currentOptions();
     const delaysRange = [1, 2, 3];
     const bools = [false, true];
 
-    for (const transp of opts) {
-      for (const delay of delaysRange) {
+    // Gera todas as variações de parâmetros para uma única imitação
+    const singleConfigs = [];
+    for (let t = 0; t < opts.length; t++) {
+      for (const d of delaysRange) {
         for (const inv of bools) {
           for (const ret of bools) {
-            let seq = leaderNotes.slice();
-            
-            if (inv && seq.length) {
-              const first = seq[0];
-              seq = seq.map(nt => modo === 'tonal' 
-                ? invertDiatonic(nt, first, expState.keySig) 
-                : invertChromatic(nt, first));
-            }
-            
-            if (ret) {
-              seq = seq.slice().reverse();
-            }
-            
-            seq = modo === 'tonal' 
-              ? seq.map(nt => transposeDiatonic(nt, expState.keySig, transp[1]))
-              : seq.map(nt => transposeChromatic(nt, transp[1]));
-            
-            let valid = true;
-            let intervalos = [];
-            const leaderLen = leaderNotes.length;
-            const imitLen = seq.length;
-            const maxLen = Math.max(leaderLen + delay, imitLen + delay);
-            
-            for (let pos = 0; pos < maxLen; pos++) {
-              const leaderIdx = pos;
-              const imitIdx = pos - delay;
-              
-              if (leaderIdx < leaderLen && imitIdx >= 0 && imitIdx < imitLen) {
-                const leaderNote = leaderNotes[leaderIdx];
-                const imitNote = seq[imitIdx];
-                
-                if (imitNote) {
-                  const lowestMidi = Math.min(
-                    noteToMidi(leaderNote),
-                    noteToMidi(imitNote)
-                  );
-                  const info = intervalInfoFromNotes(leaderNote, imitNote, lowestMidi);
-                  intervalos.push(info);
-                  
-                  if (!isValidInterval(info.cls)) {
-                    valid = false;
-                    break;
-                  }
-                }
-              }
-            }
-            
-            if (valid && intervalos.length > 0) {
-              results.push({
-                transposicao: transp[0],
-                valor: transp[1],
-                delay: delay,
-                inversao: inv,
-                retrogradacao: ret,
-                intervalos: intervalos
-              });
-            }
+            singleConfigs.push({ transpIdx: t, transpOpt: opts[t], delay: d, inv, ret });
           }
         }
       }
     }
 
-    results.sort((a, b) => a.delay - b.delay || a.valor - b.valor);
+    // Gerador de combinações para N imitações
+    function generateCombos(depth, current) {
+      if (depth === nImitations) return [current];
+      let res = [];
+      for (const cfg of singleConfigs) {
+        res = res.concat(generateCombos(depth + 1, [...current, cfg]));
+      }
+      return res;
+    }
 
-    document.getElementById('expAnalysisNum').textContent = results.length;
-    renderAnalysisResults(results);
+    const allCombos = generateCombos(0, []);
+    const validResults = [];
+
+    for (const combo of allCombos) {
+      // Constrói notas e delays de todas as vozes (0 = Líder)
+      const voicesNotes = [leaderNotes];
+      const voicesDelays = [0];
+
+      for (let k = 0; k < nImitations; k++) {
+        const cfg = combo[k];
+        let seq = leaderNotes.slice();
+        if (cfg.inv && seq.length) {
+          const first = seq[0];
+          seq = seq.map(nt => modo === 'tonal' 
+            ? invertDiatonic(nt, first, expState.keySig) 
+            : invertChromatic(nt, first));
+        }
+        if (cfg.ret) {
+          seq = seq.slice().reverse();
+        }
+        seq = modo === 'tonal' 
+          ? seq.map(nt => transposeDiatonic(nt, expState.keySig, cfg.transpOpt[1]))
+          : seq.map(nt => transposeChromatic(nt, cfg.transpOpt[1]));
+
+        voicesNotes.push(seq);
+        voicesDelays.push(cfg.delay);
+        //voicesDelays.push(cfg.delay + (k > 0 ? voicesDelays[k] : 0));
+      }
+
+      let comboValid = true;
+      const pairsIntervals = {};
+
+      // Analisa pares de vozes (i < j)
+      for (let i = 0; i < nVoices && comboValid; i++) {
+        for (let j = i + 1; j < nVoices && comboValid; j++) {
+          const pairKey = `${i}-${j}`;
+          pairsIntervals[pairKey] = [];
+
+          let parallelCount = 0;
+          let lastSimpleNum = null;
+          let lastMidiA = null;
+          let lastMidiB = null;
+
+          const lenA = voicesNotes[i].length;
+          const lenB = voicesNotes[j].length;
+          const delayA = voicesDelays[i];
+          const delayB = voicesDelays[j];
+          const maxPulse = Math.max(delayA + lenA, delayB + lenB);
+
+          for (let p = 0; p < maxPulse; p++) {
+            const idxA = p - delayA;
+            const idxB = p - delayB;
+
+            if (idxA >= 0 && idxA < lenA && idxB >= 0 && idxB < lenB) {
+              const noteA = voicesNotes[i][idxA];
+              const noteB = voicesNotes[j][idxB];
+
+              // Encontra a nota mais grave entre todas as vozes ativas no pulso 'p'
+              let lowestMidi = Infinity;
+              for (let v = 0; v < nVoices; v++) {
+                const idxV = p - voicesDelays[v];
+                if (idxV >= 0 && idxV < voicesNotes[v].length) {
+                  lowestMidi = Math.min(lowestMidi, noteToMidi(voicesNotes[v][idxV]));
+                }
+              }
+
+              const info = intervalInfoFromNotes(noteA, noteB, lowestMidi);
+              pairsIntervals[pairKey].push(info);
+
+              // 1. Validação de Dissonância / Indesejado
+              if (!isValidInterval(info.cls)) {
+                comboValid = false;
+                break;
+              }
+
+              // 2. Validação Contrapontística de Movimento e Paralelismo
+              const midiA = noteToMidi(noteA);
+              const midiB = noteToMidi(noteB);
+
+              if (lastMidiA !== null && lastMidiB !== null) {
+                const moveA = midiA - lastMidiA;
+                const moveB = midiB - lastMidiB;
+
+                // Movimento Paralelo Estrito: ambas se movem na mesma direção pelo mesmo número de semitons
+                const isStrictParallel = (moveA !== 0) && (moveA === moveB);
+
+                if (isStrictParallel) {
+                  // Regra 1: Paralelismo proibido de Uníssono (1ª), 5ª ou 8ª
+                  if (info.simpleNum === 1 || info.simpleNum === 5) {
+                    comboValid = false;
+                    break;
+                  }
+
+                  // Regra 2: Limite de paralelismo de 3ª, 4ª e 6ª (máx. 3 seguidas)
+                  if ([3, 4, 6].includes(info.simpleNum)) {
+                    if (info.simpleNum === lastSimpleNum) {
+                      parallelCount++;
+                      if (parallelCount > 3) {
+                        comboValid = false;
+                        break;
+                      }
+                    } else {
+                      parallelCount = 1;
+                    }
+                  } else {
+                    parallelCount = 0;
+                  }
+                } else {
+                  parallelCount = 0;
+                }
+              }
+
+              lastMidiA = midiA;
+              lastMidiB = midiB;
+              lastSimpleNum = info.simpleNum;
+            }
+          }
+        }
+      }
+
+      if (comboValid) {
+        validResults.push({
+          combo,
+          pairsIntervals
+        });
+      }
+    }
+
+    document.getElementById('expAnalysisNum').textContent = validResults.length;
+    renderAnalysisResults(validResults, nVoices);
   }
 
-  function renderAnalysisResults(results) {
+  function renderAnalysisResults(results, nVoices) {
     const container = document.getElementById('expAnalysisResults');
     
     if (results.length === 0) {
-      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma configuração de imitação viável encontrada para as notas atuais do Líder.</div>';
+      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma combinação de imitação viável encontrada para as notas do Líder sem violações contrapontísticas.</div>';
       return;
     }
 
@@ -1181,40 +1269,46 @@ buildReferenceTable();
       <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Transposição</th>
-            <th>Atraso</th>
-            <th>Inversão</th>
-            <th>Retrogradação</th>
-            <th>Intervalos Resultantes</th>
-            <th>Ação</th>
+            <th class="col-idx">#</th>
+            <th class="col-transp">Transposição</th>
+            <th class="col-delay">Atraso</th>
+            <th class="col-inv">Inversão</th>
+            <th class="col-ret">Retrogradação</th>
+            <th class="col-ivs">Intervalos Resultantes Por Par</th>
+            <th class="col-action">Ação</th>
           </tr>
         </thead>
         <tbody>
     `;
 
     results.forEach((r, idx) => {
-      const invBadge = r.inversao 
-        ? '<span class="badge badge-yes">Sim</span>' 
-        : '<span class="badge badge-no">Não</span>';
-      const retBadge = r.retrogradacao 
-        ? '<span class="badge badge-yes">Sim</span>' 
-        : '<span class="badge badge-no">Não</span>';
-      
-      const intervalSummary = r.intervalos.slice(0, 5).map(i => 
-        `<span class="iv ${i.cls}" style="min-width:20px;padding:1px 3px;font-size:10px">${i.label}</span>`
-      ).join(' ');
-      const more = r.intervalos.length > 5 ? ` +${r.intervalos.length - 5}` : '';
+      const transpText = r.combo.map((c, i) => `${i + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
+      const delayText = r.combo.map((c, i) => `${c.delay}`).join(' / ');
+      const invText = r.combo.map(c => c.inv ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
+      const retText = r.combo.map(c => c.ret ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
+
+      let ivLines = '';
+      for (let i = 0; i < nVoices; i++) {
+        for (let j = i + 1; j < nVoices; j++) {
+          const pairKey = `${i}-${j}`;
+          const ivs = r.comboPairs ? r.comboPairs[pairKey] : r.pairsIntervals[pairKey];
+          if (ivs && ivs.length > 0) {
+            const pairName = i === 0 ? `Líd×${j}ªIm` : `${i}ªIm×${j}ªIm`;
+            const summary = ivs.map(iv => `<span class="iv ${iv.cls}" style="min-width:18px;padding:1px 3px;font-size:10px">${iv.label}</span>`).join(' ');
+            ivLines += `<div class="pair-line"><span class="pair-label">${pairName}:</span>${summary}</div>`;
+          }
+        }
+      }
 
       html += `
         <tr>
-          <td>${idx + 1}</td>
-          <td><strong>${r.transposicao}</strong></td>
-          <td>${r.delay}</td>
-          <td>${invBadge}</td>
-          <td>${retBadge}</td>
-          <td style="font-size:11px">${intervalSummary}${more}</td>
-          <td><button class="apply-btn" data-idx="${idx}">Aplicar na 1ª Imitação</button></td>
+          <td class="col-idx">${idx + 1}</td>
+          <td class="col-transp">${transpText}</td>
+          <td class="col-delay">${delayText}</td>
+          <td class="col-inv">${invText}</td>
+          <td class="col-ret">${retText}</td>
+          <td class="col-ivs">${ivLines}</td>
+          <td class="col-action"><button class="apply-btn" data-idx="${idx}">Aplicar nas Imitações</button></td>
         </tr>
       `;
     });
@@ -1225,43 +1319,35 @@ buildReferenceTable();
     container.querySelectorAll('.apply-btn').forEach(btn => {
       btn.onclick = () => {
         const idx = +btn.dataset.idx;
-        aplicarConfiguracao(results[idx]);
+        aplicarConfiguracaoMultipla(results[idx]);
       };
     });
   }
 
-  function aplicarConfiguracao(config) {
-    const opts = currentOptions();
-    const transpIdx = opts.findIndex(opt => opt[0] === config.transposicao);
-    
-    if (transpIdx === -1) {
-      alert('Transposição não encontrada nas opções atuais.');
-      return;
-    }
+  function aplicarConfiguracaoMultipla(item) {
+    item.combo.forEach((config, k) => {
+      const voiceIdx = k + 1;
+      imitationState.transposition[voiceIdx] = config.transpIdx;
+      imitationState.delays[voiceIdx] = config.delay;
+      imitationState.inversion[voiceIdx] = config.inv;
+      imitationState.retrograde[voiceIdx] = config.ret;
 
-    const voiceIdx = 1;
-    
-    imitationState.transposition[voiceIdx] = transpIdx;
-    imitationState.delays[voiceIdx] = config.delay;
-    imitationState.inversion[voiceIdx] = config.inversao;
-    imitationState.retrograde[voiceIdx] = config.retrogradacao;
-
-    const sel = document.getElementById('c' + voiceIdx);
-    if (sel) sel.value = transpIdx;
-    
-    const delayInput = document.getElementById('delay' + voiceIdx);
-    if (delayInput) delayInput.value = config.delay;
-    
-    const invCheck = document.getElementById('inv' + voiceIdx);
-    if (invCheck) invCheck.checked = config.inversao;
-    
-    const retCheck = document.getElementById('ret' + voiceIdx);
-    if (retCheck) retCheck.checked = config.retrogradacao;
+      const sel = document.getElementById('c' + voiceIdx);
+      if (sel) sel.value = config.transpIdx;
+      
+      const delayInput = document.getElementById('delay' + voiceIdx);
+      if (delayInput) delayInput.value = config.delay;
+      
+      const invCheck = document.getElementById('inv' + voiceIdx);
+      if (invCheck) invCheck.checked = config.inv;
+      
+      const retCheck = document.getElementById('ret' + voiceIdx);
+      if (retCheck) retCheck.checked = config.ret;
+    });
 
     calc();
     if (expState.open) expRender();
 
-    // Redireciona para a aba de Experimentação
     const expTabBtn = document.querySelector('.tab-btn[data-tab="experimentacao"]');
     if (expTabBtn) expTabBtn.click();
   }
