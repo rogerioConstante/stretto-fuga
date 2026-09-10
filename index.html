@@ -8,44 +8,44 @@
 <style>
 :root{--bg:#090c12;--panel:#111722;--panel2:#171e2a;--line:#2a3442;--text:#edf3fa;--muted:#93a0b1;--cyan:#62e9ff;--blue:#35a9ff;--green:#4dff9a;--red:#ff4f72}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% 0,#152536 0,#090c12 38%);color:var(--text);font:14px "Segoe UI",Arial,sans-serif}
-header{padding:28px 38px;border-bottom:1px solid var(--line);background:#0b1017e8}h1{margin:0 0 7px;font-size:27px}header p{margin:0;color:var(--muted);max-width:1050px;line-height:1.5}
-.app{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 110px)}
-aside{padding:24px;border-right:1px solid var(--line);background:#0d1219;overflow-y:auto;max-height:calc(100vh - 110px)}
-.field,.comes{margin-bottom:18px}
-label{display:block;margin-bottom:7px;color:#bbc6d3;font-size:13px}
-select{width:100%;padding:10px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:7px;outline:0;font-family:inherit}
+header{padding:18px 28px;border-bottom:1px solid var(--line);background:#0b1017e8}h1{margin:0 0 4px;font-size:24px}header p{margin:0;color:var(--muted);max-width:1050px;line-height:1.4}
+.app{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 80px)}
+aside{padding:16px;border-right:1px solid var(--line);background:#0d1219;overflow-y:auto;height:calc(100vh - 80px);max-height:calc(100vh - 80px)}
+.field,.comes{margin-bottom:12px}
+label{display:block;margin-bottom:5px;color:#bbc6d3;font-size:12px}
+select{width:100%;padding:8px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:6px;outline:0;font-family:inherit;font-size:12px}
 select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #62e9ff20}
-.comes{padding:13px;border:1px solid var(--line);border-radius:9px;background:#10151e;margin-bottom:14px}
+.comes{padding:10px;border:1px solid var(--line);border-radius:8px;background:#10151e;margin-bottom:10px}
 .comes:last-child{margin-bottom:0}
-.ct{margin-bottom:9px;color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
-.comes .transp-label{font-size:11px;color:var(--muted);margin:8px 0 4px;display:block}
-.comes .transp-select{width:100%;padding:8px 10px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:6px;font-size:12px;outline:0;font-family:inherit}
+.ct{margin-bottom:6px;color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
+.comes .transp-label{font-size:11px;color:var(--muted);margin:6px 0 3px;display:block}
+.comes .transp-select{width:100%;padding:6px 8px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:6px;font-size:12px;outline:0;font-family:inherit}
 .comes .transp-select:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #62e9ff20}
-.comes .ctrl-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
-.comes .ctrl-row .ctrl-group{display:flex;align-items:center;gap:5px}
+.comes .ctrl-row{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.comes .ctrl-row .ctrl-group{display:flex;align-items:center;gap:4px}
 .comes .ctrl-row label{font-size:11px;color:var(--muted);cursor:pointer;user-select:none;margin:0;display:inline-flex;align-items:center;gap:4px}
-.comes .ctrl-row input[type=number]{width:40px;padding:4px 3px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:11px;text-align:center;font-family:inherit}
+.comes .ctrl-row input[type=number]{width:38px;padding:3px 2px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:11px;text-align:center;font-family:inherit}
 .comes .ctrl-row input[type=checkbox]{width:12px;height:12px;margin:0;accent-color:var(--cyan);cursor:pointer;flex:0 0 auto}
 .comes .delay-label{font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
-.note{color:var(--muted);font-size:12px;line-height:1.5}
-main{padding:28px 34px 45px;overflow:auto}.title{margin-bottom:12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
-.viable{padding:20px;border:1px solid #274554;border-radius:12px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:20px}
-.moves{display:flex;gap:9px;flex-wrap:wrap}.move{padding:8px 13px;border:1px solid #285060;border-radius:7px;background:#13232c;color:#8cf0ff;font-weight:650}.none{color:var(--red);font-weight:600}
+.note{color:var(--muted);font-size:11px;line-height:1.4}
+main{padding:24px 28px 40px;overflow:auto}.title{margin-bottom:12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+.viable{padding:16px;border:1px solid #274554;border-radius:10px;background:linear-gradient(135deg,#101b24,#10151e);margin-bottom:20px}
+.moves{display:flex;gap:8px;flex-wrap:wrap}.move{padding:6px 11px;border:1px solid #285060;border-radius:6px;background:#13232c;color:#8cf0ff;font-weight:650;font-size:12px}.none{color:var(--red);font-weight:600}
 
 .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line)}
-.tab-btn{padding:11px 20px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
+.tab-btn{padding:10px 18px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan)}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
 .mode-switch{display:flex;gap:6px}
-.mode-btn{flex:1;padding:9px 6px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
+.mode-btn{flex:1;padding:8px 6px;background:var(--panel2);border:1px solid #394657;border-radius:6px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center}
 .mode-btn:hover{color:var(--text)}
 .mode-btn.active{color:#04141c;background:var(--cyan);border-color:var(--cyan)}
 
 .ic-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.ic-chip{padding:7px 10px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid transparent;font-family:inherit}
+.ic-chip{padding:6px 9px;border-radius:5px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid transparent;font-family:inherit}
 .ic-chip.desired{color:var(--green);border-color:#4dff9a55;background:#4dff9a12}
 .ic-chip.undesired{color:var(--red);border-color:#ff4f7255;background:#ff4f7212}
 
@@ -60,7 +60,7 @@ tr:last-child td{border-bottom:0}
 table.compact th,table.compact td{padding:1px 4px;line-height:1.2}
 table.compact td:first-child,table.compact th:first-child{min-width:70px}
 table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
-@media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line);max-height:none}main{padding:22px}}
+@media(max-width:820px){.app{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line);height:auto;max-height:none}main{padding:22px}}
 
 .exp-body{padding:4px 0 16px;overflow:visible;max-height:none}
 .exp-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
@@ -98,29 +98,31 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-canvas-area svg text.iv-num.iv-perfect{fill:#35a9ff!important}.exp-canvas-area svg text.iv-num.iv-special-consonant{fill:#ffe45c!important}
 .exp-canvas-area svg text.iv-num.iv-imperfect,.exp-canvas-area svg text.iv-num.iv-desired{fill:#4dff9a!important}
 .exp-canvas-area svg text.iv-num.iv-dissonant,.exp-canvas-area svg text.iv-num.iv-undesired{fill:#ff4f72!important}
-.exp-tooltip-icon{position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:50%;background:#171e29;border:1px solid var(--line);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:21;cursor:help}
-.exp-tooltip{position:absolute;top:8px;left:34px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
+
+/* Ícone do Tooltip no canto superior direito */
+.exp-tooltip-icon{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#171e29;border:1px solid var(--line);color:var(--cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:21;cursor:help}
+.exp-tooltip{position:absolute;top:8px;right:34px;max-width:320px;background:#171e29;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5;color:var(--muted);opacity:0;visibility:hidden;transition:opacity .15s ease;z-index:20;pointer-events:none;box-shadow:0 8px 24px #0008}
 .exp-tooltip-icon:hover + .exp-tooltip{opacity:1;visibility:visible}
 
-/* Análise de imitações viáveis */
-.exp-analysis{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}
-.exp-analysis-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+/* Estilos da Seção de Análise de Imitações */
+.exp-analysis{padding-top:4px}
+.exp-analysis-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
 .exp-analysis-header .title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin:0}
 .exp-analyze-btn{padding:8px 20px;background:var(--cyan);border:none;border-radius:7px;color:#04141c;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .exp-analyze-btn:hover{opacity:.85}
 .exp-analyze-btn:disabled{opacity:.4;cursor:not-allowed}
 .exp-analysis-count{font-size:13px;color:var(--muted)}
 .exp-analysis-count b{color:var(--text)}
-.exp-analysis-results{overflow:auto;max-height:240px}
+.exp-analysis-results{overflow:auto}
 .exp-analysis-results table{width:100%;font-size:12px}
-.exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29;padding:6px 10px}
-.exp-analysis-results td{padding:5px 10px;border-bottom:1px solid var(--line)}
-.exp-analysis-results .apply-btn{padding:3px 12px;background:var(--panel2);border:1px solid #394657;border-radius:4px;color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit}
+.exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29;padding:8px 10px}
+.exp-analysis-results td{padding:6px 10px;border-bottom:1px solid var(--line)}
+.exp-analysis-results .apply-btn{padding:4px 12px;background:var(--panel2);border:1px solid #394657;border-radius:4px;color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit;font-weight:600}
 .exp-analysis-results .apply-btn:hover{background:var(--panel);border-color:var(--cyan)}
-.exp-analysis-empty{color:var(--muted);font-size:13px;padding:12px 0}
+.exp-analysis-empty{color:var(--muted);font-size:13px;padding:16px 0}
 .exp-analysis .status-ok{color:var(--green)}
 .exp-analysis .status-fail{color:var(--red)}
-.exp-analysis .badge{display:inline-block;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.exp-analysis .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
 .exp-analysis .badge-yes{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}
 .exp-analysis .badge-no{color:var(--muted);border:1px solid #39465755;background:#171e29}
 </style>
@@ -164,6 +166,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   <button class="tab-btn active" data-tab="referencia" type="button">Tabela de Referência</button>
   <button class="tab-btn" data-tab="configurador" type="button">Movimentos viáveis</button>
   <button class="tab-btn" data-tab="experimentacao" type="button">🎹 Experimentação</button>
+  <button class="tab-btn" data-tab="analise" type="button">🔍 Análise de Imitações</button>
 </div>
 
 <div id="tab-referencia" class="tab-panel active">
@@ -210,15 +213,18 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
     <div class="exp-tooltip-icon">ⓘ</div>
     <div class="exp-tooltip">Digite as letras no teclado do computador (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓) ou use o teclado de piano virtual. Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável (destacada) é definida automaticamente pelas transposições configuradas ao lado.</div>
   </div>
+</div>
 
-  <!-- Seção de análise de imitações viáveis -->
+<div id="tab-analise" class="tab-panel">
   <div class="exp-analysis">
     <div class="exp-analysis-header">
-      <span class="title">🔍 Análise de imitações viáveis</span>
-      <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar</button>
+      <span class="title">Análise de imitações viáveis</span>
+      <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Líder Atual</button>
       <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
     </div>
-    <div id="expAnalysisResults" class="exp-analysis-results"></div>
+    <div id="expAnalysisResults" class="exp-analysis-results">
+      <div class="exp-analysis-empty">Insira notas na pauta do Líder (aba Experimentação) e clique em "Analisar Líder Atual" para verificar as imitações viáveis.</div>
+    </div>
   </div>
 </div>
 </main>
@@ -226,15 +232,13 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 
 <script>
 // =====================================================================
-// MODO TONAL — intervalos diatônicos (grau 0-indexado + direção embutida
-// no próprio valor: positivo = acima, negativo = abaixo)
+// MODO TONAL — intervalos diatônicos
 // =====================================================================
 const intervalosTonal = [
   ["U", 0], ["2ª", 1], ["3ª", 2], ["4ª", 3],
   ["5ª", 4], ["6ª", 5], ["7ª", 6], ["8ª", 7]
 ];
 
-// Cada opção: [rótulo, valor_sinalizado_em_graus]
 const optionsTonal = [
   ...intervalosTonal.map(x => [x[1] === 0 ? "U" : x[0] + " ↑", x[1]]),
   ...intervalosTonal.slice(1).map(x => [x[0] + " ↓", -x[1]])
@@ -249,7 +253,7 @@ function clsTonal(intervalNum) {
 }
 
 // =====================================================================
-// MODO Atonal — semitons (0 a 11) + direção embutida no valor sinalizado
+// MODO Atonal — semitons (0 a 11)
 // =====================================================================
 const optionsAtonal = [
   ["0", 0],
@@ -552,7 +556,7 @@ calc();
 buildReferenceTable();
 
 // =====================================================================
-// EXPERIMENTAÇÃO
+// EXPERIMENTAÇÃO & ANÁLISE
 // =====================================================================
 (function () {
   const VF = Vex.Flow;
@@ -1077,13 +1081,13 @@ buildReferenceTable();
   }
 
   // =====================================================================
-  // ANÁLISE DE IMITAÇÕES VIÁVEIS
+  // ANÁLISE DE IMITAÇÕES VIÁVEIS (Aba Dedicada)
   // =====================================================================
   function analisarImitacoesViaveis() {
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
       document.getElementById('expAnalysisResults').innerHTML = 
-        '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas no Líder para realizar a análise.</div>';
+        '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
       document.getElementById('expAnalysisNum').textContent = '0';
       return;
     }
@@ -1097,10 +1101,8 @@ buildReferenceTable();
       for (const delay of delaysRange) {
         for (const inv of bools) {
           for (const ret of bools) {
-            // Gerar sequência da imitação
             let seq = leaderNotes.slice();
             
-            // Aplicar inversão
             if (inv && seq.length) {
               const first = seq[0];
               seq = seq.map(nt => modo === 'tonal' 
@@ -1108,24 +1110,20 @@ buildReferenceTable();
                 : invertChromatic(nt, first));
             }
             
-            // Aplicar retrogradação
             if (ret) {
               seq = seq.slice().reverse();
             }
             
-            // Aplicar transposição
             seq = modo === 'tonal' 
               ? seq.map(nt => transposeDiatonic(nt, expState.keySig, transp[1]))
               : seq.map(nt => transposeChromatic(nt, transp[1]));
             
-            // Verificar intervalos
             let valid = true;
             let intervalos = [];
             const leaderLen = leaderNotes.length;
             const imitLen = seq.length;
             const maxLen = Math.max(leaderLen + delay, imitLen + delay);
             
-            // Para cada posição de tempo
             for (let pos = 0; pos < maxLen; pos++) {
               const leaderIdx = pos;
               const imitIdx = pos - delay;
@@ -1134,7 +1132,6 @@ buildReferenceTable();
                 const leaderNote = leaderNotes[leaderIdx];
                 const imitNote = seq[imitIdx];
                 
-                // Verificar se a imitação não está em silêncio (pausa)
                 if (imitNote) {
                   const lowestMidi = Math.min(
                     noteToMidi(leaderNote),
@@ -1166,7 +1163,6 @@ buildReferenceTable();
       }
     }
 
-    // Ordenar resultados: primeiro por delay, depois por transposição
     results.sort((a, b) => a.delay - b.delay || a.valor - b.valor);
 
     document.getElementById('expAnalysisNum').textContent = results.length;
@@ -1177,7 +1173,7 @@ buildReferenceTable();
     const container = document.getElementById('expAnalysisResults');
     
     if (results.length === 0) {
-      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma configuração de imitação viável encontrada para o Líder atual.</div>';
+      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma configuração de imitação viável encontrada para as notas atuais do Líder.</div>';
       return;
     }
 
@@ -1190,7 +1186,7 @@ buildReferenceTable();
             <th>Atraso</th>
             <th>Inversão</th>
             <th>Retrogradação</th>
-            <th>Intervalos</th>
+            <th>Intervalos Resultantes</th>
             <th>Ação</th>
           </tr>
         </thead>
@@ -1205,11 +1201,10 @@ buildReferenceTable();
         ? '<span class="badge badge-yes">Sim</span>' 
         : '<span class="badge badge-no">Não</span>';
       
-      // Mostrar os primeiros 3 intervalos como exemplo
-      const intervalSummary = r.intervalos.slice(0, 3).map(i => 
+      const intervalSummary = r.intervalos.slice(0, 5).map(i => 
         `<span class="iv ${i.cls}" style="min-width:20px;padding:1px 3px;font-size:10px">${i.label}</span>`
       ).join(' ');
-      const more = r.intervalos.length > 3 ? ` +${r.intervalos.length - 3}` : '';
+      const more = r.intervalos.length > 5 ? ` +${r.intervalos.length - 5}` : '';
 
       html += `
         <tr>
@@ -1219,7 +1214,7 @@ buildReferenceTable();
           <td>${invBadge}</td>
           <td>${retBadge}</td>
           <td style="font-size:11px">${intervalSummary}${more}</td>
-          <td><button class="apply-btn" data-idx="${idx}">Aplicar</button></td>
+          <td><button class="apply-btn" data-idx="${idx}">Aplicar na 1ª Imitação</button></td>
         </tr>
       `;
     });
@@ -1227,7 +1222,6 @@ buildReferenceTable();
     html += '</tbody></table>';
     container.innerHTML = html;
 
-    // Adicionar eventos aos botões "Aplicar"
     container.querySelectorAll('.apply-btn').forEach(btn => {
       btn.onclick = () => {
         const idx = +btn.dataset.idx;
@@ -1237,7 +1231,6 @@ buildReferenceTable();
   }
 
   function aplicarConfiguracao(config) {
-    // Encontrar o índice da transposição nas opções atuais
     const opts = currentOptions();
     const transpIdx = opts.findIndex(opt => opt[0] === config.transposicao);
     
@@ -1246,16 +1239,13 @@ buildReferenceTable();
       return;
     }
 
-    // Aplicar para a 1ª imitação (índice 1)
     const voiceIdx = 1;
     
-    // Atualizar estado
     imitationState.transposition[voiceIdx] = transpIdx;
     imitationState.delays[voiceIdx] = config.delay;
     imitationState.inversion[voiceIdx] = config.inversao;
     imitationState.retrograde[voiceIdx] = config.retrogradacao;
 
-    // Atualizar UI do menu lateral
     const sel = document.getElementById('c' + voiceIdx);
     if (sel) sel.value = transpIdx;
     
@@ -1268,12 +1258,14 @@ buildReferenceTable();
     const retCheck = document.getElementById('ret' + voiceIdx);
     if (retCheck) retCheck.checked = config.retrogradacao;
 
-    // Recalcular e re-renderizar
     calc();
-    expRender();
+    if (expState.open) expRender();
+
+    // Redireciona para a aba de Experimentação
+    const expTabBtn = document.querySelector('.tab-btn[data-tab="experimentacao"]');
+    if (expTabBtn) expTabBtn.click();
   }
 
-  // Botão de análise
   document.getElementById('expAnalyzeBtn').onclick = analisarImitacoesViaveis;
 
   // =====================================================================
