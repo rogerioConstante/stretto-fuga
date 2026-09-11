@@ -116,6 +116,13 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results th,.exp-analysis-results td{padding:6px 8px;border-bottom:1px solid var(--line);overflow:hidden;text-overflow:ellipsis}
 .exp-analysis-results th{position:sticky;top:0;z-index:2;background:#171e29}
 
+/* Cabeçalhos ordenáveis */
+.exp-analysis-results th.sortable{cursor:pointer;user-select:none;transition:color .15s ease,background .15s ease}
+.exp-analysis-results th.sortable:hover{color:var(--cyan);background:#1b2433}
+.exp-analysis-results th.sortable .sort-ind{display:inline-block;margin-left:4px;font-size:10px;opacity:.55}
+.exp-analysis-results th.sortable.sort-active{color:var(--cyan)}
+.exp-analysis-results th.sortable.sort-active .sort-ind{opacity:1}
+
 /* Destaque para a linha selecionada */
 .exp-analysis-results tr.selected-row{background:#132a3a!important}
 .exp-analysis-results tr.selected-row td{border-bottom-color:#2a5878;color:#fff}
@@ -1104,6 +1111,10 @@ buildReferenceTable();
   // =====================================================================
   let currentAnalysisResults = [];
 
+  // Estado da ordenação da tabela de análise
+  let analysisSortKey = null;   // 'transp' | 'delay' | 'inv' | 'ret' | null
+  let analysisSortDir = 1;      // 1 = asc, -1 = desc
+
   // Validação dinâmica: exige pelo menos 2 notas simultâneas (sobreposição) com alguma voz ativa
   function temSobreposicaoValida(novaDelay, novaLen, vozesAtivas) {
     for (const v of vozesAtivas) {
@@ -1236,8 +1247,9 @@ buildReferenceTable();
     const maxPossibleDelay = Math.max(1, leaderNotes.length - 2);
     
     // Gerar todos os atrasos dinâmicos que satisfaçam a sobreposição mínima de 2 notas
+    // (agora incluindo 0, que significa que a imitação entra junto com o Líder)
     const delaysRange = [];
-    for (let d = 1; d <= maxPossibleDelay; d++) delaysRange.push(d);
+    for (let d = 0; d <= maxPossibleDelay; d++) delaysRange.push(d);
 
     const bools = [false, true];
 
@@ -1388,6 +1400,51 @@ buildReferenceTable();
     };
   }
 
+  // ---------------------------------------------------------------------
+  // Comparadores para ordenação da tabela de análise
+  // ---------------------------------------------------------------------
+  function cmpNumberArray(arrA, arrB) {
+    const len = Math.max(arrA.length, arrB.length);
+    for (let i = 0; i < len; i++) {
+      const a = arrA[i] !== undefined ? arrA[i] : 0;
+      const b = arrB[i] !== undefined ? arrB[i] : 0;
+      if (a !== b) return a < b ? -1 : 1;
+    }
+    return 0;
+  }
+
+  function compareResults(a, b, key) {
+    let cmp = 0;
+    if (key === 'transp') {
+      // Compara voz por voz pelo valor numérico da transposição (não pelo texto)
+      const arrA = a.combo.map(c => c.transpOpt[1]);
+      const arrB = b.combo.map(c => c.transpOpt[1]);
+      cmp = cmpNumberArray(arrA, arrB);
+    } else if (key === 'delay') {
+      const arrA = a.combo.map(c => c.delay);
+      const arrB = b.combo.map(c => c.delay);
+      cmp = cmpNumberArray(arrA, arrB);
+    } else if (key === 'inv') {
+      const arrA = a.combo.map(c => c.inv ? 1 : 0);
+      const arrB = b.combo.map(c => c.inv ? 1 : 0);
+      cmp = cmpNumberArray(arrA, arrB);
+    } else if (key === 'ret') {
+      const arrA = a.combo.map(c => c.ret ? 1 : 0);
+      const arrB = b.combo.map(c => c.ret ? 1 : 0);
+      cmp = cmpNumberArray(arrA, arrB);
+    }
+    if (cmp === 0) {
+      // Desempate estável pelo índice original
+      cmp = (a._origIdx || 0) - (b._origIdx || 0);
+    }
+    return cmp;
+  }
+
+  function sortIndicatorFor(key) {
+    if (analysisSortKey !== key) return '<span class="sort-ind">⇅</span>';
+    return `<span class="sort-ind">${analysisSortDir === 1 ? '▲' : '▼'}</span>`;
+  }
+
   function renderAnalysisResults(results, nVoices) {
     const container = document.getElementById('expAnalysisResults');
     
@@ -1396,15 +1453,32 @@ buildReferenceTable();
       return;
     }
 
+    // Anexa o índice original a cada item, para preservar a referência do "Aplicar"
+    const indexed = results.map((r, i) => {
+      if (r._origIdx === undefined) r._origIdx = i;
+      return r;
+    });
+
+    // Cria cópia ordenada sem mutar o array original
+    let view = indexed.slice();
+    if (analysisSortKey) {
+      view.sort((a, b) => analysisSortDir * compareResults(a, b, analysisSortKey));
+    }
+
+    const thSortable = (key, label, cls) => {
+      const active = analysisSortKey === key ? ' sort-active' : '';
+      return `<th class="col-${cls} sortable${active}" data-sort="${key}">${label}${sortIndicatorFor(key)}</th>`;
+    };
+
     let html = `
       <table>
         <thead>
           <tr>
             <th class="col-idx">#</th>
-            <th class="col-transp">Transposição</th>
-            <th class="col-delay">Atraso</th>
-            <th class="col-inv">Inversão</th>
-            <th class="col-ret">Retrogradação</th>
+            ${thSortable('transp', 'Transposição', 'transp')}
+            ${thSortable('delay', 'Atraso', 'delay')}
+            ${thSortable('inv', 'Inversão', 'inv')}
+            ${thSortable('ret', 'Retrogradação', 'ret')}
             <th class="col-ivs">Intervalos Resultantes Por Par</th>
             <th class="col-action">Ação</th>
           </tr>
@@ -1412,8 +1486,9 @@ buildReferenceTable();
         <tbody>
     `;
 
-    results.forEach((r, idx) => {
-      const isSelected = (appliedAnalysisIndex === idx);
+    view.forEach((r) => {
+      const origIdx = r._origIdx;
+      const isSelected = (appliedAnalysisIndex === origIdx);
       const rowClass = isSelected ? 'selected-row' : '';
       
       const transpText = r.combo.map((c, i) => `${i + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
@@ -1439,13 +1514,13 @@ buildReferenceTable();
 
       html += `
         <tr class="${rowClass}">
-          <td class="col-idx">${idx + 1}</td>
+          <td class="col-idx">${origIdx + 1}</td>
           <td class="col-transp">${transpText}</td>
           <td class="col-delay">${delayText}</td>
           <td class="col-inv">${invText}</td>
           <td class="col-ret">${retText}</td>
           <td class="col-ivs">${ivLines}</td>
-          <td class="col-action"><button class="${btnClass}" data-idx="${idx}">${btnLabel}</button></td>
+          <td class="col-action"><button class="${btnClass}" data-idx="${origIdx}">${btnLabel}</button></td>
         </tr>
       `;
     });
@@ -1453,6 +1528,21 @@ buildReferenceTable();
     html += '</tbody></table>';
     container.innerHTML = html;
 
+    // Handlers de clique nos cabeçalhos ordenáveis
+    container.querySelectorAll('th.sortable').forEach(th => {
+      th.onclick = () => {
+        const key = th.dataset.sort;
+        if (analysisSortKey === key) {
+          analysisSortDir *= -1;
+        } else {
+          analysisSortKey = key;
+          analysisSortDir = 1;
+        }
+        renderAnalysisResults(currentAnalysisResults, +voices.value);
+      };
+    });
+
+    // Handlers dos botões "Aplicar"
     container.querySelectorAll('.apply-btn').forEach(btn => {
       btn.onclick = () => {
         const idx = +btn.dataset.idx;
