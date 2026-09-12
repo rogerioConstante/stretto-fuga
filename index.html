@@ -146,6 +146,29 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis .badge-no{color:var(--muted);border:1px solid #39465755;background:#171e29}
 .exp-analysis .pair-line{display:block;margin-bottom:3px;white-space:nowrap}
 .exp-analysis .pair-label{display:inline-block;width:70px;font-size:10px;color:var(--cyan);font-weight:700}
+
+.exp-pdf-btn{padding:8px 18px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.exp-pdf-btn:hover{border-color:var(--cyan)}
+.exp-pdf-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* --- Área de impressão (PDF da Análise de Imitações) --- */
+#printArea{display:none}
+.print-title{font-size:16px;font-weight:700;margin:0 0 4px;color:#000}
+.print-subtitle{font-size:11px;color:#444;margin:0 0 14px}
+.print-score{background:#fff;margin-bottom:18px}
+.print-score svg text{fill:#000!important}
+.print-score svg path{stroke:#000!important}
+.print-table{width:100%;border-collapse:collapse;font-size:11px;color:#000}
+.print-table th,.print-table td{border:1px solid #999;padding:5px 7px;text-align:center;vertical-align:top}
+.print-table thead th{background:#eee}
+.print-table td.al-left,.print-table th.al-left{text-align:left}
+@media print{
+  header,.app{display:none!important}
+  #printArea{display:block!important}
+  .pair-line{display:block;margin-bottom:2px;white-space:nowrap}
+  .pair-label{display:inline-block;width:72px;font-size:10px;font-weight:700}
+  @page{margin:16mm}
+}
 </style>
 </head>
 <body>
@@ -242,6 +265,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <span class="title">Análise de imitações viáveis</span>
       <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Líder Atual</button>
       <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
+      <button class="exp-pdf-btn" id="expPdfBtn" type="button" disabled>Gerar PDF</button>
     </div>
     <div id="expAnalysisResults" class="exp-analysis-results">
       <div class="exp-analysis-empty">Insira notas na pauta do Líder (aba Experimentação) e clique em "Analisar Líder Atual" para verificar as imitações viáveis.</div>
@@ -249,6 +273,13 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   </div>
 </div>
 </main>
+</div>
+
+<div id="printArea">
+  <div class="print-title">Stretto Fuga — Análise de Imitações</div>
+  <div class="print-subtitle" id="printSubtitle"></div>
+  <div class="print-score" id="printScoreArea"></div>
+  <div id="printTableArea"></div>
 </div>
 
 <script>
@@ -997,7 +1028,34 @@ buildReferenceTable();
     });
     if (maxTotal === 0) maxTotal = 1;
 
-    const staveWidth = 80 + maxTotal * FIXED_COL_WIDTH;
+    // --- Medição prévia do espaço real de clave + armadura ---
+    // Antes de fixar a largura da pauta e a posição inicial das notas, mede-se
+    // (numa área/renderer temporários, descartados em seguida) o quanto cada
+    // clave usada realmente ocupa somada à armadura atual. Isso evita que
+    // armaduras com vários acidentes empurrem as notas para além da largura
+    // fixa da pauta, como acontecia antes.
+    const PROBE_WIDTH = 400;
+    const probeRenderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
+    probeRenderer.resize(PROBE_WIDTH, totalHeight);
+    const probeCtx = probeRenderer.getContext();
+    let rawNoteStartX = 0;
+    sortedData.forEach((d) => {
+      const probeStave = new VF.Stave(4, 0, PROBE_WIDTH - 8);
+      if (d.clef.ann) probeStave.addClef(d.clef.clef, 'default', d.clef.ann);
+      else probeStave.addClef(d.clef.clef);
+      if (modo === 'tonal') probeStave.addKeySignature(expState.keySig);
+      probeStave.setContext(probeCtx).draw();
+      rawNoteStartX = Math.max(rawNoteStartX, probeStave.getNoteStartX());
+    });
+    area.innerHTML = '';
+
+    const NOTE_START_PAD = 6;
+    const noteStartXFinal = rawNoteStartX + NOTE_START_PAD;
+    // Mantido apenas para preservar exatamente o posicionamento já validado dos
+    // números de intervalo entre pares (não relacionado ao problema da armadura).
+    const legacyLabelBaseX = rawNoteStartX * 1.6;
+
+    const staveWidth = noteStartXFinal + maxTotal * FIXED_COL_WIDTH + 20;
 
     const renderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
     renderer.resize(staveWidth + 60, totalHeight);
@@ -1058,11 +1116,9 @@ buildReferenceTable();
 
     new VF.Formatter().joinVoices(allVoices).format(allVoices, staveWidth - 4);
 
-    const noteStartX = Math.max(...allStaves.map(s => s.getNoteStartX())) * 1.6;
-
     sortedData.forEach((d) => {
       d._vfNotes.forEach((note, col) => {
-        const targetX = noteStartX + col * FIXED_COL_WIDTH;
+        const targetX = noteStartXFinal + col * FIXED_COL_WIDTH;
         note.setXShift(targetX - note.getAbsoluteX());
       });
     });
@@ -1099,7 +1155,7 @@ buildReferenceTable();
           const cls = info.cls;
           const label = info.label;
 
-          const x = (noteStartX * 2) + col * FIXED_COL_WIDTH;
+          const x = (legacyLabelBaseX * 2) + col * FIXED_COL_WIDTH;
           drawIntervalLabel(area, x, textY, label, cls, fontSize, escala);
         }
       }
@@ -1234,6 +1290,7 @@ buildReferenceTable();
         '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
       document.getElementById('expAnalysisNum').textContent = '0';
       currentAnalysisResults = [];
+      document.getElementById('expPdfBtn').disabled = true;
       return;
     }
 
@@ -1342,6 +1399,7 @@ buildReferenceTable();
 
     currentAnalysisResults = validResults;
     document.getElementById('expAnalysisNum').textContent = validResults.length;
+    document.getElementById('expPdfBtn').disabled = validResults.length === 0;
     renderAnalysisResults(validResults, nVoices);
   }
 
@@ -1585,6 +1643,148 @@ buildReferenceTable();
     const expTabBtn = document.querySelector('.tab-btn[data-tab="experimentacao"]');
     if (expTabBtn) expTabBtn.click();
   }
+
+  // =====================================================================
+  // GERAÇÃO DE PDF (impressão) — partitura do Líder + tabela de resultados
+  // =====================================================================
+
+  // Desenha somente a voz do Líder (sem nenhuma imitação), reaproveitando a
+  // mesma técnica de medição prévia de largura usada em renderCanvas, para
+  // que a armadura nunca empurre notas para fora da pauta impressa.
+  function renderLeaderScoreForPrint(containerEl) {
+    containerEl.innerHTML = '';
+    const VF = Vex.Flow;
+    const leaderNotes = expState.notes;
+    if (!leaderNotes.length) return;
+
+    const clef = chooseClefForNotes(leaderNotes);
+
+    const PROBE_WIDTH = 400;
+    const probeRenderer = new VF.Renderer(containerEl, VF.Renderer.Backends.SVG);
+    probeRenderer.resize(PROBE_WIDTH, STAVE_HEIGHT + 20);
+    const probeCtx = probeRenderer.getContext();
+    const probeStave = new VF.Stave(4, 0, PROBE_WIDTH - 8);
+    if (clef.ann) probeStave.addClef(clef.clef, 'default', clef.ann);
+    else probeStave.addClef(clef.clef);
+    if (modo === 'tonal') probeStave.addKeySignature(expState.keySig);
+    probeStave.setContext(probeCtx).draw();
+    const noteStartX = probeStave.getNoteStartX() + 6;
+    containerEl.innerHTML = '';
+
+    const staveWidth = noteStartX + leaderNotes.length * FIXED_COL_WIDTH + 20;
+
+    const renderer = new VF.Renderer(containerEl, VF.Renderer.Backends.SVG);
+    renderer.resize(staveWidth + 60, STAVE_HEIGHT + 20);
+    const ctx = renderer.getContext();
+    const escala = 0.9;
+    ctx.scale(escala, escala);
+    ctx.setFont('Arial', 9 / escala);
+
+    const stave = new VF.Stave(4, 10, staveWidth + 8);
+    stave.setBegBarType(VF.Barline.type.NONE);
+    stave.setEndBarType(VF.Barline.type.NONE);
+    if (clef.ann) stave.addClef(clef.clef, 'default', clef.ann);
+    else stave.addClef(clef.clef);
+    if (modo === 'tonal') stave.addKeySignature(expState.keySig);
+    stave.setContext(ctx).draw();
+
+    const vfNotes = leaderNotes.map((nt) => {
+      const sn = new VF.StaveNote({ clef: clef.clef, keys: [vfKey(nt)], duration: 'w' });
+      const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
+      if (sym) sn.addModifier(new VF.Accidental(sym), 0);
+      return sn;
+    });
+
+    const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 1 });
+    voice.setStrict(false);
+    voice.addTickables(vfNotes);
+
+    new VF.Formatter().joinVoices([voice]).format([voice], staveWidth - 4);
+
+    vfNotes.forEach((note, col) => {
+      const targetX = noteStartX + col * FIXED_COL_WIDTH;
+      note.setXShift(targetX - note.getAbsoluteX());
+    });
+
+    voice.draw(ctx, stave);
+  }
+
+  // Monta a tabela de resultados da análise em HTML estático, no mesmo
+  // formato exibido na aba (sem cabeçalhos ordenáveis nem botões de ação,
+  // que não fazem sentido numa versão impressa).
+  function buildPrintResultsTable(results, nVoices) {
+    if (!results.length) {
+      return '<p>Nenhuma combinação de imitação viável encontrada para as notas do Líder.</p>';
+    }
+
+    let html = `
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="al-left">Transposição</th>
+            <th>Atraso</th>
+            <th>Inversão</th>
+            <th>Retrogradação</th>
+            <th class="al-left">Intervalos Resultantes Por Par</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    results.forEach((r, i) => {
+      const transpText = r.combo.map((c, k) => `${k + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
+      const delayText = r.combo.map(c => `${c.delay}`).join(' / ');
+      const invText = r.combo.map(c => c.inv ? 'Sim' : 'Não').join('<br>');
+      const retText = r.combo.map(c => c.ret ? 'Sim' : 'Não').join('<br>');
+
+      let ivLines = '';
+      for (let a = 0; a < nVoices; a++) {
+        for (let b = a + 1; b < nVoices; b++) {
+          const pairKey = `${a}-${b}`;
+          const ivs = r.pairsIntervals[pairKey];
+          if (ivs && ivs.length > 0) {
+            const pairName = a === 0 ? `Líd×${b}ªIm` : `${a}ªIm×${b}ªIm`;
+            const summary = ivs.map(iv => `<span class="iv ${iv.cls}">${iv.label}</span>`).join(' ');
+            ivLines += `<div class="pair-line"><span class="pair-label">${pairName}:</span>${summary}</div>`;
+          }
+        }
+      }
+
+      html += `
+        <tr>
+          <td>${i + 1}</td>
+          <td class="al-left">${transpText}</td>
+          <td>${delayText}</td>
+          <td>${invText}</td>
+          <td>${retText}</td>
+          <td class="al-left">${ivLines}</td>
+        </tr>
+      `;
+    });
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function gerarPDFAnalise() {
+    if (!currentAnalysisResults.length) {
+      alert('Realize a análise (botão "Analisar Líder Atual") antes de gerar o PDF.');
+      return;
+    }
+
+    const nVoices = +voices.value;
+    document.getElementById('printSubtitle').textContent =
+      `Modo ${modo === 'tonal' ? 'tonal (' + KEY_LABELS[expState.keySig] + ')' : 'atonal'} · ${nVoices} vozes · ${currentAnalysisResults.length} combinação(ões) viável(is)`;
+
+    renderLeaderScoreForPrint(document.getElementById('printScoreArea'));
+    document.getElementById('printTableArea').innerHTML =
+      buildPrintResultsTable(currentAnalysisResults, nVoices);
+
+    window.print();
+  }
+
+  document.getElementById('expPdfBtn').onclick = gerarPDFAnalise;
 
   document.getElementById('expAnalyzeBtn').onclick = analisarImitacoesViaveis;
 
