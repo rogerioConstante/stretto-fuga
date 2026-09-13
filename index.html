@@ -1080,15 +1080,22 @@ buildReferenceTable();
 
       const vfNotes = [];
       const colNoteRefs = [];
+      // Cada nota recebe sua pauta (stave) assim que criada — e não apenas no
+      // voice.draw() final — porque getAbsoluteX() soma automaticamente a
+      // largura de clave+armadura da pauta atribuída. Se isso só acontecesse
+      // no draw(), o deslocamento calculado abaixo contaria essa largura em
+      // dobro, empurrando as notas mais para a direita do que o necessário.
       
       for (let c = 0; c < d.delay; c++) {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
+        sn.setStave(stave);
         vfNotes.push(sn);
         colNoteRefs.push(null);
       }
       
       d.notas.forEach((nt) => {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: 'w' });
+        sn.setStave(stave);
         const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
         if (sym) sn.addModifier(new VF.Accidental(sym), 0);
         vfNotes.push(sn);
@@ -1098,6 +1105,7 @@ buildReferenceTable();
       const remaining = maxTotal - (d.delay + d.notas.length);
       for (let c = 0; c < remaining; c++) {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
+        sn.setStave(stave);
         vfNotes.push(sn);
         colNoteRefs.push(null);
       }
@@ -1119,7 +1127,13 @@ buildReferenceTable();
     sortedData.forEach((d) => {
       d._vfNotes.forEach((note, col) => {
         const targetX = noteStartXFinal + col * FIXED_COL_WIDTH;
-        note.setXShift(targetX - note.getAbsoluteX());
+        // Reposiciona a base do TickContext (em vez de usar setXShift), pois
+        // getAbsoluteX() — usado pelos acidentes via getModifierStartXY() —
+        // não soma o x_shift. Mover o TickContext mantém a cabeça da nota e
+        // seus acidentes sempre juntos.
+        const tc = note.getTickContext();
+        const delta = targetX - note.getAbsoluteX();
+        tc.setX(tc.getX() + delta);
       });
     });
 
@@ -1155,7 +1169,7 @@ buildReferenceTable();
           const cls = info.cls;
           const label = info.label;
 
-          const x = (legacyLabelBaseX * 2) + col * FIXED_COL_WIDTH;
+          const x = 8 + noteStartXFinal + col * FIXED_COL_WIDTH;
           drawIntervalLabel(area, x, textY, label, cls, fontSize, escala);
         }
       }
@@ -1690,6 +1704,7 @@ buildReferenceTable();
 
     const vfNotes = leaderNotes.map((nt) => {
       const sn = new VF.StaveNote({ clef: clef.clef, keys: [vfKey(nt)], duration: 'w' });
+      sn.setStave(stave);
       const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
       if (sym) sn.addModifier(new VF.Accidental(sym), 0);
       return sn;
@@ -1703,7 +1718,9 @@ buildReferenceTable();
 
     vfNotes.forEach((note, col) => {
       const targetX = noteStartX + col * FIXED_COL_WIDTH;
-      note.setXShift(targetX - note.getAbsoluteX());
+      const tc = note.getTickContext();
+      const delta = targetX - note.getAbsoluteX();
+      tc.setX(tc.getX() + delta);
     });
 
     voice.draw(ctx, stave);
