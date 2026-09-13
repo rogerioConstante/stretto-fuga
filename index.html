@@ -649,13 +649,18 @@ buildReferenceTable();
   }
   function noteToMidi(n) { return PITCH_CLASS[n.letter] + n.acc + 12 * (n.octave + 1); }
   function transposeDiatonic(note, key, deltaSteps) {
+    // Usa a armadura vigente quando a nota foi inserida (note.keyAtEntry) como
+    // referência para decidir se ela é "diatônica" ou alterada — não a armadura
+    // selecionada no momento (key). Assim, trocar a armadura depois de já ter
+    // notas inseridas não reinterpreta/altera as alturas já escritas.
+    const refKey = note.keyAtEntry || key;
     const idx = LETTERS.indexOf(note.letter);
     const rawIdx = idx + deltaSteps;
     const newLetter = LETTERS[((rawIdx % 7) + 7) % 7];
     const newOctave = note.octave + Math.floor(rawIdx / 7);
-    const deviation = note.acc - keyDefaultAcc(note.letter, key);
-    const newAcc = keyDefaultAcc(newLetter, key) + deviation;
-    return { letter: newLetter, acc: newAcc, octave: newOctave };
+    const deviation = note.acc - keyDefaultAcc(note.letter, refKey);
+    const newAcc = keyDefaultAcc(newLetter, refKey) + deviation;
+    return { letter: newLetter, acc: newAcc, octave: newOctave, keyAtEntry: refKey };
   }
   const CHROMA_SPELL = [
     ['C', 0], ['C', 1], ['D', 0], ['D', 1], ['E', 0], ['F', 0],
@@ -670,12 +675,13 @@ buildReferenceTable();
   }
 
   function invertDiatonic(note, first, key) {
+    const refKey = note.keyAtEntry || key;
     const targetIdx = 2 * diatonicIndex(first.letter, first.octave) - diatonicIndex(note.letter, note.octave);
     const newLetter = LETTERS[((targetIdx % 7) + 7) % 7];
     const newOctave = Math.floor(targetIdx / 7);
-    const deviation = note.acc - keyDefaultAcc(note.letter, key);
-    const newAcc = keyDefaultAcc(newLetter, key) + deviation;
-    return { letter: newLetter, acc: newAcc, octave: newOctave };
+    const deviation = note.acc - keyDefaultAcc(note.letter, refKey);
+    const newAcc = keyDefaultAcc(newLetter, refKey) + deviation;
+    return { letter: newLetter, acc: newAcc, octave: newOctave, keyAtEntry: refKey };
   }
   function invertChromatic(note, first) {
     const newMidi = 2 * noteToMidi(first) - noteToMidi(note);
@@ -766,7 +772,7 @@ buildReferenceTable();
   function addNote(letter, octaveOverride) {
     const octave = octaveOverride !== undefined ? octaveOverride : expState.octave;
     const acc = expState.pendingAcc !== null ? expState.pendingAcc : (modo === 'tonal' ? keyDefaultAcc(letter, expState.keySig) : 0);
-    expState.notes.push({ letter, acc, octave });
+    expState.notes.push({ letter, acc, octave, keyAtEntry: expState.keySig });
     expState.pendingAcc = null;
     appliedAnalysisIndex = null;
     document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('active'));
@@ -1051,9 +1057,6 @@ buildReferenceTable();
 
     const NOTE_START_PAD = 6;
     const noteStartXFinal = rawNoteStartX + NOTE_START_PAD;
-    // Mantido apenas para preservar exatamente o posicionamento já validado dos
-    // números de intervalo entre pares (não relacionado ao problema da armadura).
-    const legacyLabelBaseX = rawNoteStartX * 1.6;
 
     const staveWidth = noteStartXFinal + maxTotal * FIXED_COL_WIDTH + 20;
 
