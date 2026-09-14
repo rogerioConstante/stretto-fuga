@@ -133,6 +133,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results th.col-delay, .exp-analysis-results td.col-delay{width:60px;text-align:center}
 .exp-analysis-results th.col-inv, .exp-analysis-results td.col-inv{width:75px;text-align:center}
 .exp-analysis-results th.col-ret, .exp-analysis-results td.col-ret{width:75px;text-align:center}
+.exp-analysis-results th.col-ritmo, .exp-analysis-results td.col-ritmo{width:150px;text-align:left}
 .exp-analysis-results th.col-action, .exp-analysis-results td.col-action{width:150px;text-align:center}
 .exp-analysis-results th.col-ivs, .exp-analysis-results td.col-ivs{width:auto;text-align:left;white-space:normal}
 
@@ -345,7 +346,8 @@ const imitationState = {
   delays: {},
   inversion: {},
   retrograde: {},
-  transposition: {}
+  transposition: {},
+  ritmo: {}
 };
 
 let appliedAnalysisIndex = null; // Guarda o índice da solução selecionada
@@ -372,6 +374,61 @@ function getTransposition(i) {
   if (i === 0) return 0;
   if (imitationState.transposition[i] === undefined) imitationState.transposition[i] = i - 1;
   return imitationState.transposition[i];
+}
+
+// =====================================================================
+// MOTOR DE RITMO (aumentação / diminuição)
+// =====================================================================
+// Grade interna: 1 pulso normal (a duração de uma nota do Líder) = 6 ticks.
+// 6 é o menor número que representa como inteiro todos os fatores pedidos
+// (1, 1.5, 2, 3 e seus inversos 2/3, 1/2, 1/3) sem arredondamento.
+const TICKS_PER_PULSE = 6;
+
+// id: usado em <select>/imitationState. duration/dotted: figura VexFlow para
+// uma nota inteira desse ritmo. tuplet: true quando a figura é uma
+// trêsquiáltera (agrupa de 3 em 3 notas reais da voz, com colchete "3").
+const RITMO_OPTIONS = [
+  { id: 0, label: 'Normal (×1)',                               mult: 1,     duration: 'w',   dotted: false, tuplet: false },
+  { id: 1, label: 'Aumentação ×1.5 (semibreve pontuada)',      mult: 1.5,   duration: 'w',   dotted: true,  tuplet: false },
+  { id: 2, label: 'Aumentação ×2 (breve)',                     mult: 2,     duration: '1/2', dotted: false, tuplet: false },
+  { id: 3, label: 'Aumentação ×3 (breve pontuada)',            mult: 3,     duration: '1/2', dotted: true,  tuplet: false },
+  { id: 4, label: 'Diminuição ÷1.5 (semibreve trêsquiáltera)', mult: 2 / 3, duration: 'w',   dotted: false, tuplet: true },
+  { id: 5, label: 'Diminuição ÷2 (mínima)',                    mult: 0.5,   duration: 'h',   dotted: false, tuplet: false },
+  { id: 6, label: 'Diminuição ÷3 (mínima trêsquiáltera)',      mult: 1 / 3, duration: 'h',   dotted: false, tuplet: true },
+];
+
+function getRitmo(i) {
+  if (i === 0) return 0;
+  if (imitationState.ritmo[i] === undefined) imitationState.ritmo[i] = 0;
+  return imitationState.ritmo[i];
+}
+
+function ritmoDurTicks(ritmoIdx) {
+  return TICKS_PER_PULSE * RITMO_OPTIONS[ritmoIdx || 0].mult;
+}
+
+// Descreve os eventos (ataques) de uma voz na grade de ticks: início (após o
+// atraso, em ticks) e duração de cada nota — todas iguais dentro de uma
+// mesma voz, já que o ritmo é escolhido por voz, não nota a nota.
+function buildTickTrack(seq, delayPulsos, ritmoIdx) {
+  const durTicks = ritmoDurTicks(ritmoIdx);
+  const startOffset = delayPulsos * TICKS_PER_PULSE;
+  return {
+    seq, durTicks, startOffset,
+    totalTicks: startOffset + seq.length * durTicks,
+    // Índice (em seq) da nota ativa no tick informado, ou -1 se em silêncio.
+    activeIndexAt(tick) {
+      if (tick < startOffset) return -1;
+      const idx = Math.floor((tick - startOffset) / durTicks);
+      return idx < seq.length ? idx : -1;
+    },
+    // Ticks em que essa voz ataca uma nota nova.
+    onsetTicks() {
+      const ticks = [];
+      for (let i = 0; i < seq.length; i++) ticks.push(startOffset + i * durTicks);
+      return ticks;
+    }
+  };
 }
 
 // =====================================================================
@@ -409,6 +466,12 @@ function setup() {
           <label><input type="checkbox" id="ret${k}" ${getRetrograde(k) ? 'checked' : ''}> Retrogradação</label>
         </span>
       </div>
+      <div class="ctrl-row">
+        <span class="delay-label">
+          <label>Ritmo</label>
+          <select class="ritmo-select" id="ritmo${k}">${RITMO_OPTIONS.map(r => `<option value="${r.id}">${r.label}</option>`).join('')}</select>
+        </span>
+      </div>
     `;
     controls.appendChild(div);
     
@@ -438,6 +501,14 @@ function setup() {
     const retCheck = div.querySelector(`#ret${k}`);
     retCheck.onchange = (e) => {
       imitationState.retrograde[k] = e.target.checked;
+      appliedAnalysisIndex = null;
+      if (window._expState && window._expState.open) window.expRender();
+    };
+
+    const ritmoSel = div.querySelector(`#ritmo${k}`);
+    ritmoSel.value = getRitmo(k);
+    ritmoSel.onchange = (e) => {
+      imitationState.ritmo[k] = +e.target.value;
       appliedAnalysisIndex = null;
       if (window._expState && window._expState.open) window.expRender();
     };
@@ -998,7 +1069,13 @@ buildReferenceTable();
     mirrorViableMoves();
 
     const delays = [];
-    for (let i = 0; i < n; i++) delays.push(getDelay(i));
+    const ritmos = [];
+    const tracks = [];
+    for (let i = 0; i < n; i++) {
+      delays.push(getDelay(i));
+      ritmos.push(getRitmo(i));
+      tracks.push(buildTickTrack(voiceNotes[i], getDelay(i), getRitmo(i)));
+    }
 
     const sortedIndices = Array.from({ length: n }, (_, i) => i)
       .sort((a, b) => vals[b] - vals[a]);
@@ -1009,6 +1086,8 @@ buildReferenceTable();
       transposicao: vals[i],
       notas: voiceNotes[i],
       delay: delays[i],
+      ritmoIdx: ritmos[i],
+      track: tracks[i],
       isEditable: i === edIdx,
       clef: chooseClefForNotes(voiceNotes[i].length ? voiceNotes[i] : [placeholderNote(vals[i] - edVal)])
     }));
@@ -1027,12 +1106,16 @@ buildReferenceTable();
     const VF = Vex.Flow;
     const n = sortedData.length;
 
-    let maxTotal = 0;
+    // Extensão total (em ticks) ocupada pela voz mais longa, arredondada para
+    // cima até o próximo pulso inteiro — usada para dimensionar a pauta e
+    // para saber quantos pulsos de pausa preencher no final de cada voz.
+    let maxTicks = TICKS_PER_PULSE;
     sortedData.forEach(d => {
-      const total = d.delay + d.notas.length;
-      if (total > maxTotal) maxTotal = total;
+      if (d.track.totalTicks > maxTicks) maxTicks = d.track.totalTicks;
     });
-    if (maxTotal === 0) maxTotal = 1;
+    const maxTotalPulses = Math.ceil(maxTicks / TICKS_PER_PULSE);
+    const maxTicksRounded = maxTotalPulses * TICKS_PER_PULSE;
+    const PX_PER_TICK = FIXED_COL_WIDTH / TICKS_PER_PULSE;
 
     // --- Medição prévia do espaço real de clave + armadura ---
     // Antes de fixar a largura da pauta e a posição inicial das notas, mede-se
@@ -1058,7 +1141,7 @@ buildReferenceTable();
     const NOTE_START_PAD = 6;
     const noteStartXFinal = rawNoteStartX + NOTE_START_PAD;
 
-    const staveWidth = noteStartXFinal + maxTotal * FIXED_COL_WIDTH + 20;
+    const staveWidth = noteStartXFinal + maxTotalPulses * FIXED_COL_WIDTH + 20;
 
     const renderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
     renderer.resize(staveWidth + 60, totalHeight);
@@ -1069,6 +1152,7 @@ buildReferenceTable();
 
     const allVoices = [];
     const allStaves = [];
+    const allTuplets = [];
 
     sortedData.forEach((d, idx) => {
       const yPos = yPositions[idx];
@@ -1081,59 +1165,91 @@ buildReferenceTable();
       if (modo === 'tonal') stave.addKeySignature(expState.keySig);
       stave.setContext(ctx).draw();
 
+      const ritmoInfo = RITMO_OPTIONS[d.ritmoIdx || 0];
       const vfNotes = [];
-      const colNoteRefs = [];
+      const eventRefs = []; // paralelo a vfNotes: { startTick, durTicks } de cada figura (nota ou pausa)
       // Cada nota recebe sua pauta (stave) assim que criada — e não apenas no
       // voice.draw() final — porque getAbsoluteX() soma automaticamente a
       // largura de clave+armadura da pauta atribuída. Se isso só acontecesse
       // no draw(), o deslocamento calculado abaixo contaria essa largura em
       // dobro, empurrando as notas mais para a direita do que o necessário.
-      
+
+      // Pausa inicial (atraso), sempre em pulsos inteiros de semibreve.
       for (let c = 0; c < d.delay; c++) {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
         sn.setStave(stave);
         vfNotes.push(sn);
-        colNoteRefs.push(null);
+        eventRefs.push({ startTick: c * TICKS_PER_PULSE, durTicks: TICKS_PER_PULSE });
       }
-      
-      d.notas.forEach((nt) => {
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: 'w' });
+
+      // Notas reais da voz, na figura correspondente ao ritmo escolhido.
+      // Ritmos com quiáltera (diminuição ÷1.5 e ÷3) agrupam de 3 em 3 notas
+      // reais; um grupo incompleto no final ainda recebe o colchete "3".
+      let tupletBuffer = [];
+      const flushTuplet = () => {
+        if (ritmoInfo.tuplet && tupletBuffer.length) {
+          allTuplets.push(new VF.Tuplet(tupletBuffer.slice(), { num_notes: 3, notes_occupied: 2 }));
+        }
+        tupletBuffer = [];
+      };
+
+      d.notas.forEach((nt, i) => {
+        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: ritmoInfo.duration });
         sn.setStave(stave);
+        if (ritmoInfo.dotted) VF.Dot.buildAndAttach([sn], { all: true });
         const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
         if (sym) sn.addModifier(new VF.Accidental(sym), 0);
         vfNotes.push(sn);
-        colNoteRefs.push(sn);
+        eventRefs.push({ startTick: d.track.startOffset + i * d.track.durTicks, durTicks: d.track.durTicks });
+
+        if (ritmoInfo.tuplet) {
+          tupletBuffer.push(sn);
+          if (tupletBuffer.length === 3) flushTuplet();
+        }
       });
-      
-      const remaining = maxTotal - (d.delay + d.notas.length);
-      for (let c = 0; c < remaining; c++) {
+      flushTuplet();
+
+      // Pausa final até o comprimento total da peça (pulsos inteiros; o
+      // último trecho é arredondado quando a voz termina no meio de um pulso).
+      const remainingPulses = Math.round((maxTicksRounded - d.track.totalTicks) / TICKS_PER_PULSE);
+      for (let c = 0; c < remainingPulses; c++) {
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
         sn.setStave(stave);
         vfNotes.push(sn);
-        colNoteRefs.push(null);
+        eventRefs.push({ startTick: d.track.totalTicks + c * TICKS_PER_PULSE, durTicks: TICKS_PER_PULSE });
       }
 
-      const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 1 });
+      const voice = new VF.Voice({ num_beats: vfNotes.length || 1, beat_value: 1 });
       voice.setStrict(false);
       voice.addTickables(vfNotes);
-      
+
       allVoices.push(voice);
       allStaves.push(stave);
-      d._colNoteRefs = colNoteRefs;
       d._vfNotes = vfNotes;
+      d._eventRefs = eventRefs;
       d._stave = stave;
       d._yPos = yPos;
     });
 
-    new VF.Formatter().joinVoices(allVoices).format(allVoices, staveWidth - 4);
+    // Formata cada voz SEPARADAMENTE (não em conjunto): Formatter.joinVoices()
+    // exige que todas as vozes somem o mesmo total de ticks internos do
+    // VexFlow, o que deixa de ser verdade com aumentação/diminuição (vozes
+    // com ritmos diferentes têm durações totais diferentes). Isso é seguro
+    // porque a posição X final de cada nota é definida manualmente logo
+    // abaixo (via TickContext) — a formatação aqui só serve para o VexFlow
+    // calcular larguras internas de modificadores (acidentes, pontos, etc.).
+    allVoices.forEach(voice => {
+      new VF.Formatter().joinVoices([voice]).format([voice], staveWidth - 4);
+    });
 
     sortedData.forEach((d) => {
-      d._vfNotes.forEach((note, col) => {
-        const targetX = noteStartXFinal + col * FIXED_COL_WIDTH;
+      d._vfNotes.forEach((note, i) => {
+        const targetX = noteStartXFinal + d._eventRefs[i].startTick * PX_PER_TICK;
         // Reposiciona a base do TickContext (em vez de usar setXShift), pois
         // getAbsoluteX() — usado pelos acidentes via getModifierStartXY() —
         // não soma o x_shift. Mover o TickContext mantém a cabeça da nota e
-        // seus acidentes sempre juntos.
+        // seus acidentes (e a quiáltera, que também lê a posição da nota)
+        // sempre juntos.
         const tc = note.getTickContext();
         const delta = targetX - note.getAbsoluteX();
         tc.setX(tc.getX() + delta);
@@ -1144,6 +1260,12 @@ buildReferenceTable();
       voice.draw(ctx, allStaves[idx]);
     });
 
+    allTuplets.forEach(t => t.setContext(ctx).draw());
+
+    // Números de intervalo entre cada par de vozes: calculados nos ticks em
+    // que QUALQUER uma das duas vozes do par ataca uma nota nova — o que
+    // generaliza a antiga verificação "pulso a pulso" para vozes que agora
+    // podem se mover em velocidades diferentes (aumentação/diminuição).
     for (let i = 0; i < n; i++) {
       const rowA = sortedData[i];
       const gapTop = rowA._yPos + STAVE_HEIGHT;
@@ -1154,27 +1276,25 @@ buildReferenceTable();
         const fontSize = Math.max(6, 11 - layer * 1.2);
         const textY = gapTop + 17 + layer * 11;
 
-        for (let col = 0; col < maxTotal; col++) {
-          const noteA = rowA._colNoteRefs[col];
-          const noteB = rowB._colNoteRefs[col];
-          if (!noteA || !noteB) continue;
+        const attackTicks = Array.from(new Set([
+          ...rowA.track.onsetTicks(),
+          ...rowB.track.onsetTicks()
+        ])).sort((x, y) => x - y);
 
-          const idxA = col - rowA.delay;
-          const idxB = col - rowB.delay;
-          if (idxA < 0 || idxA >= rowA.notas.length || idxB < 0 || idxB >= rowB.notas.length) continue;
+        attackTicks.forEach(tick => {
+          const idxA = rowA.track.activeIndexAt(tick);
+          const idxB = rowB.track.activeIndexAt(tick);
+          if (idxA < 0 || idxB < 0) return;
 
           const lowestMidi = Math.min(...sortedData.map(v => {
-            const vi = col - v.delay;
-            return (vi >= 0 && vi < v.notas.length) ? noteToMidi(v.notas[vi]) : Infinity;
+            const vi = v.track.activeIndexAt(tick);
+            return vi >= 0 ? noteToMidi(v.notas[vi]) : Infinity;
           }));
 
           const info = intervalInfoFromNotes(rowA.notas[idxA], rowB.notas[idxB], lowestMidi);
-          const cls = info.cls;
-          const label = info.label;
-
-          const x = 8 + noteStartXFinal + col * FIXED_COL_WIDTH;
-          drawIntervalLabel(area, x, textY, label, cls, fontSize, escala);
-        }
+          const x = 8 + noteStartXFinal + tick * PX_PER_TICK;
+          drawIntervalLabel(area, x, textY, info.label, info.cls, fontSize, escala);
+        });
       }
     }
   }
@@ -1185,7 +1305,7 @@ buildReferenceTable();
   let currentAnalysisResults = [];
 
   // Estado da ordenação da tabela de análise
-  let analysisSortKey = null;   // 'transp' | 'delay' | 'inv' | 'ret' | null
+  let analysisSortKey = null;   // 'transp' | 'delay' | 'inv' | 'ret' | 'ritmo' | null
   let analysisSortDir = 1;      // 1 = asc, -1 = desc
 
   // Validação dinâmica: exige pelo menos 2 notas simultâneas (sobreposição) com alguma voz ativa
@@ -1229,18 +1349,24 @@ buildReferenceTable();
   // Modo ATONAL: proíbe qualquer paralelismo (movimento na mesma direção) que resulte em intervalo
   // de 0 ou 7 semitons (mod 12 — cobre também as composições 12, 19, 24...); para os demais
   // intervalos, limita a no máximo 3 ocorrências seguidas do mesmo intervalo em semitons.
-  function checkParallelismoPar(seqA, delayA, seqB, delayB) {
+  function checkParallelismoPar(seqA, delayA, ritmoA, seqB, delayB, ritmoB) {
+    const trackA = buildTickTrack(seqA, delayA, ritmoA);
+    const trackB = buildTickTrack(seqB, delayB, ritmoB);
+
+    // Só faz sentido falar em movimento paralelo/direto quando as duas vozes
+    // atacam nota nova exatamente no mesmo tick — com ritmos diferentes
+    // (aumentação/diminuição), isso já não acontece em todo pulso.
+    const attacksB = new Set(trackB.onsetTicks());
+    const commonTicks = trackA.onsetTicks().filter(t => attacksB.has(t)).sort((a, b) => a - b);
+
     let parallelCount = 1;
     let lastVal = null;
     let lastMidiA = null, lastMidiB = null;
 
-    const lenA = seqA.length, lenB = seqB.length;
-    const maxPulse = Math.max(delayA + lenA, delayB + lenB);
-
-    for (let p = 0; p < maxPulse; p++) {
-      const idxA = p - delayA;
-      const idxB = p - delayB;
-      if (idxA < 0 || idxA >= lenA || idxB < 0 || idxB >= lenB) continue;
+    for (const tick of commonTicks) {
+      const idxA = trackA.activeIndexAt(tick);
+      const idxB = trackB.activeIndexAt(tick);
+      if (idxA < 0 || idxB < 0) continue;
 
       const noteA = seqA[idxA], noteB = seqB[idxB];
       const midiA = noteToMidi(noteA), midiB = noteToMidi(noteB);
@@ -1332,7 +1458,9 @@ buildReferenceTable();
       for (const d of delaysRange) {
         for (const inv of bools) {
           for (const ret of bools) {
-            rawConfigs.push({ transpIdx: t, transpOpt: opts[t], delay: d, inv, ret });
+            for (const ritmoOpt of RITMO_OPTIONS) {
+              rawConfigs.push({ transpIdx: t, transpOpt: opts[t], delay: d, inv, ret, ritmoIdx: ritmoOpt.id });
+            }
           }
         }
       }
@@ -1344,7 +1472,7 @@ buildReferenceTable();
     const singleConfigs = [];
     for (const cfg of rawConfigs) {
       const seq = construirSequenciaVoz(leaderNotes, cfg);
-      if (checkParallelismoPar(leaderNotes, 0, seq, cfg.delay)) {
+      if (checkParallelismoPar(leaderNotes, 0, 0, seq, cfg.delay, cfg.ritmoIdx)) {
         singleConfigs.push({ cfg, seq });
       }
     }
@@ -1376,7 +1504,7 @@ buildReferenceTable();
           // com alguma voz de imitação já colocada (o par com o Líder já foi filtrado acima)
           let compativel = true;
           for (let k = 0; k < currentSeqs.length; k++) {
-            if (!checkParallelismoPar(currentSeqs[k].seq, currentSeqs[k].delay, seq, cfg.delay)) {
+            if (!checkParallelismoPar(currentSeqs[k].seq, currentSeqs[k].delay, currentSeqs[k].ritmoIdx, seq, cfg.delay, cfg.ritmoIdx)) {
               compativel = false;
               break;
             }
@@ -1387,7 +1515,7 @@ buildReferenceTable();
             await buscarCombos(
               depth + 1,
               [...currentCombo, cfg],
-              [...currentSeqs, { seq, delay: cfg.delay }],
+              [...currentSeqs, { seq, delay: cfg.delay, ritmoIdx: cfg.ritmoIdx }],
               [...vozesAtivasInfo, proximaVozInfo]
             );
           }
@@ -1423,6 +1551,8 @@ buildReferenceTable();
   function testarCombinacao(leaderNotes, combo, comboSeqs, nVoices) {
     const voicesNotes = [leaderNotes, ...comboSeqs.map(c => c.seq)];
     const voicesDelays = [0, ...comboSeqs.map(c => c.delay)];
+    const voicesRitmos = [0, ...comboSeqs.map(c => c.ritmoIdx)];
+    const voicesTracks = voicesNotes.map((seq, v) => buildTickTrack(seq, voicesDelays[v], voicesRitmos[v]));
 
     let comboValid = true;
     const pairsIntervals = {};
@@ -1430,29 +1560,30 @@ buildReferenceTable();
     // Checagem de DISSONÂNCIA sobre TODOS os pares (i, j) sem exceção. As regras de paralelismo
     // (proibição estrita de 1ª/5ª/8ª e limite de 3 seguidas de 3ª/4ª/6ª, ou a regra equivalente do
     // modo atonal) já foram validadas incrementalmente antes de chegar aqui — ver checkParallelismoPar.
+    //
+    // Os pontos verificados são os ticks em que QUALQUER uma das duas vozes do par ataca uma nota
+    // nova (não mais "pulso a pulso") — o que soa no par naquele instante é a nota ativa de cada
+    // uma, mesmo que uma delas esteja apenas sustentando uma nota mais longa (aumentação).
     for (let i = 0; i < nVoices && comboValid; i++) {
       for (let j = i + 1; j < nVoices && comboValid; j++) {
         const pairKey = `${i}-${j}`;
         pairsIntervals[pairKey] = [];
 
-        const lenA = voicesNotes[i].length;
-        const lenB = voicesNotes[j].length;
-        const delayA = voicesDelays[i];
-        const delayB = voicesDelays[j];
-        const maxPulse = Math.max(delayA + lenA, delayB + lenB);
+        const trackA = voicesTracks[i], trackB = voicesTracks[j];
+        const attackTicks = Array.from(new Set([...trackA.onsetTicks(), ...trackB.onsetTicks()])).sort((a, b) => a - b);
 
-        for (let p = 0; p < maxPulse; p++) {
-          const idxA = p - delayA;
-          const idxB = p - delayB;
+        for (const tick of attackTicks) {
+          const idxA = trackA.activeIndexAt(tick);
+          const idxB = trackB.activeIndexAt(tick);
 
-          if (idxA >= 0 && idxA < lenA && idxB >= 0 && idxB < lenB) {
+          if (idxA >= 0 && idxB >= 0) {
             const noteA = voicesNotes[i][idxA];
             const noteB = voicesNotes[j][idxB];
 
             let lowestMidi = Infinity;
             for (let v = 0; v < nVoices; v++) {
-              const idxV = p - voicesDelays[v];
-              if (idxV >= 0 && idxV < voicesNotes[v].length) {
+              const idxV = voicesTracks[v].activeIndexAt(tick);
+              if (idxV >= 0) {
                 lowestMidi = Math.min(lowestMidi, noteToMidi(voicesNotes[v][idxV]));
               }
             }
@@ -1507,6 +1638,10 @@ buildReferenceTable();
       const arrA = a.combo.map(c => c.ret ? 1 : 0);
       const arrB = b.combo.map(c => c.ret ? 1 : 0);
       cmp = cmpNumberArray(arrA, arrB);
+    } else if (key === 'ritmo') {
+      const arrA = a.combo.map(c => c.ritmoIdx);
+      const arrB = b.combo.map(c => c.ritmoIdx);
+      cmp = cmpNumberArray(arrA, arrB);
     }
     if (cmp === 0) {
       // Desempate estável pelo índice original
@@ -1554,6 +1689,7 @@ buildReferenceTable();
             ${thSortable('delay', 'Atraso', 'delay')}
             ${thSortable('inv', 'Inversão', 'inv')}
             ${thSortable('ret', 'Retrogradação', 'ret')}
+            ${thSortable('ritmo', 'Ritmo', 'ritmo')}
             <th class="col-ivs">Intervalos Resultantes Por Par</th>
             <th class="col-action">Ação</th>
           </tr>
@@ -1570,6 +1706,7 @@ buildReferenceTable();
       const delayText = r.combo.map((c, i) => `${c.delay}`).join(' / ');
       const invText = r.combo.map(c => c.inv ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
       const retText = r.combo.map(c => c.ret ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
+      const ritmoText = r.combo.map(c => RITMO_OPTIONS[c.ritmoIdx || 0].label).join('<br>');
 
       let ivLines = '';
       for (let i = 0; i < nVoices; i++) {
@@ -1594,6 +1731,7 @@ buildReferenceTable();
           <td class="col-delay">${delayText}</td>
           <td class="col-inv">${invText}</td>
           <td class="col-ret">${retText}</td>
+          <td class="col-ritmo">${ritmoText}</td>
           <td class="col-ivs">${ivLines}</td>
           <td class="col-action"><button class="${btnClass}" data-idx="${origIdx}">${btnLabel}</button></td>
         </tr>
@@ -1635,6 +1773,7 @@ buildReferenceTable();
       imitationState.delays[voiceIdx] = config.delay;
       imitationState.inversion[voiceIdx] = config.inv;
       imitationState.retrograde[voiceIdx] = config.ret;
+      imitationState.ritmo[voiceIdx] = config.ritmoIdx;
 
       const sel = document.getElementById('c' + voiceIdx);
       if (sel) sel.value = config.transpIdx;
@@ -1647,6 +1786,9 @@ buildReferenceTable();
       
       const retCheck = document.getElementById('ret' + voiceIdx);
       if (retCheck) retCheck.checked = config.ret;
+
+      const ritmoSel = document.getElementById('ritmo' + voiceIdx);
+      if (ritmoSel) ritmoSel.value = config.ritmoIdx;
     });
 
     calc();
@@ -1746,6 +1888,7 @@ buildReferenceTable();
             <th>Atraso</th>
             <th>Inversão</th>
             <th>Retrogradação</th>
+            <th class="al-left">Ritmo</th>
             <th class="al-left">Intervalos Resultantes Por Par</th>
           </tr>
         </thead>
@@ -1757,6 +1900,7 @@ buildReferenceTable();
       const delayText = r.combo.map(c => `${c.delay}`).join(' / ');
       const invText = r.combo.map(c => c.inv ? 'Sim' : 'Não').join('<br>');
       const retText = r.combo.map(c => c.ret ? 'Sim' : 'Não').join('<br>');
+      const ritmoText = r.combo.map(c => RITMO_OPTIONS[c.ritmoIdx || 0].label).join('<br>');
 
       let ivLines = '';
       for (let a = 0; a < nVoices; a++) {
@@ -1778,6 +1922,7 @@ buildReferenceTable();
           <td>${delayText}</td>
           <td>${invText}</td>
           <td>${retText}</td>
+          <td class="al-left">${ritmoText}</td>
           <td class="al-left">${ivLines}</td>
         </tr>
       `;
