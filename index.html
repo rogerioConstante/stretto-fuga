@@ -134,6 +134,11 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results th.col-inv, .exp-analysis-results td.col-inv{width:75px;text-align:center}
 .exp-analysis-results th.col-ret, .exp-analysis-results td.col-ret{width:75px;text-align:center}
 .exp-analysis-results th.col-ritmo, .exp-analysis-results td.col-ritmo{width:150px;text-align:left}
+.exp-form-filters{display:flex;align-items:center;flex-wrap:wrap;gap:5px 9px;margin-left:8px;font-size:11px;line-height:1.2}
+.exp-form-filters label{white-space:nowrap;cursor:pointer}
+.exp-form-filters input{vertical-align:middle;margin:0 2px 0 0}
+.exp-filter-label{font-weight:700;margin-left:4px}
+@media(max-width:1100px){.exp-form-filters{width:100%;margin-left:0;margin-top:4px}}
 .exp-analysis-results th.col-action, .exp-analysis-results td.col-action{width:150px;text-align:center}
 .exp-analysis-results th.col-ivs, .exp-analysis-results td.col-ivs{width:auto;text-align:left;white-space:normal}
 
@@ -266,6 +271,16 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <span class="title">Análise de imitações viáveis</span>
       <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Líder Atual</button>
       <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
+      <div class="exp-form-filters" title="Selecione as formas de imitação e os tipos de ritmo que serão analisados">
+        <span class="exp-filter-label">Formas:</span>
+        <label><input type="checkbox" id="expFormOriginal" checked> Original</label>
+        <label><input type="checkbox" id="expFormInversion" checked> Inversão</label>
+        <label><input type="checkbox" id="expFormRetrograde" checked> Retrogradação</label>
+        <span class="exp-filter-label">Ritmo:</span>
+        <label><input type="checkbox" id="expRitmoNormal" checked> Normal</label>
+        <label><input type="checkbox" id="expRitmoAug" checked> Aumentação</label>
+        <label><input type="checkbox" id="expRitmoDim" checked> Diminuição</label>
+      </div>
       <button class="exp-pdf-btn" id="expPdfBtn" type="button" disabled>Gerar PDF</button>
     </div>
     <div id="expAnalysisResults" class="exp-analysis-results">
@@ -1138,7 +1153,7 @@ buildReferenceTable();
     });
     area.innerHTML = '';
 
-    const NOTE_START_PAD = 6;
+    const NOTE_START_PAD = 14;
     const noteStartXFinal = rawNoteStartX + NOTE_START_PAD;
 
     const staveWidth = noteStartXFinal + maxTotalPulses * FIXED_COL_WIDTH + 20;
@@ -1292,7 +1307,7 @@ buildReferenceTable();
           }));
 
           const info = intervalInfoFromNotes(rowA.notas[idxA], rowB.notas[idxB], lowestMidi);
-          const x = noteStartXFinal + tick * PX_PER_TICK;
+          const x = noteStartXFinal + tick * PX_PER_TICK + 3;
           drawIntervalLabel(area, x, textY, info.label, info.cls, fontSize, escala);
         });
       }
@@ -1469,155 +1484,80 @@ buildReferenceTable();
     return (bits[index >>> 5] & (1 << (index & 31))) !== 0;
   }
 
+  // ---------------------------------------------------------------------
+  // ANÁLISE EM WEB WORKER
+  // O Worker recebe apenas dados serializáveis e executa toda a parte pesada
+  // (preparação, matriz de compatibilidade em bitsets, busca e teste final).
+  // A thread principal fica livre para a interface.
+  // ---------------------------------------------------------------------
+  function criarWorkerAnalise() {
+    const workerSource = `
+      const LETTERS = ['C','D','E','F','G','A','B'];
+      const PITCH_CLASS = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+      const TICKS_PER_PULSE = 6;
+      const RITMO_OPTIONS = [
+        {id:0,mult:1}, {id:1,mult:1.5}, {id:2,mult:2}, {id:3,mult:3},
+        {id:4,mult:2/3}, {id:5,mult:.5}, {id:6,mult:1/3}
+      ];
+      const SHARP_ORDER=['F','C','G','D','A','E','B'];
+      const FLAT_ORDER=['B','E','A','D','G','C','F'];
+      const KEY_INFO={C:{n:0,type:'sharp'},G:{n:1,type:'sharp'},D:{n:2,type:'sharp'},A:{n:3,type:'sharp'},E:{n:4,type:'sharp'},B:{n:5,type:'sharp'},'F#':{n:6,type:'sharp'},'C#':{n:7,type:'sharp'},F:{n:1,type:'flat'},Bb:{n:2,type:'flat'},Eb:{n:3,type:'flat'},Ab:{n:4,type:'flat'},Db:{n:5,type:'flat'},Gb:{n:6,type:'flat'},Cb:{n:7,type:'flat'}};
+      function keyDefaultAcc(letter,key){const info=KEY_INFO[key]||KEY_INFO.C;const order=info.type==='sharp'?SHARP_ORDER:FLAT_ORDER;const i=order.indexOf(letter);return i>=0&&i<info.n?(info.type==='sharp'?1:-1):0;}
+      function noteToMidi(n){return PITCH_CLASS[n.letter]+n.acc+12*(n.octave+1);}
+      function diatonicIndex(l,o){return o*7+LETTERS.indexOf(l);}
+      function transposeDiatonic(note,key,d){const ref=note.keyAtEntry||key,idx=LETTERS.indexOf(note.letter),raw=idx+d,nl=LETTERS[((raw%7)+7)%7],no=note.octave+Math.floor(raw/7),dev=note.acc-keyDefaultAcc(note.letter,ref),na=keyDefaultAcc(nl,ref)+dev;return {letter:nl,acc:na,octave:no,keyAtEntry:ref};}
+      const CHROMA_SPELL=[['C',0],['C',1],['D',0],['D',1],['E',0],['F',0],['F',1],['G',0],['G',1],['A',0],['A',1],['B',0]];
+      function transposeChromatic(note,d){const midi=noteToMidi(note)+d,pc=((midi%12)+12)%12,o=Math.floor(midi/12)-1,[l,a]=CHROMA_SPELL[pc];return {letter:l,acc:a,octave:o};}
+      function invertDiatonic(note,first,key){const ref=note.keyAtEntry||key,target=2*diatonicIndex(first.letter,first.octave)-diatonicIndex(note.letter,note.octave),nl=LETTERS[((target%7)+7)%7],no=Math.floor(target/7),dev=note.acc-keyDefaultAcc(note.letter,ref),na=keyDefaultAcc(nl,ref)+dev;return {letter:nl,acc:na,octave:no,keyAtEntry:ref};}
+      function invertChromatic(note,first){const midi=2*noteToMidi(first)-noteToMidi(note),pc=((midi%12)+12)%12,o=Math.floor(midi/12)-1,[l,a]=CHROMA_SPELL[pc];return {letter:l,acc:a,octave:o};}
+      function construir(leader,cfg,modo,key){let seq=leader.slice();if(cfg.inv&&seq.length){const f=seq[0];seq=seq.map(n=>modo==='tonal'?invertDiatonic(n,f,key):invertChromatic(n,f));}if(cfg.ret)seq=seq.slice().reverse();seq=modo==='tonal'?seq.map(n=>transposeDiatonic(n,key,cfg.transpOpt[1])):seq.map(n=>transposeChromatic(n,cfg.transpOpt[1]));return seq;}
+      function prepare(seq,cfg){const midi=seq.map(noteToMidi),dur=TICKS_PER_PULSE*RITMO_OPTIONS[cfg.ritmoIdx||0].mult,start=cfg.delay*TICKS_PER_PULSE,onsets=new Array(seq.length);for(let i=0;i<seq.length;i++)onsets[i]=start+i*dur;const onsetSet=new Set(onsets);return {cfg,seq,midi,track:{seq,durTicks:dur,startOffset:start,totalTicks:start+seq.length*dur,onsets,onsetSet,activeIndexAt(t){if(t<this.startOffset)return -1;const idx=Math.floor((t-this.startOffset)/this.durTicks);return idx>=0&&idx<this.seq.length?idx:-1;}}};}
+      function intervalSimple(a,b){const da=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter)));return ((da)%7)+1;}
+      function check(a,b,modo){const ta=a.track,tb=b.track,source=ta.onsets.length<=tb.onsets.length?ta:tb,other=source===ta?tb:ta;let count=1,last=null,lastA=null,lastB=null;for(const tick of source.onsets){if(!other.onsetSet.has(tick))continue;const ia=ta.activeIndexAt(tick),ib=tb.activeIndexAt(tick);if(ia<0||ib<0)continue;const ma=a.midi[ia],mb=b.midi[ib];if(lastA!==null){const da=ma-lastA,db=mb-lastB,same=da!==0&&db!==0&&Math.sign(da)===Math.sign(db);if(modo==='tonal'){const sn=intervalSimple(a.seq[ia],b.seq[ib]),strict=da!==0&&da===db;if(strict&&(sn===1||sn===5))return false;if(same&&(sn===3||sn===4||sn===6)){if(sn===last)count++;else count=1;if(count>3)return false;last=sn;}else{count=1;last=null;}}else{const mod=Math.abs(ma-mb)%12;if(same){if(mod===0||mod===7)return false;if(mod===last)count++;else count=1;if(count>3)return false;last=mod;}else{count=1;last=null;}}}lastA=ma;lastB=mb;}return true;}
+      function bitHas(bits,i){return (bits[i>>>5]&(1<<(i&31)))!==0;}
+      function bitAdd(bits,i){bits[i>>>5]|=1<<(i&31);}
+      function overlap(delay,len,voices){for(const v of voices){const a=Math.max(delay,v.delay),b=Math.min(delay+len,v.delay+v.len);if(b-a>=2)return true;}return false;}
+      function validClass(cls){return cls!=='dissonant'&&cls!=='undesired';}
+      function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=((d%12)+12)%12,ic=Math.min(m,12-m);return {label:String(ic),cls:icDesired[ic]?'desired':'undesired',val:ic,simpleNum:ic};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
+      function finalTest(leader,combo,modo){const voices=[leader,...combo],all=new Set();for(const v of voices)for(const t of v.track.onsets)all.add(t);const ticks=Array.from(all).sort((a,b)=>a-b),lowest=new Map();for(const t of ticks){let low=Infinity;for(const v of voices){const i=v.track.activeIndexAt(t);if(i>=0&&v.midi[i]<low)low=v.midi[i];}lowest.set(t,low);}const pairs={};for(let i=0;i<voices.length;i++)for(let j=i+1;j<voices.length;j++){const a=voices[i],b=voices[j],src=a.track.onsets.length<=b.track.onsets.length?a.track:b.track,oth=src===a.track?b.track:a.track,arr=[];for(const t of src.onsets){if(!oth.onsetSet.has(t))continue;const ia=a.track.activeIndexAt(t),ib=b.track.activeIndexAt(t);if(ia<0||ib<0)continue;const info=intervalInfo(a.seq[ia],b.seq[ib],lowest.get(t),modo,icDesired);arr.push(info);if(!validClass(info.cls))return null;}pairs[i+'-'+j]=arr;}return {combo:combo.map(c=>c.cfg),pairsIntervals:pairs};}
+      self.onmessage=async(e)=>{const d=e.data,leader=d.leaderNotes,modo=d.modo,key=d.keySig,opts=d.opts,n=d.nVoices,icDesired=d.icDesired||{};try{const delays=d.delays,forms=d.forms,ritmos=d.ritmos;const configs=[];const leaderP=prepare(leader,{transpIdx:-1,transpOpt:['Líder',0],delay:0,inv:false,ret:false,ritmoIdx:0});for(let t=0;t<opts.length;t++)for(const delay of delays)for(const form of forms)for(const rid of ritmos){const cfg={transpIdx:t,transpOpt:opts[t],delay,inv:form.inv,ret:form.ret,ritmoIdx:rid},seq=construir(leader,cfg,modo,key),pr=prepare(seq,cfg);if(check(leaderP,pr,modo)){pr.index=configs.length;configs.push(pr);}}self.postMessage({type:'phase',phase:'matrix',total:configs.length});const m=configs.length,words=Math.ceil(m/32),compat=new Array(m);for(let i=0;i<m;i++)compat[i]=new Uint32Array(words);let last=performance.now();for(let i=0;i<m;i++){for(let j=i;j<m;j++)if(check(configs[i],configs[j],modo)){bitAdd(compat[i],j);if(i!==j)bitAdd(compat[j],i);}if(performance.now()-last>80){self.postMessage({type:'progress',phase:'matrix',value:i+1,total:m});await new Promise(r=>setTimeout(r,0));last=performance.now();}}self.postMessage({type:'progress',phase:'matrix',value:m,total:m});const results=[];let nodes=0,lastP=performance.now(),lastYield=performance.now();const baseInfo=[{delay:0,len:leader.length}];function intersect(a,b){for(let w=0;w<words;w++)a[w]&=b[w];}async function search(depth,idxs,chosen,cands,infos){if(depth===n-1){const r=finalTest(leaderP,chosen,modo);if(r)results.push(r);return;}const next=cands.slice();let i=0;while(i<m){const word=next[i>>>5];let bits=word&(~0<<(i&31));if(!bits){i=(i+32)&~31;continue;}const bit=bits&-bits;const idx=(i&~31)+31-Math.clz32(bit);i=idx+1;const c=configs[idx];if(!overlap(c.cfg.delay,leader.length,infos))continue;let ok=true;for(const sel of idxs)if(!bitHas(compat[sel],idx)){ok=false;break;}if(!ok)continue;nodes++;idxs.push(idx);chosen.push(c);infos.push({delay:c.cfg.delay,len:leader.length});const child=next.slice();intersect(child,compat[idx]);await search(depth+1,idxs,chosen,child,infos);infos.pop();chosen.pop();idxs.pop();const now=performance.now();if(now-lastP>100){self.postMessage({type:'progress',phase:'search',value:nodes,total:m,nodes});lastP=now;}if(now-lastYield>12){await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}}}
+      const initial=new Uint32Array(words);for(let i=0;i<m;i++)bitAdd(initial,i);await search(0,[],[],initial,baseInfo);self.postMessage({type:'done',results,configs:m,nodes});}catch(err){self.postMessage({type:'error',message:err&&err.stack?err.stack:String(err)});}};
+    `;
+    return new Worker(URL.createObjectURL(new Blob([workerSource], {type:'application/javascript'})));
+  }
+
+  let activeAnalysisWorker = null;
+
   async function analisarImitacoesViaveis() {
     appliedAnalysisIndex = null;
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
-      document.getElementById('expAnalysisResults').innerHTML =
-        '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
-      document.getElementById('expAnalysisNum').textContent = '0';
-      currentAnalysisResults = [];
-      document.getElementById('expPdfBtn').disabled = true;
+      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
+      document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults=[]; document.getElementById('expPdfBtn').disabled=true; return;
+    }
+    const forms=[];
+    if(document.getElementById('expFormOriginal').checked) forms.push({inv:false,ret:false});
+    if(document.getElementById('expFormInversion').checked) forms.push({inv:true,ret:false});
+    if(document.getElementById('expFormRetrograde').checked) forms.push({inv:false,ret:true});
+    const ritmos=[];
+    if(document.getElementById('expRitmoNormal').checked) ritmos.push(0);
+    if(document.getElementById('expRitmoAug').checked) ritmos.push(1,2,3);
+    if(document.getElementById('expRitmoDim').checked) ritmos.push(4,5,6);
+    if(!forms.length||!ritmos.length){
+      document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Selecione pelo menos uma forma de imitação e um tipo de ritmo.</div>';
       return;
     }
-
-    const analyzeBtn = document.getElementById('expAnalyzeBtn');
-    analyzeBtn.disabled = true;
-    analyzeBtn.style.opacity = '0.5';
-
-    const nVoices = +voices.value;
-    const nImitations = nVoices - 1;
-    const opts = currentOptions();
-    const maxPossibleDelay = Math.max(1, leaderNotes.length - 2);
-    const delaysRange = [];
-    for (let d = 0; d <= maxPossibleDelay; d++) delaysRange.push(d);
-    const bools = [false, true];
-
-    // ---------------------------------------------------------------
-    // 1 + 2. Geração e preparação única das configurações.
-    // ---------------------------------------------------------------
-    const singleConfigs = [];
-    const leaderPrepared = prepararConfigAnalise(leaderNotes, {
-      transpIdx: -1, transpOpt: ['Líder', 0], delay: 0, inv: false, ret: false, ritmoIdx: 0
-    });
-
-    for (let t = 0; t < opts.length; t++) {
-      for (const d of delaysRange) {
-        for (const inv of bools) {
-          for (const ret of bools) {
-            for (const ritmoOpt of RITMO_OPTIONS) {
-              const cfg = { transpIdx: t, transpOpt: opts[t], delay: d, inv, ret, ritmoIdx: ritmoOpt.id };
-              const seq = construirSequenciaVoz(leaderNotes, cfg);
-              const prepared = prepararConfigAnalise(seq, cfg);
-
-              // Pré-filtro contra o Líder. O resultado é armazenado para não
-              // repetir esta análise durante a busca.
-              if (checkParallelismoPreparado(leaderPrepared, prepared)) {
-                prepared.index = singleConfigs.length;
-                singleConfigs.push(prepared);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // ---------------------------------------------------------------
-    // 3. Matriz de compatibilidade em bitsets.
-    // Um bit por configuração: ~1/8 do espaço de uma matriz booleana.
-    // ---------------------------------------------------------------
-    const m = singleConfigs.length;
-    const words = Math.ceil(m / 32);
-    const compatibility = Array.from({ length: m }, () => new Uint32Array(words));
-
-    let pairChecks = 0;
-    let lastProgressTime = performance.now();
-
-    for (let i = 0; i < m; i++) {
-      for (let j = i; j < m; j++) {
-        if (checkParallelismoPreparado(singleConfigs[i], singleConfigs[j])) {
-          bitSetAdd(compatibility[i], j);
-          if (i !== j) bitSetAdd(compatibility[j], i);
-        }
-        pairChecks++;
-      }
-
-      const now = performance.now();
-      if (now - lastProgressTime >= 50) {
-        const pct = ((i + 1) / m * 100).toFixed(1);
-        document.getElementById('expAnalysisNum').textContent =
-          `Preparando compatibilidades... ${pct}%`;
-        await new Promise(resolve => setTimeout(resolve, 0));
-        lastProgressTime = performance.now();
-      }
-    }
-
-    // ---------------------------------------------------------------
-    // 4. Busca incremental. Cada novo candidato é apenas uma consulta
-    // à matriz de compatibilidade, sem reconstruir tracks.
-    // ---------------------------------------------------------------
-    const validResults = [];
-    let nodesVisited = 0;
-    let lastYield = performance.now();
-    let lastProgress = performance.now();
-
-    const vozesIniciais = [{ delay: 0, len: leaderNotes.length }];
-
-    async function buscarCombos(depth, currentIndexes, currentPrepared, vozesAtivasInfo) {
-      if (depth === nImitations) {
-        const result = testarCombinacaoPreparada(leaderPrepared, currentPrepared, nVoices);
-        if (result.valid) validResults.push(result.data);
-        return;
-      }
-
-      for (let i = 0; i < m; i++) {
-        const candidate = singleConfigs[i];
-        if (!temSobreposicaoValida(candidate.cfg.delay, leaderNotes.length, vozesAtivasInfo)) continue;
-
-        let compativel = true;
-        for (let k = 0; k < currentIndexes.length; k++) {
-          if (!bitSetHas(compatibility[currentIndexes[k]], i)) {
-            compativel = false;
-            break;
-          }
-        }
-        if (!compativel) continue;
-
-        nodesVisited++;
-        const proximaVozInfo = { delay: candidate.cfg.delay, len: leaderNotes.length };
-        currentIndexes.push(i);
-        currentPrepared.push(candidate);
-        vozesAtivasInfo.push(proximaVozInfo);
-
-        await buscarCombos(depth + 1, currentIndexes, currentPrepared, vozesAtivasInfo);
-
-        vozesAtivasInfo.pop();
-        currentPrepared.pop();
-        currentIndexes.pop();
-
-        const now = performance.now();
-        if (now - lastProgress >= 80) {
-          document.getElementById('expAnalysisNum').textContent =
-            `Buscando combinações... ${nodesVisited.toLocaleString('pt-BR')} estados`;
-          lastProgress = now;
-        }
-        if (now - lastYield >= 12) {
-          await new Promise(resolve => setTimeout(resolve, 0));
-          lastYield = performance.now();
-        }
-      }
-    }
-
-    await buscarCombos(0, [], [], vozesIniciais);
-
-    analyzeBtn.disabled = false;
-    analyzeBtn.style.opacity = '1';
-
-    currentAnalysisResults = validResults;
-    currentAnalysisPage = 0;
-    document.getElementById('expAnalysisNum').textContent = validResults.length;
-    document.getElementById('expPdfBtn').disabled = validResults.length === 0;
-    renderAnalysisResults(validResults, nVoices);
+    const analyzeBtn=document.getElementById('expAnalyzeBtn'); analyzeBtn.disabled=true; analyzeBtn.style.opacity='0.5';
+    if(activeAnalysisWorker){activeAnalysisWorker.terminate();activeAnalysisWorker=null;}
+    const nVoices=+voices.value, opts=currentOptions(), maxDelay=Math.max(1,leaderNotes.length-2), delays=Array.from({length:maxDelay+1},(_,i)=>i);
+    const worker=criarWorkerAnalise(); activeAnalysisWorker=worker;
+    worker.onmessage=(ev)=>{const d=ev.data;
+      if(d.type==='phase') document.getElementById('expAnalysisNum').textContent='Preparando compatibilidades...';
+      else if(d.type==='progress'){if(d.phase==='matrix') document.getElementById('expAnalysisNum').textContent=`Compatibilidades... ${d.value.toLocaleString('pt-BR')}/${d.total.toLocaleString('pt-BR')}`; else document.getElementById('expAnalysisNum').textContent=`Buscando combinações... ${d.nodes.toLocaleString('pt-BR')} estados`; }
+      else if(d.type==='error'){console.error(d.message);document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Erro durante a análise. Veja o console para detalhes.</div>';analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
+      else if(d.type==='done'){currentAnalysisResults=d.results;currentAnalysisPage=0;document.getElementById('expAnalysisNum').textContent=d.results.length;document.getElementById('expPdfBtn').disabled=d.results.length===0;renderAnalysisResults(d.results,nVoices);analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
+    };
+    worker.postMessage({leaderNotes,modo,keySig:expState.keySig,opts,nVoices,delays,forms,ritmos,icDesired});
   }
 
   // Pré-calcula a informação de menor voz nos ticks relevantes e só então
