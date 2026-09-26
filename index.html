@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Stretto Fuga</title>
 <script src="vexflow-min.js"></script>
+<script src="Tone.js"></script>
 <style>
 :root{--bg:#090c12;--panel:#111722;--panel2:#171e2a;--line:#2a3442;--text:#edf3fa;--muted:#93a0b1;--cyan:#62e9ff;--blue:#35a9ff;--green:#4dff9a;--red:#ff4f72}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% 0,#152536 0,#090c12 38%);color:var(--text);font:14px "Segoe UI",Arial,sans-serif}
@@ -232,6 +233,13 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
     </div>
     <button class="exp-actionbtn" id="expClearBtn" type="button">Limpar</button>
     <button class="exp-kbtoggle" id="expToggleKbBtn" type="button">🎹 Mostrar teclado</button>
+    <div class="exp-tgroup">
+      <label for="expBpm">BPM</label>
+      <input type="number" id="expBpm" min="20" max="300" value="100" style="width:60px">
+    </div>
+    <button class="exp-actionbtn" id="expPlayBtn" type="button">▶ Reproduzir</button>
+    <button class="exp-actionbtn" id="expStopBtn" type="button">⏹ Parar</button>
+    <span id="expAudioStatus" class="note" style="margin:0"></span>
   </div>
 
   <div class="exp-viable-title">Movimentos melódicos viáveis para o Líder</div>
@@ -875,6 +883,122 @@ buildReferenceTable();
   document.getElementById('expClearBtn').onclick = () => { expState.notes = []; appliedAnalysisIndex = null; expRender(); };
 
   // --- Entrada de notas ---
+  // =====================================================================
+  // ÁUDIO (Tone.js + Sampler de piano real) — mesma técnica usada no
+  // "Tratamentos de Dissonância": só o Tone.Sampler (sem sintetizadores),
+  // carregando as mesmas 20 amostras (audios/C2v8.mp3 etc.). Requer que
+  // Tone.js e a pasta audios/ estejam ao lado deste HTML e que o arquivo
+  // seja servido por HTTP (não aberto via duplo-clique/file://), pelo
+  // mesmo motivo de CORS já conhecido daquele programa.
+  // =====================================================================
+  let toneReady = false;
+  let samplerPiano = null;
+  const isFileProtocol = (location.protocol === 'file:');
+
+  function setAudioStatus(msg, isWarn) {
+    const el = document.getElementById('expAudioStatus');
+    if (el) { el.textContent = msg; el.style.color = isWarn ? 'var(--red)' : 'var(--muted)'; }
+  }
+
+  async function initAudio() {
+    if (toneReady || !window.Tone) return;
+    try {
+      await Tone.start();
+      if (isFileProtocol) {
+        setAudioStatus('🎹 Piano Real requer servidor HTTP local (não abra o arquivo por duplo-clique).', true);
+        console.warn(
+          '🎹 Piano Real desativado: página aberta como arquivo local (file://).\n' +
+          'Sirva a pasta por HTTP, por exemplo:\n  python3 -m http.server 8000\n' +
+          'e abra http://localhost:8000/ (em vez do .html direto).'
+        );
+        toneReady = true; // motor "pronto", mas sem sampler funcional
+        return;
+      }
+      const amostras = {
+        'C2': 'audios/C2v8.mp3', 'D#2': 'audios/D#2v8.mp3', 'F#2': 'audios/F#2v8.mp3', 'A2': 'audios/A2v8.mp3',
+        'C3': 'audios/C3v8.mp3', 'D#3': 'audios/D#3v8.mp3', 'F#3': 'audios/F#3v8.mp3', 'A3': 'audios/A3v8.mp3',
+        'C4': 'audios/C4v8.mp3', 'D#4': 'audios/D#4v8.mp3', 'F#4': 'audios/F#4v8.mp3', 'A4': 'audios/A4v8.mp3',
+        'C5': 'audios/C5v8.mp3', 'D#5': 'audios/D#5v8.mp3', 'F#5': 'audios/F#5v8.mp3', 'A5': 'audios/A5v8.mp3',
+        'C6': 'audios/C6v8.mp3', 'D#6': 'audios/D#6v8.mp3', 'F#6': 'audios/F#6v8.mp3', 'A6': 'audios/A6v8.mp3',
+      };
+      setAudioStatus('🎧 Carregando amostras de piano…');
+      samplerPiano = new Tone.Sampler({
+        urls: amostras,
+        onload: () => setAudioStatus('🎹 Piano carregado.'),
+        onerror: (e) => { console.warn('Sampler: erro ao carregar amostra', e); setAudioStatus('⚠️ Erro ao carregar amostras (veja o console).', true); }
+      }).toDestination();
+      toneReady = true;
+    } catch (e) {
+      console.error('Erro ao iniciar Tone.js:', e);
+      setAudioStatus('⚠️ Erro no áudio.', true);
+    }
+  }
+
+  async function activateAudio() {
+    if (!window.Tone) { setAudioStatus('⚠️ Tone.js não encontrado (verifique se Tone.js está ao lado deste arquivo).', true); return; }
+    if (Tone.context && Tone.context.state !== 'running') {
+      try { await Tone.start(); } catch (e) { console.warn('Erro ao iniciar Tone:', e); }
+    }
+    if (!toneReady) await initAudio();
+  }
+
+  // Prévia em tempo real: a cada nota inserida no Líder (ou no clique de
+  // "Reproduzir"), recalcula do zero a sequência atual de cada voz
+  // (mesma função usada para desenhar a partitura — por isso funciona
+  // corretamente mesmo com retrogradação, que é reconstruída por inteiro
+  // a cada nota) e agenda a reprodução de toda nota, em qualquer voz, cujo
+  // tick esteja a partir do ponto de inserção em diante. Agendamentos
+  // pendentes de uma chamada anterior são cancelados antes, para não
+  // acumular prévias de teclas digitadas em sequência rápida.
+  let pendingPreview = [];
+  function clearPendingPreview() {
+    pendingPreview.forEach(id => clearTimeout(id));
+    pendingPreview = [];
+    if (samplerPiano) samplerPiano.releaseAll();
+  }
+  function secondsPerTick() {
+    const bpm = Math.max(1, +document.getElementById('expBpm').value || 100);
+    return 60 / bpm / TICKS_PER_PULSE;
+  }
+  function schedulePreviewNote(nt, onsetTick, insertTick, durTicks) {
+    const delaySec = Math.max(0, onsetTick - insertTick) * secondsPerTick();
+    const id = setTimeout(() => {
+      if (!samplerPiano || !samplerPiano.loaded) return;
+      const noteName = Tone.Frequency(noteToMidi(nt), 'midi').toNote();
+      samplerPiano.triggerAttackRelease(noteName, durTicks * secondsPerTick() * 0.95, Tone.now(), 0.75);
+    }, delaySec * 1000);
+    pendingPreview.push(id);
+  }
+  async function playFromTick(insertTick) {
+    if (!expState.notes.length) return;
+    await activateAudio();
+    if (!samplerPiano) return; // file:// ou erro de carregamento — sem fallback sintetizado, por pedido do usuário
+    clearPendingPreview();
+
+    expState.notes.forEach((nt, i) => {
+      const onset = i * TICKS_PER_PULSE;
+      if (onset >= insertTick) schedulePreviewNote(nt, onset, insertTick, TICKS_PER_PULSE);
+    });
+
+    const n = +voices.value;
+    for (let k = 1; k < n; k++) {
+      const cfg = {
+        transpOpt: currentOptions()[getTransposition(k)],
+        inv: getInversion(k), ret: getRetrograde(k),
+        ritmoIdx: getRitmo(k), delay: getDelay(k)
+      };
+      const seq = construirSequenciaVoz(expState.notes, cfg);
+      const track = buildTickTrack(seq, cfg.delay, cfg.ritmoIdx);
+      const onsets = track.onsetTicks();
+      seq.forEach((nt, i) => {
+        if (onsets[i] >= insertTick) schedulePreviewNote(nt, onsets[i], insertTick, track.durTicks);
+      });
+    }
+  }
+
+  document.getElementById('expPlayBtn').onclick = () => playFromTick(0);
+  document.getElementById('expStopBtn').onclick = () => clearPendingPreview();
+
   function addNote(letter, octaveOverride) {
     const octave = octaveOverride !== undefined ? octaveOverride : expState.octave;
     const acc = expState.pendingAcc !== null ? expState.pendingAcc : (modo === 'tonal' ? keyDefaultAcc(letter, expState.keySig) : 0);
@@ -883,6 +1007,7 @@ buildReferenceTable();
     appliedAnalysisIndex = null;
     document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('active'));
     expRender();
+    playFromTick((expState.notes.length - 1) * TICKS_PER_PULSE);
   }
   const LETTER_KEYS = { c: 'C', d: 'D', e: 'E', f: 'F', g: 'G', a: 'A', b: 'B' };
   window.addEventListener('keydown', (e) => {
@@ -895,8 +1020,9 @@ buildReferenceTable();
     if (k === '0') { setPendingAcc(0); return; }
     if (k === 'ArrowUp') { setOctave(expState.octave + 1); e.preventDefault(); return; }
     if (k === 'ArrowDown') { setOctave(expState.octave - 1); e.preventDefault(); return; }
-    if (k === 'Backspace') { expState.notes.pop(); appliedAnalysisIndex = null; expRender(); e.preventDefault(); return; }
+    if (k === 'Backspace') { expState.notes.pop(); appliedAnalysisIndex = null; expRender(); clearPendingPreview(); e.preventDefault(); return; }
   });
+
 
   // --- Dedução da voz editável ---
   function computeVoiceValues() {
