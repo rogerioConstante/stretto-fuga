@@ -138,6 +138,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-form-filters label{white-space:nowrap;cursor:pointer}
 .exp-form-filters input{vertical-align:middle;margin:0 2px 0 0}
 .exp-filter-label{font-weight:700;margin-left:4px}
+.exp-ritmo-filters{display:contents}
 @media(max-width:1100px){.exp-form-filters{width:100%;margin-left:0;margin-top:4px}}
 .exp-analysis-results th.col-action, .exp-analysis-results td.col-action{width:150px;text-align:center}
 .exp-analysis-results th.col-ivs, .exp-analysis-results td.col-ivs{width:auto;text-align:left;white-space:normal}
@@ -153,28 +154,9 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis .pair-line{display:block;margin-bottom:3px;white-space:nowrap}
 .exp-analysis .pair-label{display:inline-block;width:70px;font-size:10px;color:var(--cyan);font-weight:700}
 
-.exp-pdf-btn{padding:8px 18px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
-.exp-pdf-btn:hover{border-color:var(--cyan)}
-.exp-pdf-btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* --- Área de impressão (PDF da Análise de Imitações) --- */
-#printArea{display:none}
-.print-title{font-size:16px;font-weight:700;margin:0 0 4px;color:#000}
-.print-subtitle{font-size:11px;color:#444;margin:0 0 14px}
-.print-score{background:#fff;margin-bottom:18px}
-.print-score svg text{fill:#000!important}
-.print-score svg path{stroke:#000!important}
-.print-table{width:100%;border-collapse:collapse;font-size:11px;color:#000}
-.print-table th,.print-table td{border:1px solid #999;padding:5px 7px;text-align:center;vertical-align:top}
-.print-table thead th{background:#eee}
-.print-table td.al-left,.print-table th.al-left{text-align:left}
-@media print{
-  header,.app{display:none!important}
-  #printArea{display:block!important}
-  .pair-line{display:block;margin-bottom:2px;white-space:nowrap}
-  .pair-label{display:inline-block;width:72px;font-size:10px;font-weight:700}
-  @page{margin:16mm}
-}
+.exp-preset-btn{padding:8px 18px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.exp-preset-btn:hover{border-color:var(--cyan)}
+.exp-preset-btn:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -204,9 +186,9 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 <div id="controls"></div>
 
 <div id="icPanel" class="field" style="display:none">
-  <label>Classes de intervalo (clique para alternar)</label>
+  <label>Intervalos em semitons (clique para alternar)</label>
   <div class="ic-grid" id="icGrid"></div>
-  <div class="note">Verde = desejada · Vermelho = indesejada. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
+  <div class="note">Verde = desejado · Vermelho = indesejado. Intervalos complementares (ex.: 5 e 7, 4 e 8) são marcados separadamente. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
 </div>
 
 <div class="note">A 1ª Imitação entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
@@ -228,6 +210,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 <div id="tab-configurador" class="tab-panel">
   <div class="title">Movimentos melódicos viáveis para o Líder</div>
   <section class="viable"><div id="moves" class="moves"></div></section>
+  <div class="note" id="movesWarn" style="display:none;color:var(--red)">⚠ Uma ou mais imitações usam retrogradação e/ou ritmo diferente de Normal. Esta tabela assume vozes sincronizadas (sem linha do tempo real) e pode não refletir esses casos com exatidão — use a aba "🔍 Análise de Imitações" para a verificação temporal completa.</div>
   <div class="title">Tabela de possibilidades</div><div id="table"></div>
 </div>
 
@@ -277,11 +260,11 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
         <label><input type="checkbox" id="expFormInversion" checked> Inversão</label>
         <label><input type="checkbox" id="expFormRetrograde" checked> Retrogradação</label>
         <span class="exp-filter-label">Ritmo:</span>
-        <label><input type="checkbox" id="expRitmoNormal" checked> Normal</label>
-        <label><input type="checkbox" id="expRitmoAug" checked> Aumentação</label>
-        <label><input type="checkbox" id="expRitmoDim" checked> Diminuição</label>
+        <span id="expRitmoFilters" class="exp-ritmo-filters"></span>
       </div>
-      <button class="exp-pdf-btn" id="expPdfBtn" type="button" disabled>Gerar PDF</button>
+      <button class="exp-preset-btn" id="expSavePresetBtn" type="button" disabled>💾 Salvar Preset</button>
+      <button class="exp-preset-btn" id="expLoadPresetBtn" type="button">📂 Carregar Preset</button>
+      <input type="file" id="expLoadPresetInput" accept="application/json,.json" style="display:none">
     </div>
     <div id="expAnalysisResults" class="exp-analysis-results">
       <div class="exp-analysis-empty">Insira notas na pauta do Líder (aba Experimentação) e clique em "Analisar Líder Atual" para verificar as imitações viáveis.</div>
@@ -291,12 +274,6 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </main>
 </div>
 
-<div id="printArea">
-  <div class="print-title">Stretto Fuga — Análise de Imitações</div>
-  <div class="print-subtitle" id="printSubtitle"></div>
-  <div class="print-score" id="printScoreArea"></div>
-  <div id="printTableArea"></div>
-</div>
 
 <script>
 // =====================================================================
@@ -330,7 +307,7 @@ const optionsAtonal = [
 ];
 const movesAtonal = optionsAtonal;
 
-const icDesired = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+const icDesired = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false };
 function clsAtonal(ic) {
   return icDesired[ic] ? "desired" : "undesired";
 }
@@ -348,9 +325,8 @@ function calcularResultado(val1, val2, valMovimento) {
     const intervalNum = Math.abs(delta) + 1;
     return { value: intervalNum, label: intervalNum + "ª", cls: clsTonal(intervalNum) };
   } else {
-    const mod = ((delta % 12) + 12) % 12;
-    const ic = Math.min(mod, 12 - mod);
-    return { value: ic, label: "IC" + ic, cls: clsAtonal(ic) };
+    const mod = Math.abs(delta) % 12;
+    return { value: mod, label: String(mod), cls: clsAtonal(mod) };
   }
 }
 
@@ -394,22 +370,37 @@ function getTransposition(i) {
 // =====================================================================
 // MOTOR DE RITMO (aumentação / diminuição)
 // =====================================================================
-// Grade interna: 1 pulso normal (a duração de uma nota do Líder) = 6 ticks.
-// 6 é o menor número que representa como inteiro todos os fatores pedidos
-// (1, 1.5, 2, 3 e seus inversos 2/3, 1/2, 1/3) sem arredondamento.
-const TICKS_PER_PULSE = 6;
+// Grade interna: 1 pulso normal (a duração de uma nota do Líder) = 420 ticks.
+// 420 = mmc(2,3,4,5,6,7) — o menor número que representa como inteiro todos
+// os fatores pedidos (1, 1.5, 2, 3, 4, 5, 6, 7 e seus inversos) sem
+// arredondamento.
+const TICKS_PER_PULSE = 420;
 
-// id: usado em <select>/imitationState. duration/dotted: figura VexFlow para
-// uma nota inteira desse ritmo. tuplet: true quando a figura é uma
-// trêsquiáltera (agrupa de 3 em 3 notas reais da voz, com colchete "3").
+// id: usado em <select>/imitationState — a posição no array É o id (não
+// reordenar sem atualizar todo lugar que indexa RITMO_OPTIONS[idx]).
+// duration/dotted: figura VexFlow de uma nota (ou da 1ª nota de uma
+// sequência ligada — ver "tie") desse ritmo.
+// tuplet: {num_notes, notes_occupied} quando a figura precisa de colchete
+// de quiáltera (a duração real da nota = duração nominal × notes_occupied/num_notes).
+// tie: quando presente, a "nota" desse ritmo é na verdade uma sequência de
+// notas ligadas (fórmulas de duração VexFlow) cuja soma dá o fator de
+// aumentação — usado para ×4/×5/×6/×7, que não têm uma única figura padrão.
 const RITMO_OPTIONS = [
-  { id: 0, label: 'Normal (×1)',                               mult: 1,     duration: 'w',   dotted: false, tuplet: false },
-  { id: 1, label: 'Aumentação ×1.5 (semibreve pontuada)',      mult: 1.5,   duration: 'w',   dotted: true,  tuplet: false },
-  { id: 2, label: 'Aumentação ×2 (breve)',                     mult: 2,     duration: '1/2', dotted: false, tuplet: false },
-  { id: 3, label: 'Aumentação ×3 (breve pontuada)',            mult: 3,     duration: '1/2', dotted: true,  tuplet: false },
-  { id: 4, label: 'Diminuição ÷1.5 (semibreve trêsquiáltera)', mult: 2 / 3, duration: 'w',   dotted: false, tuplet: true },
-  { id: 5, label: 'Diminuição ÷2 (mínima)',                    mult: 0.5,   duration: 'h',   dotted: false, tuplet: false },
-  { id: 6, label: 'Diminuição ÷3 (mínima trêsquiáltera)',      mult: 1 / 3, duration: 'h',   dotted: false, tuplet: true },
+  { id: 0,  label: 'Normal (×1)',                               mult: 1,     duration: 'w',   dotted: false, tuplet: false },
+  { id: 1,  label: 'Aumentação ×1.5 (semibreve pontuada)',      mult: 1.5,   duration: 'w',   dotted: true,  tuplet: false },
+  { id: 2,  label: 'Aumentação ×2 (breve)',                     mult: 2,     duration: '1/2', dotted: false, tuplet: false },
+  { id: 3,  label: 'Aumentação ×3 (breve pontuada)',            mult: 3,     duration: '1/2', dotted: true,  tuplet: false },
+  { id: 4,  label: 'Diminuição ÷1.5 (semibreve trêsquiáltera)', mult: 2 / 3, duration: 'w',   dotted: false, tuplet: { num_notes: 3, notes_occupied: 2 } },
+  { id: 5,  label: 'Diminuição ÷2 (mínima)',                    mult: 0.5,   duration: 'h',   dotted: false, tuplet: false },
+  { id: 6,  label: 'Diminuição ÷3 (mínima trêsquiáltera)',      mult: 1 / 3, duration: 'h',   dotted: false, tuplet: { num_notes: 3, notes_occupied: 2 } },
+  { id: 7,  label: 'Aumentação ×4',                             mult: 4,     duration: '1/2', dotted: false, tie: ['1/2', '1/2'] },
+  { id: 8,  label: 'Aumentação ×5',                             mult: 5,     duration: '1/2', dotted: false, tie: ['1/2', '1/2', 'w'] },
+  { id: 9,  label: 'Aumentação ×6',                             mult: 6,     duration: '1/2', dotted: false, tie: ['1/2', '1/2', '1/2'] },
+  { id: 10, label: 'Aumentação ×7',                             mult: 7,     duration: '1/2', dotted: false, tie: ['1/2', '1/2', '1/2', 'w'] },
+  { id: 11, label: 'Diminuição ÷4 (semínima)',                  mult: 0.25,  duration: 'q',   dotted: false, tuplet: false },
+  { id: 12, label: 'Diminuição ÷5',                             mult: 0.2,   duration: 'q',   dotted: false, tuplet: { num_notes: 5, notes_occupied: 4 } },
+  { id: 13, label: 'Diminuição ÷6',                             mult: 1 / 6, duration: 'q',   dotted: false, tuplet: { num_notes: 3, notes_occupied: 2 } },
+  { id: 14, label: 'Diminuição ÷7',                             mult: 1 / 7, duration: 'q',   dotted: false, tuplet: { num_notes: 7, notes_occupied: 4 } },
 ];
 
 function getRitmo(i) {
@@ -560,6 +551,26 @@ function calc() {
     imitationState.transposition[k] = idx;
   }
 
+  // Para cada par de vozes adjacentes (k-1, k), a voz k-1 é sempre a mais
+  // adiantada no cânone (a imitação k ainda está "presa" na nota anterior,
+  // por causa do atraso de entrada). Se a voz k-1 estiver com Inversão
+  // ativa, o movimento que ela realmente executa é o espelhado (-mVal), não
+  // o movimento bruto do Líder — isso é levado em conta no intervalo
+  // resultante abaixo. Retrogradação e Ritmo ≠ Normal quebram a premissa de
+  // "todas as vozes tocam a mesma sequência em lockstep" desta tabela
+  // abstrata (que não tem uma linha de tempo real de notas); esses casos
+  // são sinalizados, não silenciosamente ignorados — a aba "Análise de
+  // Imitações" faz a verificação temporal completa e correta para eles.
+  const voiceFlags = [{ inv: false, ret: false, ritmo: 0 }];
+  for (let k = 1; k < n; k++) {
+    voiceFlags.push({ inv: getInversion(k), ret: getRetrograde(k), ritmo: getRitmo(k) });
+  }
+  const pairUncertain = [];
+  for (let k = 1; k < n; k++) {
+    pairUncertain.push(voiceFlags[k - 1].ret || voiceFlags[k - 1].ritmo !== 0 || voiceFlags[k].ret || voiceFlags[k].ritmo !== 0);
+  }
+  const anyUncertain = pairUncertain.some(Boolean);
+
   let rows = [];
   let good = [];
 
@@ -569,7 +580,9 @@ function calc() {
     let ok = true;
 
     for (let k = 1; k < n; k++) {
-      const r = calcularResultado(t[k - 1], t[k], mVal);
+      const moverEffective = voiceFlags[k - 1].inv ? -mVal : mVal;
+      const r = calcularResultado(t[k - 1], t[k], moverEffective);
+      r.uncertain = pairUncertain[k - 1];
       rel.push(r);
       if (r.cls === "dissonant" || r.cls === "undesired") ok = false;
     }
@@ -580,20 +593,22 @@ function calc() {
   good.sort((a, b) => b[1] - a[1]);
   lastGoodMoves = good;
 
-  movesBox(good);
-  tableBox(rows, n);
+  movesBox(good, anyUncertain);
+  tableBox(rows, n, anyUncertain);
 }
 
-function movesBox(a) {
+function movesBox(a, anyUncertain) {
   const movesElement = document.getElementById("moves");
   if (a.length) {
     movesElement.innerHTML = a.map(x => `<span class="move">${x[0]}</span>`).join("");
   } else {
     movesElement.innerHTML = `<span class="none">Nenhum movimento atende simultaneamente aos critérios ${modo === "tonal" ? "consonantes" : "desejados"}.</span>`;
   }
+  const warnEl = document.getElementById("movesWarn");
+  if (warnEl) warnEl.style.display = anyUncertain ? "block" : "none";
 }
 
-function tableBox(rows, n) {
+function tableBox(rows, n, anyUncertain) {
   let h = "<div class='wrap'><table><thead><tr><th>Movimento do Líder</th>";
   for (let k = 1; k < n; k++) h += `<th>Imitação ${k}</th>`;
   h += "</tr></thead><tbody>";
@@ -601,7 +616,8 @@ function tableBox(rows, n) {
   for (const r of rows) {
     h += `<tr><td>${r.m[0]}</td>`;
     for (const x of r.rel) {
-      h += `<td><span class="iv ${x.cls}">${x.label}</span></td>`;
+      const mark = x.uncertain ? ' title="Envolve retrogradação e/ou ritmo diferente de Normal — verifique na aba Análise" style="opacity:.6"' : '';
+      h += `<td${mark}><span class="iv ${x.cls}">${x.label}${x.uncertain ? " ⚠" : ""}</span></td>`;
     }
     h += "</tr>";
   }
@@ -633,15 +649,15 @@ function buildReferenceTable() {
 
   refNote.textContent = modo === "tonal"
     ? "Grade de consulta geral: cada célula mostra o intervalo resultante entre uma voz e a voz imediatamente anterior a ela (já deslocada pelo movimento melódico), para qualquer transposição de entrada. Serve de referência tanto para o par Líder → 1ª Imitação quanto para qualquer par de Imitações consecutivas."
-    : "Grade de consulta geral em classes de intervalo (IC0–IC6). A cor de cada célula segue a classificação definida no painel \"Classes de intervalo\", na barra lateral.";
+    : "Grade de consulta geral em intervalos, em semitons (0–11). A cor de cada célula segue a classificação definida no painel \"Intervalos em semitons\", na barra lateral.";
 }
 
 // =====================================================================
 // Painel de classificação de Classes de Intervalo (modo Atonal)
 // =====================================================================
 function renderIcPanel() {
-  icGrid.innerHTML = Object.keys(icDesired).map(ic =>
-    `<button type="button" class="ic-chip ${icDesired[ic] ? "desired" : "undesired"}" data-ic="${ic}">IC${ic}</button>`
+  icGrid.innerHTML = Object.keys(icDesired).sort((a, b) => +a - +b).map(ic =>
+    `<button type="button" class="ic-chip ${icDesired[ic] ? "desired" : "undesired"}" data-ic="${ic}">${ic}</button>`
   ).join("");
   icGrid.querySelectorAll(".ic-chip").forEach(btn => {
     btn.onclick = () => {
@@ -917,9 +933,8 @@ buildReferenceTable();
   function intervalInfoFromNotes(noteA, noteB, lowestMidi) {
     if (modo !== 'tonal') {
       const diff = noteB ? noteToMidi(noteB) - noteToMidi(noteA) : 0;
-      const mod = ((diff % 12) + 12) % 12;
-      const ic = Math.min(mod, 12 - mod);
-      return { label: String(ic), cls: clsAtonal(ic), val: ic, simpleNum: ic };
+      const mod = Math.abs(diff) % 12;
+      return { label: String(mod), cls: clsAtonal(mod), val: mod, simpleNum: mod };
     }
 
     const midiA = noteToMidi(noteA);
@@ -995,6 +1010,18 @@ buildReferenceTable();
     kb.style.height = WKH + 'px';
   }
   buildVirtualKeyboard();
+
+  // Checkboxes individuais de ritmo (aba Análise) — um por fator de
+  // aumentação/diminuição, para não sobrecarregar a busca combinatória.
+  // Todos começam desmarcados; o usuário escolhe quais entram na análise.
+  function ritmoShortLabel(r) {
+    if (r.id === 0) return 'Normal';
+    return r.mult >= 1 ? ('×' + r.mult) : ('÷' + Math.round((1 / r.mult) * 100) / 100);
+  }
+  document.getElementById('expRitmoFilters').innerHTML = RITMO_OPTIONS.map(r =>
+    `<label title="${r.label}"><input type="checkbox" id="expRitmo${r.id}"> ${ritmoShortLabel(r)}</label>`
+  ).join('');
+
   let kbOpen = false;
   document.getElementById('expToggleKbBtn').onclick = () => {
     kbOpen = !kbOpen;
@@ -1172,6 +1199,7 @@ buildReferenceTable();
     const allVoices = [];
     const allStaves = [];
     const allTuplets = [];
+    const allTies = [];
 
     sortedData.forEach((d, idx) => {
       const yPos = yPositions[idx];
@@ -1187,6 +1215,7 @@ buildReferenceTable();
       const ritmoInfo = RITMO_OPTIONS[d.ritmoIdx || 0];
       const vfNotes = [];
       const eventRefs = []; // paralelo a vfNotes: { startTick, durTicks } de cada figura (nota ou pausa)
+      const DUR_TICKS_FRAC = { 'w': 1, '1/2': 2, 'h': 0.5, 'q': 0.25, '8': 0.125 };
       // Cada nota recebe sua pauta (stave) assim que criada — e não apenas no
       // voice.draw() final — porque getAbsoluteX() soma automaticamente a
       // largura de clave+armadura da pauta atribuída. Se isso só acontecesse
@@ -1202,28 +1231,51 @@ buildReferenceTable();
       }
 
       // Notas reais da voz, na figura correspondente ao ritmo escolhido.
-      // Ritmos com quiáltera (diminuição ÷1.5 e ÷3) agrupam de 3 em 3 notas
-      // reais; um grupo incompleto no final ainda recebe o colchete "3".
+      // Ritmos com quiáltera (diminuições) agrupam ritmoInfo.tuplet.num_notes
+      // notas reais por colchete; um grupo incompleto no final ainda recebe
+      // o colchete. Ritmos de aumentação ×4/×5/×6/×7 (ritmoInfo.tie) não têm
+      // uma única figura padrão — são notadas como uma sequência de figuras
+      // ligadas (ties) cuja soma equivale ao fator de aumentação.
       let tupletBuffer = [];
       const flushTuplet = () => {
         if (ritmoInfo.tuplet && tupletBuffer.length) {
-          allTuplets.push(new VF.Tuplet(tupletBuffer.slice(), { num_notes: 3, notes_occupied: 2 }));
+          allTuplets.push(new VF.Tuplet(tupletBuffer.slice(), ritmoInfo.tuplet));
         }
         tupletBuffer = [];
       };
 
       d.notas.forEach((nt, i) => {
+        const noteStartTick = d.track.startOffset + i * d.track.durTicks;
+
+        if (ritmoInfo.tie) {
+          let offsetPulsos = 0, prevSn = null;
+          ritmoInfo.tie.forEach((durCode, segIdx) => {
+            const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: durCode });
+            sn.setStave(stave);
+            if (segIdx === 0) {
+              const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
+              if (sym) sn.addModifier(new VF.Accidental(sym), 0);
+            }
+            vfNotes.push(sn);
+            eventRefs.push({ startTick: noteStartTick + offsetPulsos * TICKS_PER_PULSE, durTicks: DUR_TICKS_FRAC[durCode] * TICKS_PER_PULSE });
+            if (prevSn) allTies.push(new VF.StaveTie({ first_note: prevSn, last_note: sn, first_indices: [0], last_indices: [0] }));
+            offsetPulsos += DUR_TICKS_FRAC[durCode];
+            prevSn = sn;
+          });
+          return;
+        }
+
         const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: ritmoInfo.duration });
         sn.setStave(stave);
         if (ritmoInfo.dotted) VF.Dot.buildAndAttach([sn], { all: true });
         const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
         if (sym) sn.addModifier(new VF.Accidental(sym), 0);
         vfNotes.push(sn);
-        eventRefs.push({ startTick: d.track.startOffset + i * d.track.durTicks, durTicks: d.track.durTicks });
+        eventRefs.push({ startTick: noteStartTick, durTicks: d.track.durTicks });
 
         if (ritmoInfo.tuplet) {
           tupletBuffer.push(sn);
-          if (tupletBuffer.length === 3) flushTuplet();
+          if (tupletBuffer.length === ritmoInfo.tuplet.num_notes) flushTuplet();
         }
       });
       flushTuplet();
@@ -1280,6 +1332,7 @@ buildReferenceTable();
     });
 
     allTuplets.forEach(t => t.setContext(ctx).draw());
+    allTies.forEach(t => t.setContext(ctx).draw());
 
     // Números de intervalo entre cada par de vozes: calculados nos ticks em
     // que QUALQUER uma das duas vozes do par ataca uma nota nova — o que
@@ -1498,10 +1551,12 @@ buildReferenceTable();
     const workerSource = `
       const LETTERS = ['C','D','E','F','G','A','B'];
       const PITCH_CLASS = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-      const TICKS_PER_PULSE = 6;
+      const TICKS_PER_PULSE = 420;
       const RITMO_OPTIONS = [
         {id:0,mult:1}, {id:1,mult:1.5}, {id:2,mult:2}, {id:3,mult:3},
-        {id:4,mult:2/3}, {id:5,mult:.5}, {id:6,mult:1/3}
+        {id:4,mult:2/3}, {id:5,mult:.5}, {id:6,mult:1/3},
+        {id:7,mult:4}, {id:8,mult:5}, {id:9,mult:6}, {id:10,mult:7},
+        {id:11,mult:.25}, {id:12,mult:.2}, {id:13,mult:1/6}, {id:14,mult:1/7}
       ];
       const SHARP_ORDER=['F','C','G','D','A','E','B'];
       const FLAT_ORDER=['B','E','A','D','G','C','F'];
@@ -1522,7 +1577,7 @@ buildReferenceTable();
       function bitAdd(bits,i){bits[i>>>5]|=1<<(i&31);}
       function overlap(delay,len,voices){for(const v of voices){const a=Math.max(delay,v.delay),b=Math.min(delay+len,v.delay+v.len);if(b-a>=2)return true;}return false;}
       function validClass(cls){return cls!=='dissonant'&&cls!=='undesired';}
-      function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=((d%12)+12)%12,ic=Math.min(m,12-m);return {label:String(ic),cls:icDesired[ic]?'desired':'undesired',val:ic,simpleNum:ic};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
+      function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=Math.abs(d)%12;return {label:String(m),cls:icDesired[m]?'desired':'undesired',val:m,simpleNum:m};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
       function finalTest(leader,combo,modo,icDesired){const voices=[leader,...combo],all=new Set();for(const v of voices)for(const t of v.track.onsets)all.add(t);const ticks=Array.from(all).sort((a,b)=>a-b),lowest=new Map();for(const t of ticks){let low=Infinity;for(const v of voices){const i=v.track.activeIndexAt(t);if(i>=0&&v.midi[i]<low)low=v.midi[i];}lowest.set(t,low);}const pairs={};for(let i=0;i<voices.length;i++)for(let j=i+1;j<voices.length;j++){const a=voices[i],b=voices[j],src=a.track.onsets.length<=b.track.onsets.length?a.track:b.track,oth=src===a.track?b.track:a.track,arr=[];const pairTicks=Array.from(new Set([...a.track.onsets,...b.track.onsets])).sort((x,y)=>x-y);for(const t of pairTicks){const ia=a.track.activeIndexAt(t),ib=b.track.activeIndexAt(t);if(ia<0||ib<0)continue;const info=intervalInfo(a.seq[ia],b.seq[ib],lowest.get(t),modo,icDesired);arr.push(info);if(!validClass(info.cls))return null;}pairs[i+'-'+j]=arr;}return {combo:combo.map(c=>c.cfg),pairsIntervals:pairs};}
       self.onmessage=async(e)=>{const d=e.data,leader=d.leaderNotes,modo=d.modo,key=d.keySig,opts=d.opts,n=d.nVoices,icDesired=d.icDesired||{};try{const delays=d.delays,forms=d.forms,ritmos=d.ritmos;const configs=[];const leaderP=prepare(leader,{transpIdx:-1,transpOpt:['Líder',0],delay:0,inv:false,ret:false,ritmoIdx:0});for(let t=0;t<opts.length;t++)for(const delay of delays)for(const form of forms)for(const rid of ritmos){const cfg={transpIdx:t,transpOpt:opts[t],delay,inv:form.inv,ret:form.ret,ritmoIdx:rid},seq=construir(leader,cfg,modo,key),pr=prepare(seq,cfg);if(check(leaderP,pr,modo)){pr.index=configs.length;configs.push(pr);}}self.postMessage({type:'phase',phase:'matrix',total:configs.length});const m=configs.length,words=Math.ceil(m/32),compat=new Array(m);for(let i=0;i<m;i++)compat[i]=new Uint32Array(words);let last=performance.now();for(let i=0;i<m;i++){for(let j=i;j<m;j++)if(check(configs[i],configs[j],modo)){bitAdd(compat[i],j);if(i!==j)bitAdd(compat[j],i);}if(performance.now()-last>80){self.postMessage({type:'progress',phase:'matrix',value:i+1,total:m});await new Promise(r=>setTimeout(r,0));last=performance.now();}}self.postMessage({type:'progress',phase:'matrix',value:m,total:m});const results=[];let nodes=0,lastP=performance.now(),lastYield=performance.now();const baseInfo=[{delay:0,len:leader.length}];function intersect(a,b){for(let w=0;w<words;w++)a[w]&=b[w];}async function search(depth,idxs,chosen,cands,infos){if(depth===n-1){const r=finalTest(leaderP,chosen,modo,icDesired);if(r)results.push(r);return;}const next=cands.slice();const start=idxs.length?idxs[idxs.length-1]+1:0;let i=start;while(i<m){const wordIndex=i>>>5;const word=next[wordIndex];let bits=word&(-1<<(i&31));if(!bits){i=(i+32)&~31;continue;}const bit=bits&-bits;const idx=(wordIndex<<5)+31-Math.clz32(bit);i=idx+1;const c=configs[idx];if(!overlap(c.cfg.delay,leader.length,infos))continue;let ok=true;for(const sel of idxs)if(!bitHas(compat[sel],idx)){ok=false;break;}if(!ok)continue;nodes++;idxs.push(idx);chosen.push(c);infos.push({delay:c.cfg.delay,len:leader.length});const child=next.slice();intersect(child,compat[idx]);await search(depth+1,idxs,chosen,child,infos);infos.pop();chosen.pop();idxs.pop();const now=performance.now();if(now-lastP>100){self.postMessage({type:'progress',phase:'search',value:nodes,total:m,nodes});lastP=now;}if(now-lastYield>12){await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}}}
       const initial=new Uint32Array(words);for(let i=0;i<m;i++)bitAdd(initial,i);await search(0,[],[],initial,baseInfo);self.postMessage({type:'done',results,configs:m,nodes});}catch(err){self.postMessage({type:'error',message:err&&err.stack?err.stack:String(err)});}};
@@ -1537,16 +1592,16 @@ buildReferenceTable();
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
       document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
-      document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults=[]; document.getElementById('expPdfBtn').disabled=true; return;
+      document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults=[]; document.getElementById('expSavePresetBtn').disabled=true; return;
     }
     const forms=[];
     if(document.getElementById('expFormOriginal').checked) forms.push({inv:false,ret:false});
     if(document.getElementById('expFormInversion').checked) forms.push({inv:true,ret:false});
     if(document.getElementById('expFormRetrograde').checked) forms.push({inv:false,ret:true});
-    const ritmos=[];
-    if(document.getElementById('expRitmoNormal').checked) ritmos.push(0);
-    if(document.getElementById('expRitmoAug').checked) ritmos.push(1,2,3);
-    if(document.getElementById('expRitmoDim').checked) ritmos.push(4,5,6);
+    const ritmos=RITMO_OPTIONS.filter(r => {
+      const cb = document.getElementById('expRitmo' + r.id);
+      return cb && cb.checked;
+    }).map(r => r.id);
     if(!forms.length||!ritmos.length){
       document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Selecione pelo menos uma forma de imitação e um tipo de ritmo.</div>';
       return;
@@ -1559,7 +1614,7 @@ buildReferenceTable();
       if(d.type==='phase') document.getElementById('expAnalysisNum').textContent='Preparando compatibilidades...';
       else if(d.type==='progress'){if(d.phase==='matrix') document.getElementById('expAnalysisNum').textContent=`Compatibilidades... ${d.value.toLocaleString('pt-BR')}/${d.total.toLocaleString('pt-BR')}`; else document.getElementById('expAnalysisNum').textContent=`Buscando combinações... ${d.nodes.toLocaleString('pt-BR')} estados`; }
       else if(d.type==='error'){console.error(d.message);document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Erro durante a análise. Veja o console para detalhes.</div>';analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
-      else if(d.type==='done'){currentAnalysisResults=d.results;currentAnalysisPage=0;document.getElementById('expAnalysisNum').textContent=d.results.length;document.getElementById('expPdfBtn').disabled=d.results.length===0;renderAnalysisResults(d.results,nVoices);analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
+      else if(d.type==='done'){currentAnalysisResults=d.results;currentAnalysisPage=0;document.getElementById('expAnalysisNum').textContent=d.results.length;document.getElementById('expSavePresetBtn').disabled=d.results.length===0;renderAnalysisResults(d.results,nVoices);analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
     };
     worker.postMessage({leaderNotes,modo,keySig:expState.keySig,opts,nVoices,delays,forms,ritmos,icDesired});
   }
@@ -1848,152 +1903,104 @@ buildReferenceTable();
   }
 
   // =====================================================================
-  // GERAÇÃO DE PDF (impressão) — partitura do Líder + tabela de resultados
+  // SALVAR / CARREGAR PRESET (líder + lista de imitações viáveis)
   // =====================================================================
+  // Um preset é um arquivo .json autocontido com: o modo, a tonalidade (se
+  // tonal), o número de vozes, as notas do Líder e a lista completa de
+  // combinações de imitação viáveis já encontradas pela última análise —
+  // permitindo recarregar tudo sem rodar a busca de novo.
+  const PRESET_VERSION = 1;
 
-  // Desenha somente a voz do Líder (sem nenhuma imitação), reaproveitando a
-  // mesma técnica de medição prévia de largura usada em renderCanvas, para
-  // que a armadura nunca empurre notas para fora da pauta impressa.
-  function renderLeaderScoreForPrint(containerEl) {
-    containerEl.innerHTML = '';
-    const VF = Vex.Flow;
-    const leaderNotes = expState.notes;
-    if (!leaderNotes.length) return;
-
-    const clef = chooseClefForNotes(leaderNotes);
-
-    const PROBE_WIDTH = 400;
-    const probeRenderer = new VF.Renderer(containerEl, VF.Renderer.Backends.SVG);
-    probeRenderer.resize(PROBE_WIDTH, STAVE_HEIGHT + 20);
-    const probeCtx = probeRenderer.getContext();
-    const probeStave = new VF.Stave(4, 0, PROBE_WIDTH - 8);
-    if (clef.ann) probeStave.addClef(clef.clef, 'default', clef.ann);
-    else probeStave.addClef(clef.clef);
-    if (modo === 'tonal') probeStave.addKeySignature(expState.keySig);
-    probeStave.setContext(probeCtx).draw();
-    const noteStartX = probeStave.getNoteStartX() + 6;
-    containerEl.innerHTML = '';
-
-    const staveWidth = noteStartX + leaderNotes.length * FIXED_COL_WIDTH + 20;
-
-    const renderer = new VF.Renderer(containerEl, VF.Renderer.Backends.SVG);
-    renderer.resize(staveWidth + 60, STAVE_HEIGHT + 20);
-    const ctx = renderer.getContext();
-    const escala = 0.9;
-    ctx.scale(escala, escala);
-    ctx.setFont('Arial', 9 / escala);
-
-    const stave = new VF.Stave(4, 10, staveWidth + 8);
-    stave.setBegBarType(VF.Barline.type.NONE);
-    stave.setEndBarType(VF.Barline.type.NONE);
-    if (clef.ann) stave.addClef(clef.clef, 'default', clef.ann);
-    else stave.addClef(clef.clef);
-    if (modo === 'tonal') stave.addKeySignature(expState.keySig);
-    stave.setContext(ctx).draw();
-
-    const vfNotes = leaderNotes.map((nt) => {
-      const sn = new VF.StaveNote({ clef: clef.clef, keys: [vfKey(nt)], duration: 'w' });
-      sn.setStave(stave);
-      const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
-      if (sym) sn.addModifier(new VF.Accidental(sym), 0);
-      return sn;
-    });
-
-    const voice = new VF.Voice({ num_beats: vfNotes.length, beat_value: 1 });
-    voice.setStrict(false);
-    voice.addTickables(vfNotes);
-
-    new VF.Formatter().joinVoices([voice]).format([voice], staveWidth - 4);
-
-    vfNotes.forEach((note, col) => {
-      const targetX = noteStartX + col * FIXED_COL_WIDTH;
-      const tc = note.getTickContext();
-      const delta = targetX - note.getAbsoluteX();
-      tc.setX(tc.getX() + delta);
-    });
-
-    voice.draw(ctx, stave);
-  }
-
-  // Monta a tabela de resultados da análise em HTML estático, no mesmo
-  // formato exibido na aba (sem cabeçalhos ordenáveis nem botões de ação,
-  // que não fazem sentido numa versão impressa).
-  function buildPrintResultsTable(results, nVoices) {
-    if (!results.length) {
-      return '<p>Nenhuma combinação de imitação viável encontrada para as notas do Líder.</p>';
-    }
-
-    let html = `
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th class="al-left">Transposição</th>
-            <th>Atraso</th>
-            <th>Inversão</th>
-            <th>Retrogradação</th>
-            <th class="al-left">Ritmo</th>
-            <th class="al-left">Intervalos Resultantes Por Par</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    results.forEach((r, i) => {
-      const transpText = r.combo.map((c, k) => `${k + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
-      const delayText = r.combo.map(c => `${c.delay}`).join(' / ');
-      const invText = r.combo.map(c => c.inv ? 'Sim' : 'Não').join('<br>');
-      const retText = r.combo.map(c => c.ret ? 'Sim' : 'Não').join('<br>');
-      const ritmoText = r.combo.map(c => RITMO_OPTIONS[c.ritmoIdx || 0].label).join('<br>');
-
-      let ivLines = '';
-      for (let a = 0; a < nVoices; a++) {
-        for (let b = a + 1; b < nVoices; b++) {
-          const pairKey = `${a}-${b}`;
-          const ivs = r.pairsIntervals[pairKey];
-          if (ivs && ivs.length > 0) {
-            const pairName = a === 0 ? `Líd×${b}ªIm` : `${a}ªIm×${b}ªIm`;
-            const summary = ivs.map(iv => `<span class="iv ${iv.cls}">${iv.label}</span>`).join(' ');
-            ivLines += `<div class="pair-line"><span class="pair-label">${pairName}:</span>${summary}</div>`;
-          }
-        }
-      }
-
-      html += `
-        <tr>
-          <td>${i + 1}</td>
-          <td class="al-left">${transpText}</td>
-          <td>${delayText}</td>
-          <td>${invText}</td>
-          <td>${retText}</td>
-          <td class="al-left">${ritmoText}</td>
-          <td class="al-left">${ivLines}</td>
-        </tr>
-      `;
-    });
-
-    html += '</tbody></table>';
-    return html;
-  }
-
-  function gerarPDFAnalise() {
+  function salvarPreset() {
     if (!currentAnalysisResults.length) {
-      alert('Realize a análise (botão "Analisar Líder Atual") antes de gerar o PDF.');
+      alert('Realize a análise (botão "Analisar Líder Atual") antes de salvar o preset.');
       return;
     }
-
-    const nVoices = +voices.value;
-    document.getElementById('printSubtitle').textContent =
-      `Modo ${modo === 'tonal' ? 'tonal (' + KEY_LABELS[expState.keySig] + ')' : 'atonal'} · ${nVoices} vozes · ${currentAnalysisResults.length} combinação(ões) viável(is)`;
-
-    renderLeaderScoreForPrint(document.getElementById('printScoreArea'));
-    document.getElementById('printTableArea').innerHTML =
-      buildPrintResultsTable(currentAnalysisResults, nVoices);
-
-    window.print();
+    const preset = {
+      presetType: 'stretto-fuga',
+      version: PRESET_VERSION,
+      modo,
+      keySig: expState.keySig,
+      nVoices: +voices.value,
+      leaderNotes: expState.notes,
+      icDesired: modo === 'atonal' ? icDesired : undefined,
+      analysisResults: currentAnalysisResults
+    };
+    const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `stretto-fuga-preset-${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
-  document.getElementById('expPdfBtn').onclick = gerarPDFAnalise;
+  function carregarPresetArquivo(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (e) {
+        alert('Arquivo de preset inválido (JSON malformado).');
+        return;
+      }
+      if (!data || data.presetType !== 'stretto-fuga' || !Array.isArray(data.leaderNotes)) {
+        alert('Este arquivo não parece ser um preset válido do Stretto Fuga.');
+        return;
+      }
+
+      // Modo (tonal/atonal) — replica o que o clique no botão de modo faz.
+      if (data.modo === 'tonal' || data.modo === 'atonal') {
+        modo = data.modo;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.modo === modo));
+        document.getElementById('icPanel').style.display = modo === 'atonal' ? 'block' : 'none';
+      }
+      if (modo === 'atonal' && data.icDesired) {
+        Object.keys(icDesired).forEach(k => { icDesired[k] = !!data.icDesired[k]; });
+        renderIcPanel();
+      }
+      if (data.nVoices) voices.value = String(data.nVoices);
+      if (data.keySig) expState.keySig = data.keySig;
+
+      expState.notes = data.leaderNotes;
+      appliedAnalysisIndex = null;
+      currentAnalysisResults = Array.isArray(data.analysisResults) ? data.analysisResults : [];
+      currentAnalysisPage = 0;
+
+      setup();
+      calc();
+      buildReferenceTable();
+      populateKeySelect();
+
+      document.getElementById('expAnalysisNum').textContent = currentAnalysisResults.length;
+      document.getElementById('expSavePresetBtn').disabled = currentAnalysisResults.length === 0;
+      renderAnalysisResults(currentAnalysisResults, +voices.value);
+
+      // Leva o usuário à aba "Análise de Imitações", onde a lista carregada
+      // é exibida (a aba Experimentação se atualiza sozinha quando aberta,
+      // via seu próprio handler de troca de aba).
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      const analiseTabBtn = document.querySelector('.tab-btn[data-tab="analise"]');
+      if (analiseTabBtn) analiseTabBtn.classList.add('active');
+      document.getElementById('tab-analise').classList.add('active');
+      expState.open = false;
+    };
+    reader.onerror = () => alert('Não foi possível ler o arquivo selecionado.');
+    reader.readAsText(file);
+  }
+
+  document.getElementById('expSavePresetBtn').onclick = salvarPreset;
+  document.getElementById('expLoadPresetBtn').onclick = () => document.getElementById('expLoadPresetInput').click();
+  document.getElementById('expLoadPresetInput').onchange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) carregarPresetArquivo(file);
+    e.target.value = '';
+  };
 
   document.getElementById('expAnalyzeBtn').onclick = analisarImitacoesViaveis;
 
