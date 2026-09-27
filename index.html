@@ -177,6 +177,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </div>
 
 <div class="field"><label for="voices">Número de vozes</label><select id="voices">
+  <option value="1">1 — Apenas o Líder</option>
   <option value="2">2 — Líder + 1 Imitação</option>
   <option value="3">3 — Líder + 2 Imitações</option>
   <option value="4">4 — Líder + 3 Imitações</option>
@@ -287,16 +288,20 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 // =====================================================================
 // MODO TONAL — intervalos diatônicos
 // =====================================================================
-const intervalosTonal = [
-  ["U", 0], ["2ª", 1], ["3ª", 2], ["4ª", 3],
-  ["5ª", 4], ["6ª", 5], ["7ª", 6], ["8ª", 7]
-];
+const intervalosTonal = Array.from({ length: 15 }, (_, i) => [i === 0 ? "U" : (i + 1) + "ª", i]);
 
 const optionsTonal = [
   ...intervalosTonal.map(x => [x[1] === 0 ? "U" : x[0] + " ↑", x[1]]),
   ...intervalosTonal.slice(1).map(x => [x[0] + " ↓", -x[1]])
 ];
-const movesTonal = optionsTonal;
+// Movimentos melódicos (Tabela de Referência / Movimentos viáveis) permanecem
+// limitados até a 8ª — só as opções de TRANSPOSIÇÃO das imitações foram
+// ampliadas até a 15ª.
+const intervalosMovTonal = intervalosTonal.slice(0, 8);
+const movesTonal = [
+  ...intervalosMovTonal.map(x => [x[1] === 0 ? "U" : x[0] + " ↑", x[1]]),
+  ...intervalosMovTonal.slice(1).map(x => [x[0] + " ↓", -x[1]])
+];
 
 function clsTonal(intervalNum) {
   const g = (intervalNum - 1) % 7;
@@ -310,10 +315,16 @@ function clsTonal(intervalNum) {
 // =====================================================================
 const optionsAtonal = [
   ["0", 0],
-  ...Array.from({ length: 11 }, (_, i) => i + 1).map(n => [n + " ↑", n]),
-  ...Array.from({ length: 11 }, (_, i) => i + 1).map(n => [n + " ↓", -n])
+  ...Array.from({ length: 24 }, (_, i) => i + 1).map(n => [n + " ↑", n]),
+  ...Array.from({ length: 24 }, (_, i) => i + 1).map(n => [n + " ↓", -n])
 ];
-const movesAtonal = optionsAtonal;
+// Movimentos melódicos permanecem limitados até 12 semitons (antes 11) —
+// só as opções de TRANSPOSIÇÃO das imitações foram ampliadas até 24.
+const movesAtonal = [
+  ["0", 0],
+  ...Array.from({ length: 12 }, (_, i) => i + 1).map(n => [n + " ↑", n]),
+  ...Array.from({ length: 12 }, (_, i) => i + 1).map(n => [n + " ↓", -n])
+];
 
 const icDesired = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false };
 function clsAtonal(ic) {
@@ -1490,7 +1501,7 @@ buildReferenceTable();
           }));
 
           const info = intervalInfoFromNotes(rowA.notas[idxA], rowB.notas[idxB], lowestMidi);
-          const x = noteStartXFinal + tick * PX_PER_TICK + 3;
+          const x = noteStartXFinal + tick * PX_PER_TICK + 8;
           drawIntervalLabel(area, x, textY, info.label, info.cls, fontSize, escala);
         });
       }
@@ -1715,6 +1726,10 @@ buildReferenceTable();
 
   async function analisarImitacoesViaveis() {
     appliedAnalysisIndex = null;
+    if (+voices.value < 2) {
+      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Selecione ao menos 2 vozes (Líder + 1 Imitação) para buscar imitações compatíveis.</div>';
+      document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults = []; document.getElementById('expSavePresetBtn').disabled = true; return;
+    }
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
       document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
