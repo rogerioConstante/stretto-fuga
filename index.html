@@ -49,6 +49,7 @@ main{padding:24px 28px 40px;overflow:auto}.title{margin-bottom:12px;color:var(--
 .ic-chip{padding:6px 9px;border-radius:5px;font-weight:700;font-size:12px;cursor:pointer;border:1px solid transparent;font-family:inherit}
 .ic-chip.desired{color:var(--green);border-color:#4dff9a55;background:#4dff9a12}
 .ic-chip.undesired{color:var(--red);border-color:#ff4f7255;background:#ff4f7212}
+.ic-chip.false-dissonance{color:#ffe45c;border-color:#ffe45c55;background:#ffe45c12}
 
 .wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
 table{width:auto;border-collapse:collapse;background:#0f141c;font-size:12px}
@@ -171,7 +172,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 <div class="field">
   <label>Modo</label>
   <div class="mode-switch">
-    <button class="mode-btn active" data-modo="tonal" type="button">Tonal</button>
+    <button class="mode-btn active" data-modo="tonal" type="button">Modal/Escalar</button>
     <button class="mode-btn" data-modo="atonal" type="button">Atonal</button>
   </div>
 </div>
@@ -190,7 +191,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 <div id="icPanel" class="field" style="display:none">
   <label>Intervalos em semitons (clique para alternar)</label>
   <div class="ic-grid" id="icGrid"></div>
-  <div class="note">Verde = desejado · Vermelho = indesejado. Intervalos complementares (ex.: 5 e 7, 4 e 8) são marcados separadamente. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
+  <div class="note">Verde = desejado · Vermelho = indesejado · Dourado = falsa dissonância (dissonante apenas contra a voz mais grave da textura; entre vozes superiores é tratado como consonância). Intervalos complementares (ex.: 5 e 7, 4 e 8) são marcados separadamente. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
 </div>
 
 <div class="note">A 1ª Imitação entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
@@ -326,9 +327,19 @@ const movesAtonal = [
   ...Array.from({ length: 12 }, (_, i) => i + 1).map(n => [n + " ↓", -n])
 ];
 
-const icDesired = { 0: false, 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false, 9: false, 10: false, 11: false };
+// Cada classe de intervalo (0–11) tem um de três estados:
+// "undesired" (vermelho, padrão), "desired" (verde) ou "false" (falsa
+// dissonância, dourado — dissonante apenas quando envolve a voz mais grave
+// da textura; válida/consonante entre vozes superiores).
+const icDesired = { 0: "undesired", 1: "undesired", 2: "undesired", 3: "undesired", 4: "undesired", 5: "undesired", 6: "undesired", 7: "undesired", 8: "undesired", 9: "undesired", 10: "undesired", 11: "undesired" };
 function clsAtonal(ic) {
-  return icDesired[ic] ? "desired" : "undesired";
+  const st = icDesired[ic];
+  if (st === "desired") return "desired";
+  // Nas tabelas abstratas (sem noção de "voz mais grave"), a falsa
+  // dissonância é tratada como dissonante — mesmo critério já usado para a
+  // 4J/trítono em clsTonal, que também não tem essa exceção.
+  if (st === "false") return "dissonant";
+  return "undesired";
 }
 
 // =====================================================================
@@ -674,14 +685,16 @@ function buildReferenceTable() {
 // =====================================================================
 // Painel de classificação de Classes de Intervalo (modo Atonal)
 // =====================================================================
+const IC_STATE_CSS = { undesired: "undesired", desired: "desired", "false": "false-dissonance" };
+const IC_STATE_CYCLE = { undesired: "desired", desired: "false", "false": "undesired" };
 function renderIcPanel() {
   icGrid.innerHTML = Object.keys(icDesired).sort((a, b) => +a - +b).map(ic =>
-    `<button type="button" class="ic-chip ${icDesired[ic] ? "desired" : "undesired"}" data-ic="${ic}">${ic}</button>`
+    `<button type="button" class="ic-chip ${IC_STATE_CSS[icDesired[ic]] || "undesired"}" data-ic="${ic}" title="Clique para alternar: indesejada → desejada → falsa dissonância">${ic}</button>`
   ).join("");
   icGrid.querySelectorAll(".ic-chip").forEach(btn => {
     btn.onclick = () => {
       const ic = btn.dataset.ic;
-      icDesired[ic] = !icDesired[ic];
+      icDesired[ic] = IC_STATE_CYCLE[icDesired[ic]] || "undesired";
       renderIcPanel();
       calc();
       buildReferenceTable();
@@ -1071,7 +1084,20 @@ buildReferenceTable();
     if (modo !== 'tonal') {
       const diff = noteB ? noteToMidi(noteB) - noteToMidi(noteA) : 0;
       const mod = Math.abs(diff) % 12;
-      return { label: String(mod), cls: clsAtonal(mod), val: mod, simpleNum: mod };
+      const state = icDesired[mod];
+      let cls;
+      if (state === 'desired') {
+        cls = 'desired';
+      } else if (state === 'false') {
+        const midiA = noteToMidi(noteA);
+        const midiB = noteB ? noteToMidi(noteB) : midiA;
+        const lowMidi = Math.min(midiA, midiB);
+        const involvesLowest = (lowMidi === lowestMidi);
+        cls = involvesLowest ? 'dissonant' : 'special-consonant';
+      } else {
+        cls = 'undesired';
+      }
+      return { label: String(mod), cls, val: mod, simpleNum: mod };
     }
 
     const midiA = noteToMidi(noteA);
@@ -1714,7 +1740,7 @@ buildReferenceTable();
       function bitAdd(bits,i){bits[i>>>5]|=1<<(i&31);}
       function overlap(delay,len,voices){for(const v of voices){const a=Math.max(delay,v.delay),b=Math.min(delay+len,v.delay+v.len);if(b-a>=2)return true;}return false;}
       function validClass(cls){return cls!=='dissonant'&&cls!=='undesired';}
-      function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=Math.abs(d)%12;return {label:String(m),cls:icDesired[m]?'desired':'undesired',val:m,simpleNum:m};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
+      function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=Math.abs(d)%12,st=icDesired[m];let cls;if(st==='desired')cls='desired';else if(st==='false'){const ma2=noteToMidi(a),mb2=noteToMidi(b),lo2=Math.min(ma2,mb2);cls=(lo2===lowest)?'dissonant':'special-consonant';}else cls='undesired';return {label:String(m),cls,val:m,simpleNum:m};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
       function finalTest(leader,combo,modo,icDesired){const voices=[leader,...combo],all=new Set();for(const v of voices)for(const t of v.track.onsets)all.add(t);const ticks=Array.from(all).sort((a,b)=>a-b),lowest=new Map();for(const t of ticks){let low=Infinity;for(const v of voices){const i=v.track.activeIndexAt(t);if(i>=0&&v.midi[i]<low)low=v.midi[i];}lowest.set(t,low);}const pairs={};for(let i=0;i<voices.length;i++)for(let j=i+1;j<voices.length;j++){const a=voices[i],b=voices[j],src=a.track.onsets.length<=b.track.onsets.length?a.track:b.track,oth=src===a.track?b.track:a.track,arr=[];const pairTicks=Array.from(new Set([...a.track.onsets,...b.track.onsets])).sort((x,y)=>x-y);for(const t of pairTicks){const ia=a.track.activeIndexAt(t),ib=b.track.activeIndexAt(t);if(ia<0||ib<0)continue;const info=intervalInfo(a.seq[ia],b.seq[ib],lowest.get(t),modo,icDesired);arr.push(info);if(!validClass(info.cls))return null;}pairs[i+'-'+j]=arr;}return {combo:combo.map(c=>c.cfg),pairsIntervals:pairs};}
       self.onmessage=async(e)=>{const d=e.data,leader=d.leaderNotes,modo=d.modo,key=d.keySig,opts=d.opts,n=d.nVoices,icDesired=d.icDesired||{};try{const delays=d.delays,forms=d.forms,ritmos=d.ritmos;const configs=[];const leaderP=prepare(leader,{transpIdx:-1,transpOpt:['Líder',0],delay:0,inv:false,ret:false,ritmoIdx:0});for(let t=0;t<opts.length;t++)for(const delay of delays)for(const form of forms)for(const rid of ritmos){const cfg={transpIdx:t,transpOpt:opts[t],delay,inv:form.inv,ret:form.ret,ritmoIdx:rid},seq=construir(leader,cfg,modo,key),pr=prepare(seq,cfg);if(check(leaderP,pr,modo)){pr.index=configs.length;configs.push(pr);}}self.postMessage({type:'phase',phase:'matrix',total:configs.length});const m=configs.length,words=Math.ceil(m/32),compat=new Array(m);for(let i=0;i<m;i++)compat[i]=new Uint32Array(words);let last=performance.now();for(let i=0;i<m;i++){for(let j=i;j<m;j++)if(check(configs[i],configs[j],modo)){bitAdd(compat[i],j);if(i!==j)bitAdd(compat[j],i);}if(performance.now()-last>80){self.postMessage({type:'progress',phase:'matrix',value:i+1,total:m});await new Promise(r=>setTimeout(r,0));last=performance.now();}}self.postMessage({type:'progress',phase:'matrix',value:m,total:m});const results=[];let nodes=0,lastP=performance.now(),lastYield=performance.now();const baseInfo=[{delay:0,len:leader.length}];function intersect(a,b){for(let w=0;w<words;w++)a[w]&=b[w];}async function search(depth,idxs,chosen,cands,infos){if(depth===n-1){const r=finalTest(leaderP,chosen,modo,icDesired);if(r)results.push(r);return;}const next=cands.slice();const start=idxs.length?idxs[idxs.length-1]+1:0;let i=start;while(i<m){const wordIndex=i>>>5;const word=next[wordIndex];let bits=word&(-1<<(i&31));if(!bits){i=(i+32)&~31;continue;}const bit=bits&-bits;const idx=(wordIndex<<5)+31-Math.clz32(bit);i=idx+1;const c=configs[idx];if(!overlap(c.cfg.delay,leader.length,infos))continue;let ok=true;for(const sel of idxs)if(!bitHas(compat[sel],idx)){ok=false;break;}if(!ok)continue;nodes++;idxs.push(idx);chosen.push(c);infos.push({delay:c.cfg.delay,len:leader.length});const child=next.slice();intersect(child,compat[idx]);await search(depth+1,idxs,chosen,child,infos);infos.pop();chosen.pop();idxs.pop();const now=performance.now();if(now-lastP>100){self.postMessage({type:'progress',phase:'search',value:nodes,total:m,nodes});lastP=now;}if(now-lastYield>12){await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}}}
       const initial=new Uint32Array(words);for(let i=0;i<m;i++)bitAdd(initial,i);await search(0,[],[],initial,baseInfo);self.postMessage({type:'done',results,configs:m,nodes});}catch(err){self.postMessage({type:'error',message:err&&err.stack?err.stack:String(err)});}};
@@ -2101,7 +2127,13 @@ buildReferenceTable();
         document.getElementById('icPanel').style.display = modo === 'atonal' ? 'block' : 'none';
       }
       if (modo === 'atonal' && data.icDesired) {
-        Object.keys(icDesired).forEach(k => { icDesired[k] = !!data.icDesired[k]; });
+        Object.keys(icDesired).forEach(k => {
+          const v = data.icDesired[k];
+          // Compatível com presets antigos (valor booleano) e novos (string
+          // de 3 estados: "desired" | "undesired" | "false").
+          if (v === 'desired' || v === 'false' || v === 'undesired') icDesired[k] = v;
+          else icDesired[k] = v ? 'desired' : 'undesired';
+        });
         renderIcPanel();
       }
       if (data.nVoices) voices.value = String(data.nVoices);
