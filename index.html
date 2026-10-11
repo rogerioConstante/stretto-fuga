@@ -164,7 +164,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 <body>
 <header>
 <h1>Stretto Fuga — Calculadora de Intervalos</h1>
-<p>Ferramenta para explorar movimentos melódicos possíveis do Líder em uma textura imitativa.</p>
+<p>Ferramenta para explorar a criação de texturas polifônicas imitativas.</p>
 <div class="note">por Rogério Tavares Constante</div>
 </header>
 <div class="app">
@@ -1575,26 +1575,6 @@ buildReferenceTable();
     return seq;
   }
 
-  // Verifica SOMENTE as regras de movimento paralelo entre um par de vozes — checagem que não
-  // depende de nenhuma outra voz, o que permite aplicá-la cedo (pré-filtro contra o Líder e poda
-  // incremental durante a busca), antes de montar a combinação completa.
-  //
-  // Modo TONAL: proíbe paralela estrita (mesmo deslocamento em semitons) de 1ª/5ª/8ª; separadamente,
-  // limita a no máximo 3 ocorrências seguidas de 3ª/4ª/6ª mantendo o mesmo número intervalar genérico,
-  // por qualquer tipo de movimento (direto, oblíquo ou contrário) desde que na mesma direção.
-  //
-  // Modo ATONAL: proíbe qualquer paralelismo (movimento na mesma direção) que resulte em intervalo
-  // de 0 ou 7 semitons (mod 12 — cobre também as composições 12, 19, 24...); para os demais
-  // intervalos, limita a no máximo 3 ocorrências seguidas do mesmo intervalo em semitons.
-  // ---------------------------------------------------------------------
-  // ANÁLISE OTIMIZADA DE IMITAÇÕES
-  //
-  // A versão anterior reconstruía tracks, calculava MIDI e repetia a mesma
-  // checagem de paralelismo muitas vezes durante a busca combinatória. Aqui
-  // cada configuração é preparada uma única vez e a compatibilidade entre
-  // configurações é armazenada em uma matriz de bitsets.
-  // ---------------------------------------------------------------------
-
   function prepararConfigAnalise(seq, cfg) {
     const midi = seq.map(noteToMidi);
     const trackBase = buildTickTrack(seq, cfg.delay, cfg.ritmoIdx);
@@ -1620,16 +1600,11 @@ buildReferenceTable();
     };
   }
 
-  // Checagem de paralelismo usando estruturas já preparadas. Não cria tracks,
-  // Sets ou arrays durante a busca combinatória.
   function checkParallelismoPreparado(a, b) {
     const ta = a.track, tb = b.track;
     const seqA = a.seq, seqB = b.seq;
     const midiA = a.midi, midiB = b.midi;
 
-    // Percorre a lista menor de ataques e consulta a presença no outro conjunto.
-    // Como os ataques são progressões aritméticas, isso evita sort/filter/Set
-    // novos para cada chamada.
     const source = ta.onsets.length <= tb.onsets.length ? ta : tb;
     const other = source === ta ? tb : ta;
 
@@ -1652,12 +1627,10 @@ buildReferenceTable();
         const sameDirection = moveA !== 0 && moveB !== 0 && Math.sign(moveA) === Math.sign(moveB);
 
         if (modo === 'tonal') {
-          // A função intervalInfoFromNotes é preservada para manter exatamente
-          // a classificação musical existente.
           const info = intervalInfoFromNotes(seqA[idxA], seqB[idxB], Math.min(ma, mb));
           const simpleNum = info.simpleNum;
+          // Paralela estrita: mesmo deslocamento em semitons, em 1ª/5ª/8ª.
           const isStrictParallel = moveA !== 0 && moveA === moveB;
-
           if (isStrictParallel && (simpleNum === 1 || simpleNum === 5)) return false;
 
           if (sameDirection && (simpleNum === 3 || simpleNum === 4 || simpleNum === 6)) {
@@ -1674,8 +1647,11 @@ buildReferenceTable();
           }
         } else {
           const modv = Math.abs(ma - mb) % 12;
+          // Paralela estrita: mesmo deslocamento em semitons, resultando em 0/7.
+          const isStrictParallel = moveA !== 0 && moveA === moveB && (modv === 0 || modv === 7);
+          if (isStrictParallel) return false;
+
           if (sameDirection) {
-            if (modv === 0 || modv === 7) return false;
             if (modv === lastVal) {
               parallelCount++;
               if (parallelCount > 3) return false;
@@ -1735,13 +1711,53 @@ buildReferenceTable();
       function construir(leader,cfg,modo,key){let seq=leader.slice();if(cfg.inv&&seq.length){const f=seq[0];seq=seq.map(n=>modo==='tonal'?invertDiatonic(n,f,key):invertChromatic(n,f));}if(cfg.ret)seq=seq.slice().reverse();seq=modo==='tonal'?seq.map(n=>transposeDiatonic(n,key,cfg.transpOpt[1])):seq.map(n=>transposeChromatic(n,cfg.transpOpt[1]));return seq;}
       function prepare(seq,cfg){const midi=seq.map(noteToMidi),dur=TICKS_PER_PULSE*RITMO_OPTIONS[cfg.ritmoIdx||0].mult,start=cfg.delay*TICKS_PER_PULSE,onsets=new Array(seq.length);for(let i=0;i<seq.length;i++)onsets[i]=start+i*dur;const onsetSet=new Set(onsets);return {cfg,seq,midi,track:{seq,durTicks:dur,startOffset:start,totalTicks:start+seq.length*dur,onsets,onsetSet,activeIndexAt(t){if(t<this.startOffset)return -1;const idx=Math.floor((t-this.startOffset)/this.durTicks);return idx>=0&&idx<this.seq.length?idx:-1;}}};}
       function intervalSimple(a,b){const da=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter)));return ((da)%7)+1;}
-      function check(a,b,modo){const ta=a.track,tb=b.track,source=ta.onsets.length<=tb.onsets.length?ta:tb,other=source===ta?tb:ta;let count=1,last=null,lastA=null,lastB=null;for(const tick of source.onsets){if(!other.onsetSet.has(tick))continue;const ia=ta.activeIndexAt(tick),ib=tb.activeIndexAt(tick);if(ia<0||ib<0)continue;const ma=a.midi[ia],mb=b.midi[ib];if(lastA!==null){const da=ma-lastA,db=mb-lastB,same=da!==0&&db!==0&&Math.sign(da)===Math.sign(db);if(modo==='tonal'){const sn=intervalSimple(a.seq[ia],b.seq[ib]),strict=da!==0&&da===db;if(strict&&(sn===1||sn===5))return false;if(same&&(sn===3||sn===4||sn===6)){if(sn===last)count++;else count=1;if(count>3)return false;last=sn;}else{count=1;last=null;}}else{const mod=Math.abs(ma-mb)%12;if(same){if(mod===0||mod===7)return false;if(mod===last)count++;else count=1;if(count>3)return false;last=mod;}else{count=1;last=null;}}}lastA=ma;lastB=mb;}return true;}
+      function check(a,b,modo){const ta=a.track,tb=b.track,source=ta.onsets.length<=tb.onsets.length?ta:tb,other=source===ta?tb:ta;let count=1,last=null,lastA=null,lastB=null;for(const tick of source.onsets){if(!other.onsetSet.has(tick))continue;const ia=ta.activeIndexAt(tick),ib=tb.activeIndexAt(tick);if(ia<0||ib<0)continue;const ma=a.midi[ia],mb=b.midi[ib];if(lastA!==null){const da=ma-lastA,db=mb-lastB,same=da!==0&&db!==0&&Math.sign(da)===Math.sign(db);if(modo==='tonal'){const sn=intervalSimple(a.seq[ia],b.seq[ib]),strict=da!==0&&da===db;if(strict&&(sn===1||sn===5))return false;if(same&&(sn===3||sn===4||sn===6)){if(sn===last)count++;else count=1;if(count>3)return false;last=sn;}else{count=1;last=null;}}else{const mod=Math.abs(ma-mb)%12,strict=da!==0&&da===db&&(mod===0||mod===7);if(strict)return false;if(same){if(mod===last)count++;else count=1;if(count>3)return false;last=mod;}else{count=1;last=null;}}}lastA=ma;lastB=mb;}return true;}
       function bitHas(bits,i){return (bits[i>>>5]&(1<<(i&31)))!==0;}
       function bitAdd(bits,i){bits[i>>>5]|=1<<(i&31);}
       function overlap(delay,len,voices){for(const v of voices){const a=Math.max(delay,v.delay),b=Math.min(delay+len,v.delay+v.len);if(b-a>=2)return true;}return false;}
       function validClass(cls){return cls!=='dissonant'&&cls!=='undesired';}
       function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=Math.abs(d)%12,st=icDesired[m];let cls;if(st==='desired')cls='desired';else if(st==='false'){const ma2=noteToMidi(a),mb2=noteToMidi(b),lo2=Math.min(ma2,mb2);cls=(lo2===lowest)?'dissonant':'special-consonant';}else cls='undesired';return {label:String(m),cls,val:m,simpleNum:m};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
-      function finalTest(leader,combo,modo,icDesired){const voices=[leader,...combo],all=new Set();for(const v of voices)for(const t of v.track.onsets)all.add(t);const ticks=Array.from(all).sort((a,b)=>a-b),lowest=new Map();for(const t of ticks){let low=Infinity;for(const v of voices){const i=v.track.activeIndexAt(t);if(i>=0&&v.midi[i]<low)low=v.midi[i];}lowest.set(t,low);}const pairs={};for(let i=0;i<voices.length;i++)for(let j=i+1;j<voices.length;j++){const a=voices[i],b=voices[j],src=a.track.onsets.length<=b.track.onsets.length?a.track:b.track,oth=src===a.track?b.track:a.track,arr=[];const pairTicks=Array.from(new Set([...a.track.onsets,...b.track.onsets])).sort((x,y)=>x-y);for(const t of pairTicks){const ia=a.track.activeIndexAt(t),ib=b.track.activeIndexAt(t);if(ia<0||ib<0)continue;const info=intervalInfo(a.seq[ia],b.seq[ib],lowest.get(t),modo,icDesired);arr.push(info);if(!validClass(info.cls))return null;}pairs[i+'-'+j]=arr;}return {combo:combo.map(c=>c.cfg),pairsIntervals:pairs};}
+      function finalTest(leader,combo,modo,icDesired){
+        const voices=[leader,...combo];
+        const all=new Set();
+        for(const v of voices)for(const t of v.track.onsets)all.add(t);
+        const ticks=Array.from(all).sort((a,b)=>a-b),lowest=new Map();
+        for(const t of ticks){let low=Infinity;for(const v of voices){const i=v.track.activeIndexAt(t);if(i>=0&&v.midi[i]<low)low=v.midi[i];}lowest.set(t,low);}
+        const pairs={};
+        for(let i=0;i<voices.length;i++)for(let j=i+1;j<voices.length;j++){
+          const a=voices[i],b=voices[j];
+          const pairTicks=Array.from(new Set([...a.track.onsets,...b.track.onsets])).sort((x,y)=>x-y);
+          const arr=[];
+          for(const t of pairTicks){const ia=a.track.activeIndexAt(t),ib=b.track.activeIndexAt(t);if(ia<0||ib<0)continue;const info=intervalInfo(a.seq[ia],b.seq[ib],lowest.get(t),modo,icDesired);arr.push(info);if(!validClass(info.cls))return null;}
+          pairs[i+'-'+j]=arr;
+        }
+        if(!checkOcultasExternas(voices,ticks))return null;
+        return {combo:combo.map(c=>c.cfg),pairsIntervals:pairs};
+      }
+      function checkOcultasExternas(voices,ticks){
+        let lastTop=null,lastBottom=null,lastTopMidi=null,lastBottomMidi=null;
+        for(const t of ticks){
+          let topIdx=-1,bottomIdx=-1,topMidi=-Infinity,bottomMidi=Infinity;
+          for(let v=0;v<voices.length;v++){
+            const i=voices[v].track.activeIndexAt(t);
+            if(i<0)continue;
+            const m=voices[v].midi[i];
+            if(m>topMidi){topMidi=m;topIdx=v;}
+            if(m<bottomMidi){bottomMidi=m;bottomIdx=v;}
+          }
+          if(topIdx<0||bottomIdx<0||topIdx===bottomIdx){lastTop=null;lastBottom=null;lastTopMidi=null;lastBottomMidi=null;continue;}
+          if(lastTop!==null&&lastTop===topIdx&&lastBottom===bottomIdx){
+            const moveTop=topMidi-lastTopMidi,moveBottom=bottomMidi-lastBottomMidi;
+            const sameDir=moveTop!==0&&moveBottom!==0&&Math.sign(moveTop)===Math.sign(moveBottom);
+            if(sameDir){
+              const mod=Math.abs(topMidi-bottomMidi)%12;
+              if(mod===0||mod===7)return false;
+            }
+          }
+          lastTop=topIdx;lastBottom=bottomIdx;lastTopMidi=topMidi;lastBottomMidi=bottomMidi;
+        }
+        return true;
+      }
       self.onmessage=async(e)=>{const d=e.data,leader=d.leaderNotes,modo=d.modo,key=d.keySig,opts=d.opts,n=d.nVoices,icDesired=d.icDesired||{};try{const delays=d.delays,forms=d.forms,ritmos=d.ritmos;const configs=[];const leaderP=prepare(leader,{transpIdx:-1,transpOpt:['Líder',0],delay:0,inv:false,ret:false,ritmoIdx:0});for(let t=0;t<opts.length;t++)for(const delay of delays)for(const form of forms)for(const rid of ritmos){const cfg={transpIdx:t,transpOpt:opts[t],delay,inv:form.inv,ret:form.ret,ritmoIdx:rid},seq=construir(leader,cfg,modo,key),pr=prepare(seq,cfg);if(check(leaderP,pr,modo)){pr.index=configs.length;configs.push(pr);}}self.postMessage({type:'phase',phase:'matrix',total:configs.length});const m=configs.length,words=Math.ceil(m/32),compat=new Array(m);for(let i=0;i<m;i++)compat[i]=new Uint32Array(words);let last=performance.now();for(let i=0;i<m;i++){for(let j=i;j<m;j++)if(check(configs[i],configs[j],modo)){bitAdd(compat[i],j);if(i!==j)bitAdd(compat[j],i);}if(performance.now()-last>80){self.postMessage({type:'progress',phase:'matrix',value:i+1,total:m});await new Promise(r=>setTimeout(r,0));last=performance.now();}}self.postMessage({type:'progress',phase:'matrix',value:m,total:m});const results=[];let nodes=0,lastP=performance.now(),lastYield=performance.now();const baseInfo=[{delay:0,len:leader.length}];function intersect(a,b){for(let w=0;w<words;w++)a[w]&=b[w];}async function search(depth,idxs,chosen,cands,infos){if(depth===n-1){const r=finalTest(leaderP,chosen,modo,icDesired);if(r)results.push(r);return;}const next=cands.slice();const start=idxs.length?idxs[idxs.length-1]+1:0;let i=start;while(i<m){const wordIndex=i>>>5;const word=next[wordIndex];let bits=word&(-1<<(i&31));if(!bits){i=(i+32)&~31;continue;}const bit=bits&-bits;const idx=(wordIndex<<5)+31-Math.clz32(bit);i=idx+1;const c=configs[idx];if(!overlap(c.cfg.delay,leader.length,infos))continue;let ok=true;for(const sel of idxs)if(!bitHas(compat[sel],idx)){ok=false;break;}if(!ok)continue;nodes++;idxs.push(idx);chosen.push(c);infos.push({delay:c.cfg.delay,len:leader.length});const child=next.slice();intersect(child,compat[idx]);await search(depth+1,idxs,chosen,child,infos);infos.pop();chosen.pop();idxs.pop();const now=performance.now();if(now-lastP>100){self.postMessage({type:'progress',phase:'search',value:nodes,total:m,nodes});lastP=now;}if(now-lastYield>12){await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}}}
       const initial=new Uint32Array(words);for(let i=0;i<m;i++)bitAdd(initial,i);await search(0,[],[],initial,baseInfo);self.postMessage({type:'done',results,configs:m,nodes});}catch(err){self.postMessage({type:'error',message:err&&err.stack?err.stack:String(err)});}};
     `;
@@ -1788,6 +1804,8 @@ buildReferenceTable();
 
   // Pré-calcula a informação de menor voz nos ticks relevantes e só então
   // constrói os objetos necessários para a apresentação da tabela.
+  // Passa a validar também oitavas/quintas ocultas entre as
+  // vozes externas, para ficar coerente com o finalTest do Worker.
   function testarCombinacaoPreparada(leaderPrepared, comboPrepared, nVoices) {
     const voicesPrepared = [leaderPrepared, ...comboPrepared];
     const voicesNotes = voicesPrepared.map(v => v.seq);
@@ -1799,7 +1817,6 @@ buildReferenceTable();
     }
     const attackTicks = Array.from(allAttackTicks).sort((a, b) => a - b);
 
-    // Para cada tick, calcula uma vez a nota mais grave entre todas as vozes.
     const lowestByTick = new Map();
     for (const tick of attackTicks) {
       let lowestMidi = Infinity;
@@ -1818,8 +1835,6 @@ buildReferenceTable();
         const pairKey = `${i}-${j}`;
         pairsIntervals[pairKey] = [];
         const trackA = voicesTracks[i], trackB = voicesTracks[j];
-        const source = trackA.onsets.length <= trackB.onsets.length ? trackA : trackB;
-        const other = source === trackA ? trackB : trackA;
 
         const pairTicks = Array.from(new Set([...trackA.onsets, ...trackB.onsets])).sort((a, b) => a - b);
         for (const tick of pairTicks) {
@@ -1841,7 +1856,40 @@ buildReferenceTable();
       }
     }
 
+    // [AJUSTE OCULTAS] Verificação de movimento direto para 0/7 entre as vozes externas.
+    if (comboValid && !checkOcultasExternasMain(voicesPrepared, attackTicks)) {
+      comboValid = false;
+    }
+
     return { valid: comboValid, data: { combo: comboPrepared.map(c => c.cfg), pairsIntervals } };
+  }
+
+  function checkOcultasExternasMain(voicesPrepared, ticks) {
+    let lastTop = null, lastBottom = null, lastTopMidi = null, lastBottomMidi = null;
+    for (const t of ticks) {
+      let topIdx = -1, bottomIdx = -1, topMidi = -Infinity, bottomMidi = Infinity;
+      for (let v = 0; v < voicesPrepared.length; v++) {
+        const i = voicesPrepared[v].track.activeIndexAt(t);
+        if (i < 0) continue;
+        const m = voicesPrepared[v].midi[i];
+        if (m > topMidi) { topMidi = m; topIdx = v; }
+        if (m < bottomMidi) { bottomMidi = m; bottomIdx = v; }
+      }
+      if (topIdx < 0 || bottomIdx < 0 || topIdx === bottomIdx) {
+        lastTop = null; lastBottom = null; lastTopMidi = null; lastBottomMidi = null;
+        continue;
+      }
+      if (lastTop !== null && lastTop === topIdx && lastBottom === bottomIdx) {
+        const moveTop = topMidi - lastTopMidi, moveBottom = bottomMidi - lastBottomMidi;
+        const sameDir = moveTop !== 0 && moveBottom !== 0 && Math.sign(moveTop) === Math.sign(moveBottom);
+        if (sameDir) {
+          const mod = Math.abs(topMidi - bottomMidi) % 12;
+          if (mod === 0 || mod === 7) return false;
+        }
+      }
+      lastTop = topIdx; lastBottom = bottomIdx; lastTopMidi = topMidi; lastBottomMidi = bottomMidi;
+    }
+    return true;
   }
 
   // ---------------------------------------------------------------------
