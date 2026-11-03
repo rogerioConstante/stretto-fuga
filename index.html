@@ -159,6 +159,21 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-preset-btn{padding:8px 18px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .exp-preset-btn:hover{border-color:var(--cyan)}
 .exp-preset-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Editor rítmico (barra de duração) e critério de análise */
+.exp-durbar{align-items:center}
+.exp-durbar .exp-dur-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.dur-btn{padding:5px 8px;background:var(--panel2);border:1px solid #394657;border-radius:6px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.dur-btn:hover{border-color:var(--cyan)}
+.dur-btn.active{color:#04141c;background:var(--cyan);border-color:var(--cyan)}
+.dur-btn small{opacity:.65;margin-right:4px;font-weight:700}
+.exp-tup input[type=number]{width:46px;padding:4px 3px;background:var(--panel);color:var(--text);border:1px solid #394657;border-radius:5px;font-size:12px;text-align:center;font-family:inherit}
+.exp-tup input[type=number]:focus{border-color:var(--cyan);outline:0}
+.exp-tup .sep{color:var(--muted);font-weight:700}
+.exp-dur-info{color:var(--cyan);font-size:11px;margin-left:4px}
+.exp-criterio{display:flex;align-items:center;gap:6px;font-size:11px}
+.exp-criterio select{width:auto;padding:6px 8px}
+.exp-criterio .exp-filter-label{margin-left:0}
 </style>
 </head>
 <body>
@@ -244,6 +259,29 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
     <span id="expAudioStatus" class="note" style="margin:0"></span>
   </div>
 
+  <div class="exp-toolbar exp-durbar" id="expDurBar">
+    <span class="exp-dur-title">Duração da próxima nota</span>
+    <div class="exp-tgroup" id="expFigGroup"></div>
+    <div class="exp-tgroup" id="expDotGroup">
+      <button class="dur-btn" type="button" data-dots="0" title="Sem ponto">Sem ponto</button>
+      <button class="dur-btn" type="button" data-dots="1" title="Um ponto (+½ do valor) — atalho: tecla .">Ponto</button>
+      <button class="dur-btn" type="button" data-dots="2" title="Dois pontos (+½ +¼ do valor) — atalho: tecla .">2 pontos</button>
+    </div>
+    <div class="exp-tgroup exp-tup" id="expTupGroup">
+      <label for="expTupNum">Quiáltera</label>
+      <input type="number" id="expTupNum" min="1" max="99" value="1" title="Numerador: quantas notas da quiáltera">
+      <span class="sep">:</span>
+      <input type="number" id="expTupDen" min="1" max="99" value="1" title="Denominador: quantas notas normais ocupam o mesmo tempo">
+      <button class="dur-btn" type="button" data-tup="1:1" title="Sem quiáltera">Nenhuma</button>
+      <button class="dur-btn" type="button" data-tup="3:2">3:2</button>
+      <button class="dur-btn" type="button" data-tup="5:4">5:4</button>
+      <button class="dur-btn" type="button" data-tup="7:4">7:4</button>
+      <button class="dur-btn" type="button" data-tup="7:8">7:8</button>
+      <button class="dur-btn" type="button" data-tup="11:8">11:8</button>
+    </div>
+    <span class="exp-dur-info" id="expDurInfo"></span>
+  </div>
+
   <div class="exp-viable-title">Movimentos melódicos viáveis para o Líder</div>
   <section class="viable exp-viable"><div id="expMoves" class="moves"></div></section>
 
@@ -254,7 +292,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   <div class="exp-canvas-wrapper">
     <div class="exp-canvas-area" id="expCanvasArea"></div>
     <div class="exp-tooltip-icon">ⓘ</div>
-    <div class="exp-tooltip">Digite as letras no teclado do computador (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓) ou use o teclado de piano virtual. Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável (destacada) é definida automaticamente pelas transposições configuradas ao lado.</div>
+    <div class="exp-tooltip">Digite as letras no teclado do computador (dó=c, ré=d, mi=e, fá=f, sol=g, lá=a, si=b — a oitava é definida pelo controle "Oitava" acima, ajustável pelas setas ↑/↓) ou use o teclado de piano virtual. Use ♯/♭/♮ (ou os atalhos +, -, 0) antes da nota para acidentes; Backspace apaga a última nota. A pauta editável (destacada) é definida automaticamente pelas transposições configuradas ao lado. A duração de cada nota é escolhida na barra "Duração da próxima nota" (teclas 1–7: breve a fusa; tecla . alterna os pontos; quiálteras num:den arbitrárias) e vale para as notas seguintes até ser mudada.</div>
   </div>
 </div>
 
@@ -264,6 +302,14 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <span class="title">Análise de imitações viáveis</span>
       <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Líder Atual</button>
       <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
+      <div class="exp-criterio" title="Critério de validação contrapontística (independente do modo Modal/Escalar × Atonal)">
+        <span class="exp-filter-label">Critério:</span>
+        <select id="expCriterio">
+          <option value="A">Modo A — Consonância estrita</option>
+          <option value="B">Modo B — Dissonâncias tratadas</option>
+          <option value="C">Modo C — Consonância nos ataques simultâneos</option>
+        </select>
+      </div>
       <div class="exp-form-filters" title="Selecione as formas de imitação e os tipos de ritmo que serão analisados">
         <span class="exp-filter-label">Formas:</span>
         <label><input type="checkbox" id="expFormOriginal" checked> Original</label>
@@ -285,7 +331,567 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </div>
 
 
+<script id="strettoCore" type="text/plain">
+// =====================================================================
+// NÚCLEO COMPARTILHADO (tela + Web Worker)
+// Funções puras, sem acesso ao DOM. O MESMO texto-fonte é avaliado na
+// thread principal e injetado no Worker — por isso a construção das vozes,
+// o modelo temporal e as regras de validação não podem divergir.
+// =====================================================================
+const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const PITCH_CLASS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const SHARP_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B'];
+const FLAT_ORDER = ['B', 'E', 'A', 'D', 'G', 'C', 'F'];
+const KEY_INFO = {
+  C: { n: 0, type: 'sharp' }, G: { n: 1, type: 'sharp' }, D: { n: 2, type: 'sharp' }, A: { n: 3, type: 'sharp' },
+  E: { n: 4, type: 'sharp' }, B: { n: 5, type: 'sharp' }, 'F#': { n: 6, type: 'sharp' }, 'C#': { n: 7, type: 'sharp' },
+  F: { n: 1, type: 'flat' }, Bb: { n: 2, type: 'flat' }, Eb: { n: 3, type: 'flat' }, Ab: { n: 4, type: 'flat' },
+  Db: { n: 5, type: 'flat' }, Gb: { n: 6, type: 'flat' }, Cb: { n: 7, type: 'flat' }
+};
+const CHROMA_SPELL = [['C', 0], ['C', 1], ['D', 0], ['D', 1], ['E', 0], ['F', 0], ['F', 1], ['G', 0], ['G', 1], ['A', 0], ['A', 1], ['B', 0]];
+
+function keyDefaultAcc(letter, key) {
+  const info = KEY_INFO[key] || KEY_INFO.C;
+  if (info.n === 0) return 0;
+  const order = info.type === 'sharp' ? SHARP_ORDER : FLAT_ORDER;
+  const i = order.indexOf(letter);
+  return i >= 0 && i < info.n ? (info.type === 'sharp' ? 1 : -1) : 0;
+}
+function noteToMidi(n) { return PITCH_CLASS[n.letter] + n.acc + 12 * (n.octave + 1); }
+function diatonicIndex(l, o) { return o * 7 + LETTERS.indexOf(l); }
+
+// Usa a armadura vigente quando a nota foi inserida (note.keyAtEntry) como
+// referência — não a armadura selecionada no momento (key).
+function transposeDiatonic(note, key, d) {
+  const ref = note.keyAtEntry || key, idx = LETTERS.indexOf(note.letter), raw = idx + d,
+    nl = LETTERS[((raw % 7) + 7) % 7], no = note.octave + Math.floor(raw / 7),
+    dev = note.acc - keyDefaultAcc(note.letter, ref), na = keyDefaultAcc(nl, ref) + dev;
+  return { letter: nl, acc: na, octave: no, keyAtEntry: ref };
+}
+function transposeChromatic(note, d) {
+  const midi = noteToMidi(note) + d, pc = ((midi % 12) + 12) % 12, o = Math.floor(midi / 12) - 1, [l, a] = CHROMA_SPELL[pc];
+  return { letter: l, acc: a, octave: o };
+}
+function invertDiatonic(note, first, key) {
+  const ref = note.keyAtEntry || key,
+    target = 2 * diatonicIndex(first.letter, first.octave) - diatonicIndex(note.letter, note.octave),
+    nl = LETTERS[((target % 7) + 7) % 7], no = Math.floor(target / 7),
+    dev = note.acc - keyDefaultAcc(note.letter, ref), na = keyDefaultAcc(nl, ref) + dev;
+  return { letter: nl, acc: na, octave: no, keyAtEntry: ref };
+}
+function invertChromatic(note, first) {
+  const midi = 2 * noteToMidi(first) - noteToMidi(note), pc = ((midi % 12) + 12) % 12, o = Math.floor(midi / 12) - 1, [l, a] = CHROMA_SPELL[pc];
+  return { letter: l, acc: a, octave: o };
+}
+
+// ---------------------------------------------------------------------
+// FRAÇÕES EXATAS  [numerador, denominador] (sempre reduzidas, den > 0)
+// Unidade de tempo: 1 pulso de referência = 1 semibreve.
+// ---------------------------------------------------------------------
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a; }
+function fr(n, d) {
+  if (d === undefined) d = 1;
+  if (d < 0) { n = -n; d = -d; }
+  if (!Number.isSafeInteger(n) || !Number.isSafeInteger(d)) throw new Error('GRADE_OVERFLOW');
+  const g = gcd(n, d) || 1;
+  return [n / g, d / g];
+}
+function frMul(a, b) { return fr(a[0] * b[0], a[1] * b[1]); }
+function frAdd(a, b) { return fr(a[0] * b[1] + b[0] * a[1], a[1] * b[1]); }
+function frSub(a, b) { return fr(a[0] * b[1] - b[0] * a[1], a[1] * b[1]); }
+function frCmp(a, b) { return a[0] * b[1] - b[0] * a[1]; }
+function frNum(a) { return a[0] / a[1]; }
+function lcm(a, b) {
+  const r = (a / gcd(a, b)) * b;
+  if (!Number.isSafeInteger(r)) throw new Error('GRADE_OVERFLOW');
+  return r;
+}
+
+// Figuras (valor em pulsos). '1/2' = breve (convenção VexFlow).
+const FIG_ORDER = ['1/2', 'w', 'h', 'q', '8', '16', '32', '64', '128'];
+const FIG_VAL = { '1/2': [2, 1], w: [1, 1], h: [1, 2], q: [1, 4], '8': [1, 8], '16': [1, 16], '32': [1, 32], '64': [1, 64], '128': [1, 128] };
+
+// Fator de cada opção de ritmo das imitações (índice = id em RITMO_OPTIONS).
+const RITMO_FRAC = [[1, 1], [3, 2], [2, 1], [3, 1], [2, 3], [1, 2], [1, 3], [4, 1], [5, 1], [6, 1], [7, 1], [1, 4], [1, 5], [1, 6], [1, 7]];
+
+// Normaliza a especificação rítmica de uma nota. Notas sem campos de
+// duração (presets antigos) valem 1 pulso (semibreve, sem ponto, sem quiáltera).
+function noteSpec(n) {
+  const fig = FIG_VAL[n.fig] ? n.fig : 'w';
+  let dots = n.dots | 0; if (dots < 0) dots = 0; if (dots > 2) dots = 2;
+  let tn = n.tupNum | 0, td = n.tupDen | 0; if (tn < 1) tn = 1; if (td < 1) td = 1;
+  return { fig, dots, tn, td };
+}
+function nominalDur(fig, dots) { return frMul(FIG_VAL[fig], fr((2 << dots) - 1, 1 << dots)); } // ×1, ×3/2, ×7/4
+function eventDur(n) { const s = noteSpec(n); return frMul(nominalDur(s.fig, s.dots), fr(s.td, s.tn)); }
+function leaderTotalPulses(leader) { let t = [0, 1]; for (const n of leader) t = frAdd(t, eventDur(n)); return t; }
+
+// ---------------------------------------------------------------------
+// CONSTRUÇÃO DAS VOZES
+// ---------------------------------------------------------------------
+function carry(p, src, mult) {
+  p.fig = src.fig; p.dots = src.dots; p.tupNum = src.tupNum; p.tupDen = src.tupDen;
+  p.dur = frMul(eventDur(src), mult || [1, 1]);
+  return p;
+}
+// Eventos do próprio Líder (alturas intactas), opcionalmente com um fator rítmico.
+function leaderEvents(leader, mult) {
+  return leader.map(n => { const p = { letter: n.letter, acc: n.acc, octave: n.octave, keyAtEntry: n.keyAtEntry }; return carry(p, n, mult); });
+}
+// Sequência de uma imitação: inversão → retrogradação INTEGRAL (altura e
+// duração viajam juntas) → transposição; as durações são então multiplicadas
+// pelo fator de ritmo da voz (aumentação/diminuição).
+function buildSeq(leader, cfg, modo, key) {
+  let seq = leader.slice();
+  if (cfg.inv && seq.length) {
+    const f = seq[0];
+    seq = seq.map(n => carry(modo === 'tonal' ? invertDiatonic(n, f, key) : invertChromatic(n, f), n));
+  }
+  if (cfg.ret) seq = seq.slice().reverse();
+  const mult = RITMO_FRAC[cfg.ritmoIdx || 0], d = cfg.transpOpt[1];
+  return seq.map(n => carry(modo === 'tonal' ? transposeDiatonic(n, key, d) : transposeChromatic(n, d), n, mult));
+}
+
+// Grade de ticks inteiros: mmc dos denominadores de todas as durações efetivas.
+function gridFor(fracs) { let g = 1; for (const f of fracs) g = lcm(g, f[1]); return g; }
+function analysisGrid(leader, ritmoIds) {
+  const ids = [0].concat(ritmoIds.filter(r => r !== 0));
+  let g = 1;
+  for (const r of ids) for (const n of leader) g = lcm(g, frMul(eventDur(n), RITMO_FRAC[r])[1]);
+  return g;
+}
+
+// Voz preparada: onsets/ends em ticks INTEIROS (sem comparação de ponto flutuante).
+function prepare(events, cfg, G) {
+  const n = events.length, midi = new Array(n), onsets = new Array(n), ends = new Array(n), start = cfg.delay * G;
+  let t = start, uniform = true, d0 = 0;
+  for (let i = 0; i < n; i++) {
+    midi[i] = noteToMidi(events[i]);
+    const dd = events[i].dur, dt = dd[0] * (G / dd[1]);
+    if (!Number.isInteger(dt)) throw new Error('GRADE_INCOMPATIVEL');
+    if (i === 0) d0 = dt; else if (dt !== d0) uniform = false;
+    onsets[i] = t; t += dt; ends[i] = t;
+  }
+  if (!Number.isSafeInteger(t)) throw new Error('GRADE_OVERFLOW');
+  return {
+    cfg, seq: events, midi,
+    track: {
+      seq: events, durTicks: uniform ? d0 : 0, uniform, startOffset: start, totalTicks: t, onsets, ends, onsetSet: new Set(onsets),
+      // Índice da nota ativa no tick, ou -1 (silêncio / fora da voz).
+      activeIndexAt(tick) {
+        if (tick < this.startOffset || tick >= this.totalTicks) return -1;
+        if (this.uniform) { const idx = Math.floor((tick - this.startOffset) / this.durTicks); return idx >= 0 && idx < this.seq.length ? idx : -1; }
+        const o = this.onsets; let lo = 0, hi = o.length - 1;
+        while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (o[mid] <= tick) lo = mid; else hi = mid - 1; }
+        return lo;
+      }
+    }
+  };
+}
+
+// ---------------------------------------------------------------------
+// CLASSIFICAÇÃO DE INTERVALOS E REGRAS HERDADAS (inalteradas)
+// ---------------------------------------------------------------------
+function intervalSimple(a, b) { const da = Math.abs((b.octave - a.octave) * 7 + (LETTERS.indexOf(b.letter) - LETTERS.indexOf(a.letter))); return (da % 7) + 1; }
+function validClass(cls) { return cls !== 'dissonant' && cls !== 'undesired'; }
+function intervalInfo(a, b, lowest, modo, icDesired) {
+  if (modo !== 'tonal') {
+    const d = noteToMidi(b) - noteToMidi(a), m = Math.abs(d) % 12, st = icDesired[m];
+    let cls;
+    if (st === 'desired') cls = 'desired';
+    else if (st === 'false') { const ma2 = noteToMidi(a), mb2 = noteToMidi(b), lo2 = Math.min(ma2, mb2); cls = (lo2 === lowest) ? 'dissonant' : 'special-consonant'; }
+    else cls = 'undesired';
+    return { label: String(m), cls, val: m, simpleNum: m };
+  }
+  const ma = noteToMidi(a), mb = noteToMidi(b), lo = Math.min(ma, mb), hi = Math.max(ma, mb),
+    steps = Math.abs((b.octave - a.octave) * 7 + (LETTERS.indexOf(b.letter) - LETTERS.indexOf(a.letter))),
+    number = steps + 1, oct = Math.floor(steps / 7), sn = ((number - 1) % 7) + 1;
+  let label;
+  if (sn === 1 && oct >= 1) label = '8' + "'".repeat(oct - 1); else label = String(sn) + "'".repeat(oct);
+  const semi = hi - lo, mod = semi % 12;
+  let cls;
+  if (mod === 0 || mod === 7) cls = 'perfect';
+  else if (mod === 3 || mod === 4 || mod === 8 || mod === 9) cls = 'imperfect';
+  else if (mod === 5 || mod === 6) cls = (lo === lowest) ? 'dissonant' : 'special-consonant';
+  else cls = 'dissonant';
+  return { label, cls, val: semi, simpleNum: sn };
+}
+
+// Paralelismos entre ataques simultâneos (regra herdada, idêntica à original).
+function check(a, b, modo) {
+  const ta = a.track, tb = b.track, source = ta.onsets.length <= tb.onsets.length ? ta : tb, other = source === ta ? tb : ta;
+  let count = 1, last = null, lastA = null, lastB = null;
+  for (const tick of source.onsets) {
+    if (!other.onsetSet.has(tick)) continue;
+    const ia = ta.activeIndexAt(tick), ib = tb.activeIndexAt(tick);
+    if (ia < 0 || ib < 0) continue;
+    const ma = a.midi[ia], mb = b.midi[ib];
+    if (lastA !== null) {
+      const da = ma - lastA, db = mb - lastB, same = da !== 0 && db !== 0 && Math.sign(da) === Math.sign(db);
+      if (modo === 'tonal') {
+        const sn = intervalSimple(a.seq[ia], b.seq[ib]), strict = da !== 0 && da === db;
+        if (strict && (sn === 1 || sn === 5)) return false;
+        if (same && (sn === 3 || sn === 4 || sn === 6)) { if (sn === last) count++; else count = 1; if (count > 3) return false; last = sn; }
+        else { count = 1; last = null; }
+      } else {
+        const mod = Math.abs(ma - mb) % 12, strict = da !== 0 && da === db && (mod === 0 || mod === 7);
+        if (strict) return false;
+        if (same) { if (mod === last) count++; else count = 1; if (count > 3) return false; last = mod; }
+        else { count = 1; last = null; }
+      }
+    }
+    lastA = ma; lastB = mb;
+  }
+  return true;
+}
+
+// Oitavas/quintas ocultas entre as vozes externas (regra herdada).
+function checkOcultasExternas(voices, ticks) {
+  let lastTop = null, lastBottom = null, lastTopMidi = null, lastBottomMidi = null;
+  for (const t of ticks) {
+    let topIdx = -1, bottomIdx = -1, topMidi = -Infinity, bottomMidi = Infinity;
+    for (let v = 0; v < voices.length; v++) {
+      const i = voices[v].track.activeIndexAt(t);
+      if (i < 0) continue;
+      const m = voices[v].midi[i];
+      if (m > topMidi) { topMidi = m; topIdx = v; }
+      if (m < bottomMidi) { bottomMidi = m; bottomIdx = v; }
+    }
+    if (topIdx < 0 || bottomIdx < 0 || topIdx === bottomIdx) { lastTop = null; lastBottom = null; lastTopMidi = null; lastBottomMidi = null; continue; }
+    if (lastTop !== null && lastTop === topIdx && lastBottom === bottomIdx) {
+      const moveTop = topMidi - lastTopMidi, moveBottom = bottomMidi - lastBottomMidi;
+      const sameDir = moveTop !== 0 && moveBottom !== 0 && Math.sign(moveTop) === Math.sign(moveBottom);
+      if (sameDir) { const mod = Math.abs(topMidi - bottomMidi) % 12; if (mod === 0 || mod === 7) return false; }
+    }
+    lastTop = topIdx; lastBottom = bottomIdx; lastTopMidi = topMidi; lastBottomMidi = bottomMidi;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------
+// MODO B — DISSONÂNCIAS TRATADAS
+// Ataque simultâneo/disjunto = apenas coincidência de timestamps de ataque,
+// relativa ao PAR analisado (sem compasso, sem hierarquia métrica).
+// ---------------------------------------------------------------------
+// Natureza do movimento melódico entre duas notas consecutivas de uma voz.
+//  step : grau conjunto (tonal: letra ±1 ou mesma letra com alteração cromática,
+//         inclui 2ª aumentada; atonal: 1–2 semitons)
+//  third: salto de terça (tonal: letra ±2; atonal: 3–4 semitons)
+//  leap : qualquer salto maior;  rep: mesma altura
+function stepOf(modo, n1, n2) {
+  const dm = noteToMidi(n2) - noteToMidi(n1);
+  if (dm === 0) return { k: 'rep', dir: 0 };
+  const dir = dm > 0 ? 1 : -1;
+  if (modo === 'tonal') {
+    const dl = diatonicIndex(n2.letter, n2.octave) - diatonicIndex(n1.letter, n1.octave), al = Math.abs(dl);
+    if (dl !== 0 && Math.sign(dl) !== dir) return { k: 'leap', dir };
+    if (al <= 1) return { k: 'step', dir };
+    if (al === 2) return { k: 'third', dir };
+    return { k: 'leap', dir };
+  }
+  const a = Math.abs(dm);
+  if (a <= 2) return { k: 'step', dir };
+  if (a <= 4) return { k: 'third', dir };
+  return { k: 'leap', dir };
+}
+function samePitch(modo, a, b) {
+  return noteToMidi(a) === noteToMidi(b) && (modo !== 'tonal' || (a.letter === b.letter && a.octave === b.octave));
+}
+
+// Linha do tempo do par: um "instante" por timestamp em que ao menos uma das
+// vozes ataca. st[k]: 'C' consonante, 'D' dissonante, 'N' sem as duas vozes ativas.
+function pairContext(a, b, lowest, modo, icDesired) {
+  const ta = a.track, tb = b.track;
+  const ticks = Array.from(new Set([...ta.onsets, ...tb.onsets])).sort((x, y) => x - y), m = ticks.length;
+  const A = { seq: a.seq, idx: new Array(m), att: new Array(m), inst: new Array(a.seq.length).fill(-1) };
+  const B = { seq: b.seq, idx: new Array(m), att: new Array(m), inst: new Array(b.seq.length).fill(-1) };
+  const st = new Array(m), list = [];
+  for (let k = 0; k < m; k++) {
+    const t = ticks[k], ia = ta.activeIndexAt(t), ib = tb.activeIndexAt(t);
+    A.idx[k] = ia; B.idx[k] = ib;
+    A.att[k] = ta.onsetSet.has(t); B.att[k] = tb.onsetSet.has(t);
+    if (A.att[k]) A.inst[ia] = k;
+    if (B.att[k]) B.inst[ib] = k;
+    if (ia < 0 || ib < 0) { st[k] = 'N'; continue; }
+    const info = intervalInfo(a.seq[ia], b.seq[ib], lowest.get(ticks[k]), modo, icDesired);
+    list.push(info);
+    st[k] = validClass(info.cls) ? 'C' : 'D';
+  }
+  return { A, B, st, list, m, ticks };
+}
+
+// Contexto de leitura de uma voz no instante k (nota atacada/ativa, estados vizinhos).
+function leitura(P, X, k, modo) {
+  const seq = X.seq, i = X.idx[k], st = P.st;
+  return {
+    seq, n: seq.length, i, st,
+    stAt: j => st[X.inst[j]],                                           // estado do par no ataque da nota j
+    stBef: j => { const kk = X.inst[j] - 1; return kk >= 0 ? st[kk] : 'N'; }, // estado do par imediatamente antes
+    S: (p, q) => stepOf(modo, seq[p], seq[q])
+  };
+}
+
+// --- Os nove tratamentos. Cada função recebe (P, X, Y, k, modo): a voz X
+// ataca a nota dissonante no instante k (Y é a outra voz). Suspensão e
+// retardo recebem em X a voz que SUSTENTA a nota. ---
+
+// Apojatura: atacada diretamente (qualquer aproximação, ataque simultâneo ou
+// disjunto); resolve por grau conjunto (qualquer direção) em nota consonante.
+function trApojatura(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo);
+  return L.i + 1 < L.n && L.S(L.i, L.i + 1).k === 'step' && L.stAt(L.i + 1) === 'C';
+}
+// Nota de passagem: consonância → grau conjunto → grau conjunto na mesma direção → consonância.
+function trPassagem(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo), i = L.i;
+  if (!(i >= 1 && i + 1 < L.n) || L.stBef(i) !== 'C' || L.stAt(i + 1) !== 'C') return false;
+  const a = L.S(i - 1, i), b = L.S(i, i + 1);
+  return a.k === 'step' && b.k === 'step' && a.dir === b.dir;
+}
+// Bordadura: consonância → grau conjunto → retorno por grau conjunto à MESMA altura.
+function trBordadura(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo), i = L.i;
+  if (!(i >= 1 && i + 1 < L.n) || L.stBef(i) !== 'C' || L.stAt(i + 1) !== 'C') return false;
+  const a = L.S(i - 1, i), b = L.S(i, i + 1);
+  return a.k === 'step' && b.k === 'step' && a.dir === -b.dir && samePitch(modo, L.seq[i - 1], L.seq[i + 1]);
+}
+// Escapada: parte de consonância, atinge a dissonância por grau conjunto e
+// resolve (em consonância) por salto em direção oposta à da aproximação.
+function trEscapada(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo), i = L.i;
+  if (!(i >= 1 && i + 1 < L.n) || L.stBef(i) !== 'C' || L.stAt(i + 1) !== 'C') return false;
+  const a = L.S(i - 1, i), b = L.S(i, i + 1);
+  return a.k === 'step' && (b.k === 'third' || b.k === 'leap') && b.dir === -a.dir;
+}
+// Bordadura dupla (4 notas): N0 → vizinha (um lado) → vizinha (lado oposto; a
+// distância entre as vizinhas pode ser grau conjunto ou terça) → N0. A nota
+// dissonante pode ser a 1ª ou a 2ª vizinha; N0 e a nota final são consonantes.
+function trBordaduraDupla(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo);
+  for (let s = L.i - 2; s <= L.i - 1; s++) {
+    if (s < 0 || s + 3 >= L.n) continue;
+    const a = L.S(s, s + 1), b = L.S(s + 1, s + 2), c = L.S(s + 2, s + 3), o = L.S(s, s + 2);
+    if (a.k === 'step' && o.k === 'step' && o.dir === -a.dir && b.dir === -a.dir && (b.k === 'step' || b.k === 'third') &&
+      c.k === 'step' && c.dir === a.dir && samePitch(modo, L.seq[s], L.seq[s + 3]) &&
+      L.stBef(s + 1) === 'C' && L.stAt(s + 3) === 'C') return true;
+  }
+  return false;
+}
+// Cambiata (Schoenberg), 5 notas: N1 →(grau) N2 →(terça, mesma direção) N3 →(grau, direção oposta) N4 →(grau, mesma direção de N4) N5.
+// N1 e N5: consonantes em ataque simultâneo com a outra voz. Entre N2, N3 e N4, no máximo duas dissonantes.
+function trCambiata(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo);
+  for (let s = L.i - 3; s <= L.i - 1; s++) {
+    if (s < 0 || s + 4 >= L.n) continue;
+    const a = L.S(s, s + 1), b = L.S(s + 1, s + 2), c = L.S(s + 2, s + 3), d = L.S(s + 3, s + 4);
+    if (!(a.k === 'step' && b.k === 'third' && b.dir === a.dir && c.k === 'step' && c.dir === -a.dir && d.k === 'step' && d.dir === -a.dir)) continue;
+    const k1 = X.inst[s], k5 = X.inst[s + 4];
+    if (P.st[k1] !== 'C' || !(P.A.att[k1] && P.B.att[k1])) continue;
+    if (P.st[k5] !== 'C' || !(P.A.att[k5] && P.B.att[k5])) continue;
+    let nd = 0, ok = true;
+    for (let j = s + 1; j <= s + 3; j++) { const e = L.stAt(j); if (e === 'N') { ok = false; break; } if (e === 'D') nd++; }
+    if (ok && nd <= 2) return true;
+  }
+  return false;
+}
+// Antecipação: X ataca sozinha (ataque disjunto); no PRÓXIMO ataque da outra
+// voz, X repete o ataque da mesma altura e o intervalo resultante é consonante.
+function trAntecipacao(P, X, Y, k, modo) {
+  const L = leitura(P, X, k, modo), i = L.i;
+  if (Y.att[k] || i + 1 >= L.n) return false;
+  const j = Y.idx[k];
+  if (j < 0 || j + 1 >= Y.seq.length) return false;
+  const ky = Y.inst[j + 1];
+  return X.inst[i + 1] === ky && samePitch(modo, L.seq[i], L.seq[i + 1]) && P.st[ky] === 'C';
+}
+// Suspensão/retardo: X SUSTENTA a nota (sem novo ataque) vinda de uma situação
+// consonante (instante imediatamente anterior); o ataque da outra voz produz a
+// dissonância; o PRÓXIMO ataque de X resolve por grau conjunto em consonância —
+// descendente (suspensão) ou ascendente (retardo). Se a outra voz atacar de
+// novo antes da resolução, esse novo instante é avaliado por conta própria.
+function sustentada(P, X, k, modo, dir) {
+  const L = leitura(P, X, k, modo), i = L.i;
+  if (k < 1 || P.st[k - 1] !== 'C' || i + 1 >= L.n) return false;
+  const s = L.S(i, i + 1);
+  return s.k === 'step' && s.dir === dir && L.stAt(i + 1) === 'C';
+}
+function trSuspensao(P, X, Y, k, modo) { return sustentada(P, X, k, modo, -1); }
+function trRetardo(P, X, Y, k, modo) { return sustentada(P, X, k, modo, 1); }
+
+const TRATAMENTOS = { apojatura: trApojatura, passagem: trPassagem, bordadura: trBordadura, escapada: trEscapada, bordaduraDupla: trBordaduraDupla, cambiata: trCambiata, antecipacao: trAntecipacao, suspensao: trSuspensao, retardo: trRetardo };
+const TR_ATACANTE = [trApojatura, trPassagem, trBordadura, trEscapada, trBordaduraDupla, trCambiata, trAntecipacao];
+const TR_SUSTENTADA = [trSuspensao, trRetardo];
+
+// A dissonância do instante k é justificada se ALGUMA das duas vozes a
+// explica por um dos nove tratamentos (basta um).
+function justificada(P, k, modo) {
+  const attA = P.A.att[k], attB = P.B.att[k];
+  if (attA) for (const f of TR_ATACANTE) if (f(P, P.A, P.B, k, modo)) return true;
+  if (attB) for (const f of TR_ATACANTE) if (f(P, P.B, P.A, k, modo)) return true;
+  if (attA && !attB) for (const f of TR_SUSTENTADA) if (f(P, P.B, P.A, k, modo)) return true;
+  if (attB && !attA) for (const f of TR_SUSTENTADA) if (f(P, P.A, P.B, k, modo)) return true;
+  return false;
+}
+
+// ---------------------------------------------------------------------
+// TESTE FINAL DE UMA COMBINAÇÃO COMPLETA  (criterio: 'A' | 'B' | 'C')
+//  A — consonância estrita em todos os instantes (comportamento original)
+//  B — dissonâncias somente quando tratadas
+//  C — consonância apenas nos ataques simultâneos do par
+// ---------------------------------------------------------------------
+function finalTest(leader, combo, modo, icDesired, criterio) {
+  const voices = [leader, ...combo];
+  const all = new Set();
+  for (const v of voices) for (const t of v.track.onsets) all.add(t);
+  const ticks = Array.from(all).sort((a, b) => a - b), lowest = new Map();
+  for (const t of ticks) { let low = Infinity; for (const v of voices) { const i = v.track.activeIndexAt(t); if (i >= 0 && v.midi[i] < low) low = v.midi[i]; } lowest.set(t, low); }
+  const pairs = {};
+  for (let i = 0; i < voices.length; i++) for (let j = i + 1; j < voices.length; j++) {
+    const a = voices[i], b = voices[j];
+    if (criterio === 'B') {
+      const P = pairContext(a, b, lowest, modo, icDesired);
+      for (let k = 0; k < P.m; k++) if (P.st[k] === 'D' && !justificada(P, k, modo)) return null;
+      pairs[i + '-' + j] = P.list;
+      continue;
+    }
+    const pairTicks = Array.from(new Set([...a.track.onsets, ...b.track.onsets])).sort((x, y) => x - y);
+    const arr = [];
+    for (const t of pairTicks) {
+      const ia = a.track.activeIndexAt(t), ib = b.track.activeIndexAt(t);
+      if (ia < 0 || ib < 0) continue;
+      const info = intervalInfo(a.seq[ia], b.seq[ib], lowest.get(t), modo, icDesired);
+      arr.push(info);
+      if (!validClass(info.cls) && (criterio !== 'C' || (a.track.onsetSet.has(t) && b.track.onsetSet.has(t)))) return null;
+    }
+    pairs[i + '-' + j] = arr;
+  }
+  if (!checkOcultasExternas(voices, ticks)) return null;
+  return { combo: combo.map(c => c.cfg), pairsIntervals: pairs };
+}
+
+// ---------------------------------------------------------------------
+// NOTAÇÃO: decompõe uma duração efetiva em figuras (com pontos/ligaduras) e
+// razão de quiáltera. spec/mult (opcionais) mantêm a notação digitada pelo
+// usuário sempre que ela continua representável após o fator de ritmo.
+// ---------------------------------------------------------------------
+function nominalSegs(nom) {
+  for (const fig of FIG_ORDER) for (let dots = 0; dots <= 2; dots++) if (frCmp(nominalDur(fig, dots), nom) === 0) return [{ fig, dots }];
+  let rest = nom; const segs = [];
+  for (const fig of FIG_ORDER) {
+    const v = FIG_VAL[fig];
+    while (frCmp(rest, v) >= 0) { segs.push({ fig, dots: 0 }); rest = frSub(rest, v); if (segs.length > 24) return null; }
+  }
+  return rest[0] === 0 ? segs : null;
+}
+function notate(dur, src, mult) {
+  if (src) {
+    const s = noteSpec(src), nom = frMul(nominalDur(s.fig, s.dots), mult || [1, 1]);
+    const segs = nominalSegs(nom);
+    if (segs && frCmp(frMul(nom, fr(s.td, s.tn)), dur) === 0) return { segs, tn: s.tn, td: s.td };
+  }
+  let q = dur[1]; while (q % 2 === 0) q /= 2;       // parte ímpar do denominador
+  let tn = 1, td = 1;
+  if (q > 1) { tn = q; td = 1; while (td * 2 <= q) td *= 2; }
+  const segs = nominalSegs(frMul(dur, fr(tn, td)));
+  return { segs: segs || [{ fig: '128', dots: 0 }], tn, td, approx: !segs };
+}
+
+const __CORE_EXPORTS__ = {
+  LETTERS, PITCH_CLASS, KEY_INFO, CHROMA_SPELL, FIG_ORDER, FIG_VAL, RITMO_FRAC,
+  keyDefaultAcc, noteToMidi, diatonicIndex, transposeDiatonic, transposeChromatic, invertDiatonic, invertChromatic,
+  gcd, fr, frMul, frAdd, frSub, frCmp, frNum, lcm,
+  noteSpec, nominalDur, eventDur, leaderTotalPulses, leaderEvents, buildSeq, gridFor, analysisGrid, prepare,
+  intervalSimple, validClass, intervalInfo, check, checkOcultasExternas,
+  stepOf, samePitch, pairContext, justificada, TRATAMENTOS, finalTest, nominalSegs, notate
+};
+
+</script>
+<script id="strettoWorkerMain" type="text/plain">
+// =====================================================================
+// WEB WORKER — busca combinatória (pré-filtro por paralelismos em bitsets,
+// busca com interseção de compatibilidades e teste final por critério A/B/C).
+// Usa o núcleo compartilhado (concatenado antes deste trecho).
+// =====================================================================
+function bitHas(bits, i) { return (bits[i >>> 5] & (1 << (i & 31))) !== 0; }
+function bitAdd(bits, i) { bits[i >>> 5] |= 1 << (i & 31); }
+
+self.onmessage = async (e) => {
+  const d = e.data, leader = d.leaderNotes, modo = d.modo, key = d.keySig, opts = d.opts, n = d.nVoices,
+    icDesired = d.icDesired || {}, criterio = d.criterio || 'A', G = d.grid;
+  try {
+    const delays = d.delays, forms = d.forms, ritmos = d.ritmos;
+    const configs = [];
+    const leaderP = prepare(leaderEvents(leader), { transpIdx: -1, transpOpt: ['Líder', 0], delay: 0, inv: false, ret: false, ritmoIdx: 0 }, G);
+    // Duração total do Líder em pulsos (fração exata) — a pré-condição de
+    // sobreposição segue ignorando o ritmo, como na versão original.
+    const LEN = leaderTotalPulses(leader);
+    // sobreposição >= 2 pulsos com alguma voz já escolhida:
+    //   len - |atraso - atraso_v| >= 2   <=>   LEN[0] >= (2 + |Δ|) * LEN[1]
+    function overlap(delay, voices) {
+      for (const v of voices) if (LEN[0] >= (2 + Math.abs(delay - v.delay)) * LEN[1]) return true;
+      return false;
+    }
+    for (let t = 0; t < opts.length; t++) for (const delay of delays) for (const form of forms) for (const rid of ritmos) {
+      const cfg = { transpIdx: t, transpOpt: opts[t], delay, inv: form.inv, ret: form.ret, ritmoIdx: rid },
+        seq = buildSeq(leader, cfg, modo, key), pr = prepare(seq, cfg, G);
+      if (check(leaderP, pr, modo)) { pr.index = configs.length; configs.push(pr); }
+    }
+    self.postMessage({ type: 'phase', phase: 'matrix', total: configs.length });
+    const m = configs.length, words = Math.ceil(m / 32), compat = new Array(m);
+    for (let i = 0; i < m; i++) compat[i] = new Uint32Array(words);
+    let last = performance.now();
+    for (let i = 0; i < m; i++) {
+      for (let j = i; j < m; j++) if (check(configs[i], configs[j], modo)) { bitAdd(compat[i], j); if (i !== j) bitAdd(compat[j], i); }
+      if (performance.now() - last > 80) { self.postMessage({ type: 'progress', phase: 'matrix', value: i + 1, total: m }); await new Promise(r => setTimeout(r, 0)); last = performance.now(); }
+    }
+    self.postMessage({ type: 'progress', phase: 'matrix', value: m, total: m });
+    const results = [];
+    let nodes = 0, lastP = performance.now(), lastYield = performance.now();
+    const baseInfo = [{ delay: 0 }];
+    function intersect(a, b) { for (let w = 0; w < words; w++) a[w] &= b[w]; }
+    async function search(depth, idxs, chosen, cands, infos) {
+      if (depth === n - 1) { const r = finalTest(leaderP, chosen, modo, icDesired, criterio); if (r) results.push(r); return; }
+      const next = cands.slice();
+      const start = idxs.length ? idxs[idxs.length - 1] + 1 : 0;
+      let i = start;
+      while (i < m) {
+        const wordIndex = i >>> 5, word = next[wordIndex];
+        let bits = word & (-1 << (i & 31));
+        if (!bits) { i = (i + 32) & ~31; continue; }
+        const bit = bits & -bits, idx = (wordIndex << 5) + 31 - Math.clz32(bit);
+        i = idx + 1;
+        const c = configs[idx];
+        if (!overlap(c.cfg.delay, infos)) continue;
+        let ok = true;
+        for (const sel of idxs) if (!bitHas(compat[sel], idx)) { ok = false; break; }
+        if (!ok) continue;
+        nodes++;
+        idxs.push(idx); chosen.push(c); infos.push({ delay: c.cfg.delay });
+        const child = next.slice();
+        intersect(child, compat[idx]);
+        await search(depth + 1, idxs, chosen, child, infos);
+        infos.pop(); chosen.pop(); idxs.pop();
+        const now = performance.now();
+        if (now - lastP > 100) { self.postMessage({ type: 'progress', phase: 'search', value: nodes, total: m, nodes }); lastP = now; }
+        if (now - lastYield > 12) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); }
+      }
+    }
+    const initial = new Uint32Array(words);
+    for (let i = 0; i < m; i++) bitAdd(initial, i);
+    await search(0, [], [], initial, baseInfo);
+    self.postMessage({ type: 'done', results, configs: m, nodes });
+  } catch (err) {
+    self.postMessage({ type: 'error', message: err && err.stack ? err.stack : String(err) });
+  }
+};
+
+</script>
 <script>
+// Núcleo compartilhado com o Web Worker (modelo temporal exato, construção das
+// vozes, classificação de intervalos, critérios A/B/C e notação): o MESMO texto
+// é avaliado aqui e concatenado ao código do Worker.
+const Core = new Function(document.getElementById('strettoCore').textContent + '\nreturn __CORE_EXPORTS__;')();
+
 // =====================================================================
 // MODO TONAL — intervalos diatônicos
 // =====================================================================
@@ -400,71 +1006,40 @@ function getTransposition(i) {
 // =====================================================================
 // MOTOR DE RITMO (aumentação / diminuição)
 // =====================================================================
-// Grade interna: 1 pulso normal (a duração de uma nota do Líder) = 420 ticks.
-// 420 = mmc(2,3,4,5,6,7) — o menor número que representa como inteiro todos
-// os fatores pedidos (1, 1.5, 2, 3, 4, 5, 6, 7 e seus inversos) sem
-// arredondamento.
-const TICKS_PER_PULSE = 420;
-
+// Modelo temporal: o pulso de referência é uma semibreve. Cada nota do Líder
+// tem a sua própria duração (figura, pontos e quiáltera num:den) guardada como
+// FRAÇÃO EXATA de pulso (ver Core.eventDur). O ritmo de uma imitação é um fator
+// racional (Core.RITMO_FRAC) aplicado a cada duração individual do Líder. A
+// grade de ticks inteiros é o mmc dos denominadores envolvidos e é calculada a
+// cada renderização/análise (Core.gridFor / Core.analysisGrid) — não há mais
+// uma constante fixa de ticks por pulso.
+//
 // id: usado em <select>/imitationState — a posição no array É o id (não
-// reordenar sem atualizar todo lugar que indexa RITMO_OPTIONS[idx]).
-// duration/dotted: figura VexFlow de uma nota (ou da 1ª nota de uma
-// sequência ligada — ver "tie") desse ritmo.
-// tuplet: {num_notes, notes_occupied} quando a figura precisa de colchete
-// de quiáltera (a duração real da nota = duração nominal × notes_occupied/num_notes).
-// tie: quando presente, a "nota" desse ritmo é na verdade uma sequência de
-// notas ligadas (fórmulas de duração VexFlow) cuja soma dá o fator de
-// aumentação — usado para ×4/×5/×6/×7, que não têm uma única figura padrão.
+// reordenar sem atualizar todo lugar que indexa RITMO_OPTIONS[idx]; a ordem
+// também precisa coincidir com Core.RITMO_FRAC). A notação gráfica de cada
+// duração resultante é derivada por Core.notate.
 const RITMO_OPTIONS = [
-  { id: 0,  label: 'Normal (×1)',                               mult: 1,     duration: 'w',   dotted: false, tuplet: false },
-  { id: 1,  label: 'Aumentação ×1.5 (semibreve pontuada)',      mult: 1.5,   duration: 'w',   dotted: true,  tuplet: false },
-  { id: 2,  label: 'Aumentação ×2 (breve)',                     mult: 2,     duration: '1/2', dotted: false, tuplet: false },
-  { id: 3,  label: 'Aumentação ×3 (breve pontuada)',            mult: 3,     duration: '1/2', dotted: true,  tuplet: false },
-  { id: 4,  label: 'Diminuição ÷1.5 (semibreve trêsquiáltera)', mult: 2 / 3, duration: 'w',   dotted: false, tuplet: { num_notes: 3, notes_occupied: 2 } },
-  { id: 5,  label: 'Diminuição ÷2 (mínima)',                    mult: 0.5,   duration: 'h',   dotted: false, tuplet: false },
-  { id: 6,  label: 'Diminuição ÷3 (mínima trêsquiáltera)',      mult: 1 / 3, duration: 'h',   dotted: false, tuplet: { num_notes: 3, notes_occupied: 2 } },
-  { id: 7,  label: 'Aumentação ×4',                             mult: 4,     duration: '1/2', dotted: false, tie: ['1/2', '1/2'] },
-  { id: 8,  label: 'Aumentação ×5',                             mult: 5,     duration: '1/2', dotted: false, tie: ['1/2', '1/2', 'w'] },
-  { id: 9,  label: 'Aumentação ×6',                             mult: 6,     duration: '1/2', dotted: false, tie: ['1/2', '1/2', '1/2'] },
-  { id: 10, label: 'Aumentação ×7',                             mult: 7,     duration: '1/2', dotted: false, tie: ['1/2', '1/2', '1/2', 'w'] },
-  { id: 11, label: 'Diminuição ÷4 (semínima)',                  mult: 0.25,  duration: 'q',   dotted: false, tuplet: false },
-  { id: 12, label: 'Diminuição ÷5',                             mult: 0.2,   duration: 'q',   dotted: false, tuplet: { num_notes: 5, notes_occupied: 4 } },
-  { id: 13, label: 'Diminuição ÷6',                             mult: 1 / 6, duration: 'q',   dotted: false, tuplet: { num_notes: 3, notes_occupied: 2 } },
-  { id: 14, label: 'Diminuição ÷7',                             mult: 1 / 7, duration: 'q',   dotted: false, tuplet: { num_notes: 7, notes_occupied: 4 } },
+  { id: 0,  label: 'Normal (×1)',                               mult: 1 },
+  { id: 1,  label: 'Aumentação ×1.5 (semibreve pontuada)',      mult: 1.5 },
+  { id: 2,  label: 'Aumentação ×2 (breve)',                     mult: 2 },
+  { id: 3,  label: 'Aumentação ×3 (breve pontuada)',            mult: 3 },
+  { id: 4,  label: 'Diminuição ÷1.5 (semibreve trêsquiáltera)', mult: 2 / 3 },
+  { id: 5,  label: 'Diminuição ÷2 (mínima)',                    mult: 0.5 },
+  { id: 6,  label: 'Diminuição ÷3 (mínima trêsquiáltera)',      mult: 1 / 3 },
+  { id: 7,  label: 'Aumentação ×4',                             mult: 4 },
+  { id: 8,  label: 'Aumentação ×5',                             mult: 5 },
+  { id: 9,  label: 'Aumentação ×6',                             mult: 6 },
+  { id: 10, label: 'Aumentação ×7',                             mult: 7 },
+  { id: 11, label: 'Diminuição ÷4 (semínima)',                  mult: 0.25 },
+  { id: 12, label: 'Diminuição ÷5',                             mult: 0.2 },
+  { id: 13, label: 'Diminuição ÷6',                             mult: 1 / 6 },
+  { id: 14, label: 'Diminuição ÷7',                             mult: 1 / 7 },
 ];
 
 function getRitmo(i) {
   if (i === 0) return 0;
   if (imitationState.ritmo[i] === undefined) imitationState.ritmo[i] = 0;
   return imitationState.ritmo[i];
-}
-
-function ritmoDurTicks(ritmoIdx) {
-  return TICKS_PER_PULSE * RITMO_OPTIONS[ritmoIdx || 0].mult;
-}
-
-// Descreve os eventos (ataques) de uma voz na grade de ticks: início (após o
-// atraso, em ticks) e duração de cada nota — todas iguais dentro de uma
-// mesma voz, já que o ritmo é escolhido por voz, não nota a nota.
-function buildTickTrack(seq, delayPulsos, ritmoIdx) {
-  const durTicks = ritmoDurTicks(ritmoIdx);
-  const startOffset = delayPulsos * TICKS_PER_PULSE;
-  return {
-    seq, durTicks, startOffset,
-    totalTicks: startOffset + seq.length * durTicks,
-    // Índice (em seq) da nota ativa no tick informado, ou -1 se em silêncio.
-    activeIndexAt(tick) {
-      if (tick < startOffset) return -1;
-      const idx = Math.floor((tick - startOffset) / durTicks);
-      return idx < seq.length ? idx : -1;
-    },
-    // Ticks em que essa voz ataca uma nota nova.
-    onsetTicks() {
-      const ticks = [];
-      for (let i = 0; i < seq.length; i++) ticks.push(startOffset + i * durTicks);
-      return ticks;
-    }
-  };
 }
 
 // =====================================================================
@@ -754,18 +1329,9 @@ buildReferenceTable();
 (function () {
   const VF = Vex.Flow;
 
-  // --- Teoria ---
-  const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-  const PITCH_CLASS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-  const SHARP_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B'];
-  const FLAT_ORDER = ['B', 'E', 'A', 'D', 'G', 'C', 'F'];
-  const KEY_INFO = {
-    'C': { n: 0, type: 'sharp' }, 'G': { n: 1, type: 'sharp' }, 'D': { n: 2, type: 'sharp' },
-    'A': { n: 3, type: 'sharp' }, 'E': { n: 4, type: 'sharp' }, 'B': { n: 5, type: 'sharp' },
-    'F#': { n: 6, type: 'sharp' }, 'C#': { n: 7, type: 'sharp' },
-    'F': { n: 1, type: 'flat' }, 'Bb': { n: 2, type: 'flat' }, 'Eb': { n: 3, type: 'flat' },
-    'Ab': { n: 4, type: 'flat' }, 'Db': { n: 5, type: 'flat' }, 'Gb': { n: 6, type: 'flat' }, 'Cb': { n: 7, type: 'flat' }
-  };
+  // --- Teoria (alturas, transposição e inversão vêm do núcleo compartilhado) ---
+  const { LETTERS, PITCH_CLASS, KEY_INFO, keyDefaultAcc, noteToMidi, diatonicIndex,
+          transposeDiatonic, transposeChromatic, invertDiatonic, invertChromatic } = Core;
   const KEY_LABELS = {
     'C': 'Dó M / Lá m', 'G': 'Sol M / Mi m', 'D': 'Ré M / Si m', 'A': 'Lá M / Fá#m',
     'E': 'Mi M / Dó#m', 'B': 'Si M / Sol#m', 'F#': 'Fá# M / Ré#m', 'C#': 'Dó# M / Lá#m',
@@ -774,56 +1340,6 @@ buildReferenceTable();
   };
   const VF_ACC = { 2: '##', 1: '#', 0: 'n', '-1': 'b', '-2': 'bb' };
 
-  function keyDefaultAcc(letter, key) {
-    const info = KEY_INFO[key] || { n: 0, type: 'sharp' };
-    if (info.n === 0) return 0;
-    const order = info.type === 'sharp' ? SHARP_ORDER : FLAT_ORDER;
-    const idx = order.indexOf(letter);
-    return (idx >= 0 && idx < info.n) ? (info.type === 'sharp' ? 1 : -1) : 0;
-  }
-  function noteToMidi(n) { return PITCH_CLASS[n.letter] + n.acc + 12 * (n.octave + 1); }
-  function transposeDiatonic(note, key, deltaSteps) {
-    // Usa a armadura vigente quando a nota foi inserida (note.keyAtEntry) como
-    // referência para decidir se ela é "diatônica" ou alterada — não a armadura
-    // selecionada no momento (key). Assim, trocar a armadura depois de já ter
-    // notas inseridas não reinterpreta/altera as alturas já escritas.
-    const refKey = note.keyAtEntry || key;
-    const idx = LETTERS.indexOf(note.letter);
-    const rawIdx = idx + deltaSteps;
-    const newLetter = LETTERS[((rawIdx % 7) + 7) % 7];
-    const newOctave = note.octave + Math.floor(rawIdx / 7);
-    const deviation = note.acc - keyDefaultAcc(note.letter, refKey);
-    const newAcc = keyDefaultAcc(newLetter, refKey) + deviation;
-    return { letter: newLetter, acc: newAcc, octave: newOctave, keyAtEntry: refKey };
-  }
-  const CHROMA_SPELL = [
-    ['C', 0], ['C', 1], ['D', 0], ['D', 1], ['E', 0], ['F', 0],
-    ['F', 1], ['G', 0], ['G', 1], ['A', 0], ['A', 1], ['B', 0]
-  ];
-  function transposeChromatic(note, deltaSemitones) {
-    const midi = noteToMidi(note) + deltaSemitones;
-    const pc = ((midi % 12) + 12) % 12;
-    const octave = Math.floor(midi / 12) - 1;
-    const [letter, acc] = CHROMA_SPELL[pc];
-    return { letter, acc, octave };
-  }
-
-  function invertDiatonic(note, first, key) {
-    const refKey = note.keyAtEntry || key;
-    const targetIdx = 2 * diatonicIndex(first.letter, first.octave) - diatonicIndex(note.letter, note.octave);
-    const newLetter = LETTERS[((targetIdx % 7) + 7) % 7];
-    const newOctave = Math.floor(targetIdx / 7);
-    const deviation = note.acc - keyDefaultAcc(note.letter, refKey);
-    const newAcc = keyDefaultAcc(newLetter, refKey) + deviation;
-    return { letter: newLetter, acc: newAcc, octave: newOctave, keyAtEntry: refKey };
-  }
-  function invertChromatic(note, first) {
-    const newMidi = 2 * noteToMidi(first) - noteToMidi(note);
-    const pc = ((newMidi % 12) + 12) % 12;
-    const octave = Math.floor(newMidi / 12) - 1;
-    const [letter, acc] = CHROMA_SPELL[pc];
-    return { letter, acc, octave };
-  }
   function accSymbol(letter, acc, key) {
     const def = modo === 'tonal' ? keyDefaultAcc(letter, key) : 0;
     if (acc === def) return null;
@@ -843,8 +1359,6 @@ buildReferenceTable();
   ];
   const LEDGER_BELOW_WEIGHT = 1.6;
   const LEDGER_ABOVE_WEIGHT = 1.0;
-
-  function diatonicIndex(letter, octave) { return octave * 7 + LETTERS.indexOf(letter); }
 
   function ledgerLinesFor(letter, octave, spec) {
     const wOctave = spec.ann === '8vb' ? octave + 1 : octave;
@@ -876,7 +1390,9 @@ buildReferenceTable();
     notes: [],
     keySig: 'C',
     pendingAcc: null,
-    octave: 4
+    octave: 4,
+    // duração escolhida para as PRÓXIMAS notas (persiste até ser mudada)
+    cur: { fig: 'w', dots: 0, tn: 1, td: 1 }
   };
   window._expState = expState;
 
@@ -980,59 +1496,85 @@ buildReferenceTable();
     pendingPreview = [];
     if (samplerPiano) samplerPiano.releaseAll();
   }
-  function secondsPerTick() {
-    const bpm = Math.max(1, +document.getElementById('expBpm').value || 100);
-    return 60 / bpm / TICKS_PER_PULSE;
-  }
-  function schedulePreviewNote(nt, onsetTick, insertTick, durTicks) {
-    const delaySec = Math.max(0, onsetTick - insertTick) * secondsPerTick();
+  function schedulePreviewNote(nt, delaySec, durSec) {
     const id = setTimeout(() => {
       if (!samplerPiano || !samplerPiano.loaded) return;
       const noteName = Tone.Frequency(noteToMidi(nt), 'midi').toNote();
-      samplerPiano.triggerAttackRelease(noteName, durTicks * secondsPerTick() * 0.95, Tone.now(), 0.75);
-    }, delaySec * 1000);
+      samplerPiano.triggerAttackRelease(noteName, durSec * 0.95, Tone.now(), 0.75);
+    }, Math.max(0, delaySec) * 1000);
     pendingPreview.push(id);
   }
-  async function playFromTick(insertTick) {
+  // Toca, em todas as vozes, as notas cujo ataque cai a partir de `fromFr`
+  // (fração de pulso exata). O BPM é em pulsos (semibreves) por minuto; as
+  // durações vêm dos ticks inteiros já calculados para a partitura.
+  async function playFromPulse(fromFr) {
     if (!expState.notes.length) return;
     await activateAudio();
     if (!samplerPiano) return; // file:// ou erro de carregamento — sem fallback sintetizado, por pedido do usuário
     clearPendingPreview();
-
-    expState.notes.forEach((nt, i) => {
-      const onset = i * TICKS_PER_PULSE;
-      if (onset >= insertTick) schedulePreviewNote(nt, onset, insertTick, TICKS_PER_PULSE);
-    });
-
-    const n = +voices.value;
-    for (let k = 1; k < n; k++) {
-      const cfg = {
-        transpOpt: currentOptions()[getTransposition(k)],
-        inv: getInversion(k), ret: getRetrograde(k),
-        ritmoIdx: getRitmo(k), delay: getDelay(k)
-      };
-      const seq = construirSequenciaVoz(expState.notes, cfg);
-      const track = buildTickTrack(seq, cfg.delay, cfg.ritmoIdx);
-      const onsets = track.onsetTicks();
-      seq.forEach((nt, i) => {
-        if (onsets[i] >= insertTick) schedulePreviewNote(nt, onsets[i], insertTick, track.durTicks);
+    let V;
+    try { V = computeVoices(); } catch (e) { console.warn(e); return; }
+    const secPerPulse = 60 / Math.max(1, +document.getElementById('expBpm').value || 100);
+    const fromTick = Math.round(fromFr[0] * (V.G / fromFr[1]));
+    V.voices.forEach(v => {
+      const tr = v.prep.track;
+      v.events.forEach((nt, i) => {
+        const on = tr.onsets[i];
+        if (on >= fromTick) schedulePreviewNote(nt, (on - fromTick) / V.G * secPerPulse, (tr.ends[i] - on) / V.G * secPerPulse);
       });
-    }
+    });
   }
 
-  document.getElementById('expPlayBtn').onclick = () => playFromTick(0);
+  document.getElementById('expPlayBtn').onclick = () => playFromPulse([0, 1]);
   document.getElementById('expStopBtn').onclick = () => clearPendingPreview();
 
   function addNote(letter, octaveOverride) {
     const octave = octaveOverride !== undefined ? octaveOverride : expState.octave;
     const acc = expState.pendingAcc !== null ? expState.pendingAcc : (modo === 'tonal' ? keyDefaultAcc(letter, expState.keySig) : 0);
-    expState.notes.push({ letter, acc, octave, keyAtEntry: expState.keySig });
+    const c = expState.cur;
+    const insertAt = Core.leaderTotalPulses(expState.notes); // ataque da nota nova (soma das durações anteriores)
+    expState.notes.push({ letter, acc, octave, keyAtEntry: expState.keySig, fig: c.fig, dots: c.dots, tupNum: c.tn, tupDen: c.td });
     expState.pendingAcc = null;
     appliedAnalysisIndex = null;
     document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('active'));
     expRender();
-    playFromTick((expState.notes.length - 1) * TICKS_PER_PULSE);
+    playFromPulse(insertAt);
   }
+
+  // --- Barra de duração: figura (breve…fusa), pontos e quiáltera num:den ---
+  const FIG_UI = [
+    { code: '1/2', name: 'Breve' }, { code: 'w', name: 'Semibreve' }, { code: 'h', name: 'Mínima' },
+    { code: 'q', name: 'Semínima' }, { code: '8', name: 'Colcheia' }, { code: '16', name: 'Semicolcheia' }, { code: '32', name: 'Fusa' }
+  ];
+  function fracText(f) { return f[1] === 1 ? String(f[0]) : f[0] + '/' + f[1]; }
+  function syncDurBar() {
+    const c = expState.cur;
+    document.querySelectorAll('#expFigGroup .dur-btn').forEach(b => b.classList.toggle('active', b.dataset.fig === c.fig));
+    document.querySelectorAll('#expDotGroup .dur-btn').forEach(b => b.classList.toggle('active', +b.dataset.dots === c.dots));
+    document.querySelectorAll('#expTupGroup .dur-btn').forEach(b => b.classList.toggle('active', b.dataset.tup === c.tn + ':' + c.td));
+    document.getElementById('expTupNum').value = c.tn;
+    document.getElementById('expTupDen').value = c.td;
+    const nome = FIG_UI.find(f => f.code === c.fig).name + (c.dots === 1 ? ' pontuada' : c.dots === 2 ? ' com 2 pontos' : '') + (c.tn !== c.td ? ' · quiáltera ' + c.tn + ':' + c.td : '');
+    const dur = Core.eventDur({ fig: c.fig, dots: c.dots, tupNum: c.tn, tupDen: c.td });
+    document.getElementById('expDurInfo').textContent = nome + ' = ' + fracText(dur) + ' pulso';
+  }
+  function setFig(code) { expState.cur.fig = code; syncDurBar(); }
+  function setDots(n) { expState.cur.dots = Math.max(0, Math.min(2, n)); syncDurBar(); }
+  function setTuplet(tn, td) {
+    const clamp = v => Math.max(1, Math.min(99, Math.round(+v) || 1));
+    expState.cur.tn = clamp(tn); expState.cur.td = clamp(td); syncDurBar();
+  }
+  document.getElementById('expFigGroup').innerHTML = FIG_UI.map((f, i) =>
+    `<button class="dur-btn" type="button" data-fig="${f.code}" title="${f.name} — atalho: tecla ${i + 1}"><small>${i + 1}</small>${f.name}</button>`).join('');
+  document.querySelectorAll('#expFigGroup .dur-btn').forEach(b => { b.onclick = () => setFig(b.dataset.fig); });
+  document.querySelectorAll('#expDotGroup .dur-btn').forEach(b => { b.onclick = () => setDots(+b.dataset.dots); });
+  document.querySelectorAll('#expTupGroup .dur-btn').forEach(b => { b.onclick = () => { const [a, c] = b.dataset.tup.split(':'); setTuplet(a, c); }; });
+  ['expTupNum', 'expTupDen'].forEach(id => {
+    const el = document.getElementById(id);
+    el.onchange = () => { setTuplet(document.getElementById('expTupNum').value, document.getElementById('expTupDen').value); el.blur(); };
+    el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.onchange(); } };
+  });
+  syncDurBar();
   const LETTER_KEYS = { c: 'C', d: 'D', e: 'E', f: 'F', g: 'G', a: 'A', b: 'B' };
   window.addEventListener('keydown', (e) => {
     if (!expState.open) return;
@@ -1042,6 +1584,8 @@ buildReferenceTable();
     if (k === '+' || k === '=') { setPendingAcc(1); return; }
     if (k === '-') { setPendingAcc(-1); return; }
     if (k === '0') { setPendingAcc(0); return; }
+    if (k >= '1' && k <= '7') { setFig(FIG_UI[+k - 1].code); return; }
+    if (k === '.') { setDots((expState.cur.dots + 1) % 3); return; }
     if (k === 'ArrowUp') { setOctave(expState.octave + 1); e.preventDefault(); return; }
     if (k === 'ArrowDown') { setOctave(expState.octave - 1); e.preventDefault(); return; }
     if (k === 'Backspace') { expState.notes.pop(); appliedAnalysisIndex = null; expRender(); clearPendingPreview(); e.preventDefault(); return; }
@@ -1079,67 +1623,9 @@ buildReferenceTable();
     return 0;
   }
 
-  // --- Classificação e rotulagem de intervalos ---
+  // --- Classificação e rotulagem de intervalos (mesma função usada pelo Worker) ---
   function intervalInfoFromNotes(noteA, noteB, lowestMidi) {
-    if (modo !== 'tonal') {
-      const diff = noteB ? noteToMidi(noteB) - noteToMidi(noteA) : 0;
-      const mod = Math.abs(diff) % 12;
-      const state = icDesired[mod];
-      let cls;
-      if (state === 'desired') {
-        cls = 'desired';
-      } else if (state === 'false') {
-        const midiA = noteToMidi(noteA);
-        const midiB = noteB ? noteToMidi(noteB) : midiA;
-        const lowMidi = Math.min(midiA, midiB);
-        const involvesLowest = (lowMidi === lowestMidi);
-        cls = involvesLowest ? 'dissonant' : 'special-consonant';
-      } else {
-        cls = 'undesired';
-      }
-      return { label: String(mod), cls, val: mod, simpleNum: mod };
-    }
-
-    const midiA = noteToMidi(noteA);
-    const midiB = noteToMidi(noteB);
-    const lowMidi = Math.min(midiA, midiB);
-    const highMidi = Math.max(midiA, midiB);
-
-    const letterA = LETTERS.indexOf(noteA.letter);
-    const letterB = LETTERS.indexOf(noteB.letter);
-    const diatonicSteps = Math.abs((noteB.octave - noteA.octave) * 7 + (letterB - letterA));
-    const number = diatonicSteps + 1;
-
-    const octaveCount = Math.floor(diatonicSteps / 7);
-    const simpleNumber = ((number - 1) % 7) + 1;
-
-    let label;
-    if (simpleNumber === 1 && octaveCount >= 1) {
-      label = '8' + "'".repeat(octaveCount - 1);
-    } else {
-      label = String(simpleNumber) + "'".repeat(octaveCount);
-    }
-
-    const semitones = highMidi - lowMidi;
-    const mod = semitones % 12;
-
-    let cls;
-    if ([0, 7].includes(mod)) {
-      cls = 'perfect';
-    } else if ([3, 4, 8, 9].includes(mod)) {
-      cls = 'imperfect';
-    } else if ([5, 6].includes(mod)) {
-      const involvesLowest = (lowMidi === lowestMidi);
-      cls = involvesLowest ? 'dissonant' : 'special-consonant';
-    } else {
-      cls = 'dissonant';
-    }
-
-    return { label, cls, val: semitones, simpleNum: simpleNumber };
-  }
-
-  function isValidInterval(cls) {
-    return cls !== 'dissonant' && cls !== 'undesired';
+    return Core.intervalInfo(noteA, noteB, lowestMidi, modo, icDesired);
   }
 
   // --- Teclado virtual ---
@@ -1248,67 +1734,74 @@ buildReferenceTable();
     svgEl.appendChild(t);
   }
 
-  function expRender() {
-    if (!expState.open) return;
+  // Vozes exibidas/tocadas: sequências de eventos (alturas + durações exatas),
+  // grade de ticks inteiros comum a todas e vozes preparadas (onsets/ends).
+  // As vozes são construídas pela MESMA função usada pelo Worker (Core.buildSeq).
+  function computeVoices() {
     const n = +voices.value;
     const vals = computeVoiceValues();
     const edIdx = editableIndex(vals);
     const edVal = vals[edIdx];
-
-    const voiceNotes = [];
+    const evs = [];
     for (let i = 0; i < n; i++) {
-      const delta = vals[i] - edVal;
-      let seq;
-      if (i === edIdx) {
-        seq = expState.notes;
-      } else {
-        let base = expState.notes;
-        if (getInversion(i) && base.length) {
-          const first = base[0];
-          base = base.map(nt => modo === 'tonal' ? invertDiatonic(nt, first, expState.keySig) : invertChromatic(nt, first));
-        }
-        if (getRetrograde(i)) {
-          base = base.slice().reverse();
-        }
-        seq = modo === 'tonal' ? base.map(nt => transposeDiatonic(nt, expState.keySig, delta)) : base.map(nt => transposeChromatic(nt, delta));
-      }
-      voiceNotes.push(seq);
+      const ritmoIdx = getRitmo(i);
+      if (i === edIdx) evs.push(Core.leaderEvents(expState.notes, Core.RITMO_FRAC[ritmoIdx]));
+      else evs.push(Core.buildSeq(expState.notes, { inv: getInversion(i), ret: getRetrograde(i), ritmoIdx, transpOpt: ['', vals[i] - edVal] }, modo, expState.keySig));
     }
+    const G = Core.gridFor([].concat(...evs.map(seq => seq.map(e => e.dur))));
+    const list = evs.map((events, i) => ({
+      index: i, events, delay: getDelay(i), ritmoIdx: getRitmo(i),
+      prep: Core.prepare(events, { delay: getDelay(i) }, G)
+    }));
+    return { n, vals, edIdx, edVal, G, voices: list };
+  }
+
+  function mostrarErroGrade(err) {
+    const area = document.getElementById('expCanvasArea');
+    const msg = String(err && err.message || err);
+    area.innerHTML = '<div class="exp-analysis-empty" style="color:#b0102f">⚠️ ' +
+      (msg.indexOf('GRADE') === 0 ? 'As proporções rítmicas combinadas excedem a precisão numérica da grade temporal. Simplifique as quiálteras do Líder.' : 'Erro ao montar a partitura: ' + msg) + '</div>';
+  }
+
+  function expRender() {
+    if (!expState.open) return;
+    let V;
+    try { V = computeVoices(); } catch (err) { mostrarErroGrade(err); return; }
+    const { n, vals, edIdx, edVal, G } = V;
 
     mirrorViableMoves();
 
-    const delays = [];
-    const ritmos = [];
-    const tracks = [];
-    for (let i = 0; i < n; i++) {
-      delays.push(getDelay(i));
-      ritmos.push(getRitmo(i));
-      tracks.push(buildTickTrack(voiceNotes[i], getDelay(i), getRitmo(i)));
-    }
-
     const sortedIndices = Array.from({ length: n }, (_, i) => i)
       .sort((a, b) => vals[b] - vals[a]);
-    
-    const sortedData = sortedIndices.map(i => ({
-      index: i,
-      label: i === 0 ? 'Líder' : `Imitação ${i}`,
-      transposicao: vals[i],
-      notas: voiceNotes[i],
-      delay: delays[i],
-      ritmoIdx: ritmos[i],
-      track: tracks[i],
-      isEditable: i === edIdx,
-      clef: chooseClefForNotes(voiceNotes[i].length ? voiceNotes[i] : [placeholderNote(vals[i] - edVal)])
-    }));
+
+    const sortedData = sortedIndices.map(i => {
+      const v = V.voices[i];
+      return {
+        index: i,
+        label: i === 0 ? 'Líder' : `Imitação ${i}`,
+        transposicao: vals[i],
+        notas: v.events,
+        delay: v.delay,
+        ritmoIdx: v.ritmoIdx,
+        track: v.prep.track,
+        isEditable: i === edIdx,
+        clef: chooseClefForNotes(v.events.length ? v.events : [placeholderNote(vals[i] - edVal)])
+      };
+    });
 
     const gaps = computeGaps(n);
     const { yPositions, totalHeight } = computeYPositions(gaps);
 
-    renderCanvas(sortedData, gaps, yPositions, totalHeight);
+    try { renderCanvas(sortedData, gaps, yPositions, totalHeight, G); } catch (err) { console.error(err); mostrarErroGrade(err); }
   }
   window.expRender = expRender;
 
-  function renderCanvas(sortedData, gaps, yPositions, totalHeight) {
+  // Espaçamento horizontal mínimo entre colunas de ataque (evita sobreposição de
+  // figuras curtas, p.ex. fusas) e folga extra quando há acidente na coluna.
+  const MIN_GAP = 16;
+  const ACC_EXTRA = 9;
+
+  function renderCanvas(sortedData, gaps, yPositions, totalHeight, G) {
     const area = document.getElementById('expCanvasArea');
     area.innerHTML = '';
 
@@ -1318,13 +1811,12 @@ buildReferenceTable();
     // Extensão total (em ticks) ocupada pela voz mais longa, arredondada para
     // cima até o próximo pulso inteiro — usada para dimensionar a pauta e
     // para saber quantos pulsos de pausa preencher no final de cada voz.
-    let maxTicks = TICKS_PER_PULSE;
+    let maxTicks = G;
     sortedData.forEach(d => {
       if (d.track.totalTicks > maxTicks) maxTicks = d.track.totalTicks;
     });
-    const maxTotalPulses = Math.ceil(maxTicks / TICKS_PER_PULSE);
-    const maxTicksRounded = maxTotalPulses * TICKS_PER_PULSE;
-    const PX_PER_TICK = FIXED_COL_WIDTH / TICKS_PER_PULSE;
+    const maxTotalPulses = Math.ceil(maxTicks / G);
+    const maxTicksRounded = maxTotalPulses * G;
 
     // --- Medição prévia do espaço real de clave + armadura ---
     // Antes de fixar a largura da pauta e a posição inicial das notas, mede-se
@@ -1350,7 +1842,48 @@ buildReferenceTable();
     const NOTE_START_PAD = 14;
     const noteStartXFinal = rawNoteStartX + NOTE_START_PAD;
 
-    const staveWidth = noteStartXFinal + maxTotalPulses * FIXED_COL_WIDTH + 20;
+    // --- Fase A: plano de figuras de cada voz (ainda sem objetos VexFlow) ---
+    // Cada evento vira 1 figura (com pontos) ou uma sequência de figuras ligadas,
+    // dentro da razão de quiáltera correspondente (Core.notate). Uma pausa de
+    // semibreve por pulso de atraso no início e por pulso restante no final.
+    sortedData.forEach((d) => {
+      const plan = [];
+      for (let c = 0; c < d.delay; c++) plan.push({ rest: true, startTick: c * G });
+      d.notas.forEach((nt, i) => {
+        const onset = d.track.onsets[i];
+        const nota = Core.notate(nt.dur, nt, Core.RITMO_FRAC[d.ritmoIdx || 0]);
+        const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
+        let off = [0, 1];
+        nota.segs.forEach((sg, si) => {
+          plan.push({
+            rest: false, nt, startTick: onset + Math.round(Core.frNum(off) * G),
+            fig: sg.fig, dots: sg.dots, acc: si === 0 ? sym : null, tiePrev: si > 0, tn: nota.tn, td: nota.td
+          });
+          off = Core.frAdd(off, Core.frMul(Core.nominalDur(sg.fig, sg.dots), Core.fr(nota.td, nota.tn)));
+        });
+      });
+      const remainingPulses = Math.round((maxTicksRounded - d.track.totalTicks) / G);
+      for (let c = 0; c < remainingPulses; c++) plan.push({ rest: true, startTick: d.track.totalTicks + c * G });
+      d._plan = plan;
+    });
+
+    // --- Mapa de posições X (comum a todas as vozes, para manter o alinhamento
+    // vertical): proporcional ao tempo (FIXED_COL_WIDTH px por pulso), com
+    // espaçamento mínimo entre colunas consecutivas.
+    const tickSet = new Set(), accTicks = new Set();
+    sortedData.forEach(d => d._plan.forEach(it => { tickSet.add(it.startTick); if (it.acc) accTicks.add(it.startTick); }));
+    const ticksSorted = Array.from(tickSet).sort((a, b) => a - b);
+    const xMap = new Map();
+    let prevT = null;
+    ticksSorted.forEach(t => {
+      let x = (t / G) * FIXED_COL_WIDTH;
+      if (prevT !== null) x = Math.max(x, xMap.get(prevT) + MIN_GAP + (accTicks.has(t) ? ACC_EXTRA : 0));
+      xMap.set(t, x);
+      prevT = t;
+    });
+    const lastX = prevT === null ? 0 : xMap.get(prevT);
+    const contentWidth = Math.max(lastX + FIXED_COL_WIDTH, maxTotalPulses * FIXED_COL_WIDTH);
+    const staveWidth = noteStartXFinal + contentWidth + 20;
 
     const renderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
     renderer.resize(staveWidth + 60, totalHeight);
@@ -1364,6 +1897,7 @@ buildReferenceTable();
     const allTuplets = [];
     const allTies = [];
 
+    // --- Fase B: objetos VexFlow ---
     sortedData.forEach((d, idx) => {
       const yPos = yPositions[idx];
 
@@ -1375,83 +1909,48 @@ buildReferenceTable();
       if (modo === 'tonal') stave.addKeySignature(expState.keySig);
       stave.setContext(ctx).draw();
 
-      const ritmoInfo = RITMO_OPTIONS[d.ritmoIdx || 0];
       const vfNotes = [];
-      const eventRefs = []; // paralelo a vfNotes: { startTick, durTicks } de cada figura (nota ou pausa)
-      const DUR_TICKS_FRAC = { 'w': 1, '1/2': 2, 'h': 0.5, 'q': 0.25, '8': 0.125 };
+      const startTicks = []; // paralelo a vfNotes: tick de início de cada figura (nota ou pausa)
       // Cada nota recebe sua pauta (stave) assim que criada — e não apenas no
       // voice.draw() final — porque getAbsoluteX() soma automaticamente a
       // largura de clave+armadura da pauta atribuída. Se isso só acontecesse
       // no draw(), o deslocamento calculado abaixo contaria essa largura em
       // dobro, empurrando as notas mais para a direita do que o necessário.
 
-      // Pausa inicial (atraso), sempre em pulsos inteiros de semibreve.
-      for (let c = 0; c < d.delay; c++) {
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
-        sn.setStave(stave);
-        vfNotes.push(sn);
-        eventRefs.push({ startTick: c * TICKS_PER_PULSE, durTicks: TICKS_PER_PULSE });
-      }
-
-      // Notas reais da voz, na figura correspondente ao ritmo escolhido.
-      // Ritmos com quiáltera (diminuições) agrupam ritmoInfo.tuplet.num_notes
-      // notas reais por colchete; um grupo incompleto no final ainda recebe
-      // o colchete. Ritmos de aumentação ×4/×5/×6/×7 (ritmoInfo.tie) não têm
-      // uma única figura padrão — são notadas como uma sequência de figuras
-      // ligadas (ties) cuja soma equivale ao fator de aumentação.
-      let tupletBuffer = [];
+      // Quiálteras: figuras consecutivas com a mesma razão num:den formam grupos
+      // de `num` notas; um grupo incompleto (fim da sequência, mudança de razão
+      // ou pausa) ainda recebe o colchete. Ligaduras unem as figuras de um mesmo evento.
+      let tb = [], tbKey = null, prevSn = null;
       const flushTuplet = () => {
-        if (ritmoInfo.tuplet && tupletBuffer.length) {
-          allTuplets.push(new VF.Tuplet(tupletBuffer.slice(), ritmoInfo.tuplet));
-        }
-        tupletBuffer = [];
+        if (tb.length && tbKey) allTuplets.push(new VF.Tuplet(tb.slice(), { num_notes: tbKey.tn, notes_occupied: tbKey.td }));
+        tb = []; tbKey = null;
       };
 
-      d.notas.forEach((nt, i) => {
-        const noteStartTick = d.track.startOffset + i * d.track.durTicks;
-
-        if (ritmoInfo.tie) {
-          let offsetPulsos = 0, prevSn = null;
-          ritmoInfo.tie.forEach((durCode, segIdx) => {
-            const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: durCode });
-            sn.setStave(stave);
-            if (segIdx === 0) {
-              const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
-              if (sym) sn.addModifier(new VF.Accidental(sym), 0);
-            }
-            vfNotes.push(sn);
-            eventRefs.push({ startTick: noteStartTick + offsetPulsos * TICKS_PER_PULSE, durTicks: DUR_TICKS_FRAC[durCode] * TICKS_PER_PULSE });
-            if (prevSn) allTies.push(new VF.StaveTie({ first_note: prevSn, last_note: sn, first_indices: [0], last_indices: [0] }));
-            offsetPulsos += DUR_TICKS_FRAC[durCode];
-            prevSn = sn;
-          });
+      d._plan.forEach((it) => {
+        if (it.rest) {
+          flushTuplet(); prevSn = null;
+          const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
+          sn.setStave(stave);
+          vfNotes.push(sn); startTicks.push(it.startTick);
           return;
         }
-
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(nt)], duration: ritmoInfo.duration });
+        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(it.nt)], duration: it.fig });
         sn.setStave(stave);
-        if (ritmoInfo.dotted) VF.Dot.buildAndAttach([sn], { all: true });
-        const sym = accSymbol(nt.letter, nt.acc, expState.keySig);
-        if (sym) sn.addModifier(new VF.Accidental(sym), 0);
-        vfNotes.push(sn);
-        eventRefs.push({ startTick: noteStartTick, durTicks: d.track.durTicks });
-
-        if (ritmoInfo.tuplet) {
-          tupletBuffer.push(sn);
-          if (tupletBuffer.length === ritmoInfo.tuplet.num_notes) flushTuplet();
+        for (let k = 0; k < it.dots; k++) VF.Dot.buildAndAttach([sn], { all: true });
+        if (it.acc) sn.addModifier(new VF.Accidental(it.acc), 0);
+        vfNotes.push(sn); startTicks.push(it.startTick);
+        if (it.tiePrev && prevSn) allTies.push(new VF.StaveTie({ first_note: prevSn, last_note: sn, first_indices: [0], last_indices: [0] }));
+        prevSn = sn;
+        if (it.tn !== it.td) {
+          if (tbKey && (tbKey.tn !== it.tn || tbKey.td !== it.td)) flushTuplet();
+          tbKey = { tn: it.tn, td: it.td };
+          tb.push(sn);
+          if (tb.length === tbKey.tn) flushTuplet();
+        } else {
+          flushTuplet();
         }
       });
       flushTuplet();
-
-      // Pausa final até o comprimento total da peça (pulsos inteiros; o
-      // último trecho é arredondado quando a voz termina no meio de um pulso).
-      const remainingPulses = Math.round((maxTicksRounded - d.track.totalTicks) / TICKS_PER_PULSE);
-      for (let c = 0; c < remainingPulses; c++) {
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [restKeyFor(d.clef.clef)], duration: 'wr' });
-        sn.setStave(stave);
-        vfNotes.push(sn);
-        eventRefs.push({ startTick: d.track.totalTicks + c * TICKS_PER_PULSE, durTicks: TICKS_PER_PULSE });
-      }
 
       const voice = new VF.Voice({ num_beats: vfNotes.length || 1, beat_value: 1 });
       voice.setStrict(false);
@@ -1460,15 +1959,15 @@ buildReferenceTable();
       allVoices.push(voice);
       allStaves.push(stave);
       d._vfNotes = vfNotes;
-      d._eventRefs = eventRefs;
+      d._startTicks = startTicks;
       d._stave = stave;
       d._yPos = yPos;
     });
 
     // Formata cada voz SEPARADAMENTE (não em conjunto): Formatter.joinVoices()
     // exige que todas as vozes somem o mesmo total de ticks internos do
-    // VexFlow, o que deixa de ser verdade com aumentação/diminuição (vozes
-    // com ritmos diferentes têm durações totais diferentes). Isso é seguro
+    // VexFlow, o que deixa de ser verdade com durações individuais e ritmos
+    // diferentes (as vozes têm durações totais diferentes). Isso é seguro
     // porque a posição X final de cada nota é definida manualmente logo
     // abaixo (via TickContext) — a formatação aqui só serve para o VexFlow
     // calcular larguras internas de modificadores (acidentes, pontos, etc.).
@@ -1478,7 +1977,7 @@ buildReferenceTable();
 
     sortedData.forEach((d) => {
       d._vfNotes.forEach((note, i) => {
-        const targetX = noteStartXFinal + d._eventRefs[i].startTick * PX_PER_TICK;
+        const targetX = noteStartXFinal + xMap.get(d._startTicks[i]);
         // Reposiciona a base do TickContext (em vez de usar setXShift), pois
         // getAbsoluteX() — usado pelos acidentes via getModifierStartXY() —
         // não soma o x_shift. Mover o TickContext mantém a cabeça da nota e
@@ -1498,9 +1997,8 @@ buildReferenceTable();
     allTies.forEach(t => t.setContext(ctx).draw());
 
     // Números de intervalo entre cada par de vozes: calculados nos ticks em
-    // que QUALQUER uma das duas vozes do par ataca uma nota nova — o que
-    // generaliza a antiga verificação "pulso a pulso" para vozes que agora
-    // podem se mover em velocidades diferentes (aumentação/diminuição).
+    // que QUALQUER uma das duas vozes do par ataca uma nota nova (a mesma
+    // lista de instantes usada pela validação no Worker).
     for (let i = 0; i < n; i++) {
       const rowA = sortedData[i];
       const gapTop = rowA._yPos + STAVE_HEIGHT;
@@ -1512,8 +2010,8 @@ buildReferenceTable();
         const textY = gapTop + 17 + layer * 11;
 
         const attackTicks = Array.from(new Set([
-          ...rowA.track.onsetTicks(),
-          ...rowB.track.onsetTicks()
+          ...rowA.track.onsets,
+          ...rowB.track.onsets
         ])).sort((x, y) => x - y);
 
         attackTicks.forEach(tick => {
@@ -1527,7 +2025,7 @@ buildReferenceTable();
           }));
 
           const info = intervalInfoFromNotes(rowA.notas[idxA], rowB.notas[idxB], lowestMidi);
-          const x = noteStartXFinal + tick * PX_PER_TICK + 8;
+          const x = noteStartXFinal + xMap.get(tick) + 8;
           drawIntervalLabel(area, x, textY, info.label, info.cls, fontSize, escala);
         });
       }
@@ -1545,226 +2043,20 @@ buildReferenceTable();
   let analysisSortKey = null;   // 'transp' | 'delay' | 'inv' | 'ret' | 'ritmo' | null
   let analysisSortDir = 1;      // 1 = asc, -1 = desc
 
-  // Validação dinâmica: exige pelo menos 2 notas simultâneas (sobreposição) com alguma voz ativa
-  function temSobreposicaoValida(novaDelay, novaLen, vozesAtivas) {
-    for (const v of vozesAtivas) {
-      let sobreposicao = 0;
-      const inicioComum = Math.max(novaDelay, v.delay);
-      const fimComum = Math.min(novaDelay + novaLen, v.delay + v.len);
-
-      if (fimComum - inicioComum >= 2) return true;
-    }
-    return false;
-  }
-
-  // Constrói a sequência de notas de uma voz de imitação a partir da configuração escolhida
-  function construirSequenciaVoz(leaderNotes, cfg) {
-    let seq = leaderNotes.slice();
-    if (cfg.inv && seq.length) {
-      const first = seq[0];
-      seq = seq.map(nt => modo === 'tonal'
-        ? invertDiatonic(nt, first, expState.keySig)
-        : invertChromatic(nt, first));
-    }
-    if (cfg.ret) {
-      seq = seq.slice().reverse();
-    }
-    seq = modo === 'tonal'
-      ? seq.map(nt => transposeDiatonic(nt, expState.keySig, cfg.transpOpt[1]))
-      : seq.map(nt => transposeChromatic(nt, cfg.transpOpt[1]));
-    return seq;
-  }
-
-  function prepararConfigAnalise(seq, cfg) {
-    const midi = seq.map(noteToMidi);
-    const trackBase = buildTickTrack(seq, cfg.delay, cfg.ritmoIdx);
-    const onsets = trackBase.onsetTicks();
-    const onsetSet = new Set(onsets);
-    return {
-      cfg,
-      seq,
-      midi,
-      track: {
-        seq,
-        durTicks: trackBase.durTicks,
-        startOffset: trackBase.startOffset,
-        totalTicks: trackBase.totalTicks,
-        onsets,
-        onsetSet,
-        activeIndexAt(tick) {
-          if (tick < this.startOffset) return -1;
-          const idx = Math.floor((tick - this.startOffset) / this.durTicks);
-          return idx >= 0 && idx < this.seq.length ? idx : -1;
-        }
-      }
-    };
-  }
-
-  function checkParallelismoPreparado(a, b) {
-    const ta = a.track, tb = b.track;
-    const seqA = a.seq, seqB = b.seq;
-    const midiA = a.midi, midiB = b.midi;
-
-    const source = ta.onsets.length <= tb.onsets.length ? ta : tb;
-    const other = source === ta ? tb : ta;
-
-    let parallelCount = 1;
-    let lastVal = null;
-    let lastMidiA = null, lastMidiB = null;
-
-    for (const tick of source.onsets) {
-      if (!other.onsetSet.has(tick)) continue;
-
-      const idxA = ta.activeIndexAt(tick);
-      const idxB = tb.activeIndexAt(tick);
-      if (idxA < 0 || idxB < 0) continue;
-
-      const ma = midiA[idxA], mb = midiB[idxB];
-
-      if (lastMidiA !== null) {
-        const moveA = ma - lastMidiA;
-        const moveB = mb - lastMidiB;
-        const sameDirection = moveA !== 0 && moveB !== 0 && Math.sign(moveA) === Math.sign(moveB);
-
-        if (modo === 'tonal') {
-          const info = intervalInfoFromNotes(seqA[idxA], seqB[idxB], Math.min(ma, mb));
-          const simpleNum = info.simpleNum;
-          // Paralela estrita: mesmo deslocamento em semitons, em 1ª/5ª/8ª.
-          const isStrictParallel = moveA !== 0 && moveA === moveB;
-          if (isStrictParallel && (simpleNum === 1 || simpleNum === 5)) return false;
-
-          if (sameDirection && (simpleNum === 3 || simpleNum === 4 || simpleNum === 6)) {
-            if (simpleNum === lastVal) {
-              parallelCount++;
-              if (parallelCount > 3) return false;
-            } else {
-              parallelCount = 1;
-            }
-            lastVal = simpleNum;
-          } else {
-            parallelCount = 1;
-            lastVal = null;
-          }
-        } else {
-          const modv = Math.abs(ma - mb) % 12;
-          // Paralela estrita: mesmo deslocamento em semitons, resultando em 0/7.
-          const isStrictParallel = moveA !== 0 && moveA === moveB && (modv === 0 || modv === 7);
-          if (isStrictParallel) return false;
-
-          if (sameDirection) {
-            if (modv === lastVal) {
-              parallelCount++;
-              if (parallelCount > 3) return false;
-            } else {
-              parallelCount = 1;
-            }
-            lastVal = modv;
-          } else {
-            parallelCount = 1;
-            lastVal = null;
-          }
-        }
-      }
-
-      lastMidiA = ma;
-      lastMidiB = mb;
-    }
-    return true;
-  }
-
-  function bitSetAdd(bits, index) {
-    bits[index >>> 5] |= (1 << (index & 31));
-  }
-
-  function bitSetHas(bits, index) {
-    return (bits[index >>> 5] & (1 << (index & 31))) !== 0;
-  }
-
   // ---------------------------------------------------------------------
   // ANÁLISE EM WEB WORKER
   // O Worker recebe apenas dados serializáveis e executa toda a parte pesada
   // (preparação, matriz de compatibilidade em bitsets, busca e teste final).
-  // A thread principal fica livre para a interface.
+  // A thread principal fica livre para a interface. O código do Worker é o
+  // núcleo compartilhado (o mesmo avaliado aqui na tela) + o laço de busca.
   // ---------------------------------------------------------------------
   function criarWorkerAnalise() {
-    const workerSource = `
-      const LETTERS = ['C','D','E','F','G','A','B'];
-      const PITCH_CLASS = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-      const TICKS_PER_PULSE = 420;
-      const RITMO_OPTIONS = [
-        {id:0,mult:1}, {id:1,mult:1.5}, {id:2,mult:2}, {id:3,mult:3},
-        {id:4,mult:2/3}, {id:5,mult:.5}, {id:6,mult:1/3},
-        {id:7,mult:4}, {id:8,mult:5}, {id:9,mult:6}, {id:10,mult:7},
-        {id:11,mult:.25}, {id:12,mult:.2}, {id:13,mult:1/6}, {id:14,mult:1/7}
-      ];
-      const SHARP_ORDER=['F','C','G','D','A','E','B'];
-      const FLAT_ORDER=['B','E','A','D','G','C','F'];
-      const KEY_INFO={C:{n:0,type:'sharp'},G:{n:1,type:'sharp'},D:{n:2,type:'sharp'},A:{n:3,type:'sharp'},E:{n:4,type:'sharp'},B:{n:5,type:'sharp'},'F#':{n:6,type:'sharp'},'C#':{n:7,type:'sharp'},F:{n:1,type:'flat'},Bb:{n:2,type:'flat'},Eb:{n:3,type:'flat'},Ab:{n:4,type:'flat'},Db:{n:5,type:'flat'},Gb:{n:6,type:'flat'},Cb:{n:7,type:'flat'}};
-      function keyDefaultAcc(letter,key){const info=KEY_INFO[key]||KEY_INFO.C;const order=info.type==='sharp'?SHARP_ORDER:FLAT_ORDER;const i=order.indexOf(letter);return i>=0&&i<info.n?(info.type==='sharp'?1:-1):0;}
-      function noteToMidi(n){return PITCH_CLASS[n.letter]+n.acc+12*(n.octave+1);}
-      function diatonicIndex(l,o){return o*7+LETTERS.indexOf(l);}
-      function transposeDiatonic(note,key,d){const ref=note.keyAtEntry||key,idx=LETTERS.indexOf(note.letter),raw=idx+d,nl=LETTERS[((raw%7)+7)%7],no=note.octave+Math.floor(raw/7),dev=note.acc-keyDefaultAcc(note.letter,ref),na=keyDefaultAcc(nl,ref)+dev;return {letter:nl,acc:na,octave:no,keyAtEntry:ref};}
-      const CHROMA_SPELL=[['C',0],['C',1],['D',0],['D',1],['E',0],['F',0],['F',1],['G',0],['G',1],['A',0],['A',1],['B',0]];
-      function transposeChromatic(note,d){const midi=noteToMidi(note)+d,pc=((midi%12)+12)%12,o=Math.floor(midi/12)-1,[l,a]=CHROMA_SPELL[pc];return {letter:l,acc:a,octave:o};}
-      function invertDiatonic(note,first,key){const ref=note.keyAtEntry||key,target=2*diatonicIndex(first.letter,first.octave)-diatonicIndex(note.letter,note.octave),nl=LETTERS[((target%7)+7)%7],no=Math.floor(target/7),dev=note.acc-keyDefaultAcc(note.letter,ref),na=keyDefaultAcc(nl,ref)+dev;return {letter:nl,acc:na,octave:no,keyAtEntry:ref};}
-      function invertChromatic(note,first){const midi=2*noteToMidi(first)-noteToMidi(note),pc=((midi%12)+12)%12,o=Math.floor(midi/12)-1,[l,a]=CHROMA_SPELL[pc];return {letter:l,acc:a,octave:o};}
-      function construir(leader,cfg,modo,key){let seq=leader.slice();if(cfg.inv&&seq.length){const f=seq[0];seq=seq.map(n=>modo==='tonal'?invertDiatonic(n,f,key):invertChromatic(n,f));}if(cfg.ret)seq=seq.slice().reverse();seq=modo==='tonal'?seq.map(n=>transposeDiatonic(n,key,cfg.transpOpt[1])):seq.map(n=>transposeChromatic(n,cfg.transpOpt[1]));return seq;}
-      function prepare(seq,cfg){const midi=seq.map(noteToMidi),dur=TICKS_PER_PULSE*RITMO_OPTIONS[cfg.ritmoIdx||0].mult,start=cfg.delay*TICKS_PER_PULSE,onsets=new Array(seq.length);for(let i=0;i<seq.length;i++)onsets[i]=start+i*dur;const onsetSet=new Set(onsets);return {cfg,seq,midi,track:{seq,durTicks:dur,startOffset:start,totalTicks:start+seq.length*dur,onsets,onsetSet,activeIndexAt(t){if(t<this.startOffset)return -1;const idx=Math.floor((t-this.startOffset)/this.durTicks);return idx>=0&&idx<this.seq.length?idx:-1;}}};}
-      function intervalSimple(a,b){const da=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter)));return ((da)%7)+1;}
-      function check(a,b,modo){const ta=a.track,tb=b.track,source=ta.onsets.length<=tb.onsets.length?ta:tb,other=source===ta?tb:ta;let count=1,last=null,lastA=null,lastB=null;for(const tick of source.onsets){if(!other.onsetSet.has(tick))continue;const ia=ta.activeIndexAt(tick),ib=tb.activeIndexAt(tick);if(ia<0||ib<0)continue;const ma=a.midi[ia],mb=b.midi[ib];if(lastA!==null){const da=ma-lastA,db=mb-lastB,same=da!==0&&db!==0&&Math.sign(da)===Math.sign(db);if(modo==='tonal'){const sn=intervalSimple(a.seq[ia],b.seq[ib]),strict=da!==0&&da===db;if(strict&&(sn===1||sn===5))return false;if(same&&(sn===3||sn===4||sn===6)){if(sn===last)count++;else count=1;if(count>3)return false;last=sn;}else{count=1;last=null;}}else{const mod=Math.abs(ma-mb)%12,strict=da!==0&&da===db&&(mod===0||mod===7);if(strict)return false;if(same){if(mod===last)count++;else count=1;if(count>3)return false;last=mod;}else{count=1;last=null;}}}lastA=ma;lastB=mb;}return true;}
-      function bitHas(bits,i){return (bits[i>>>5]&(1<<(i&31)))!==0;}
-      function bitAdd(bits,i){bits[i>>>5]|=1<<(i&31);}
-      function overlap(delay,len,voices){for(const v of voices){const a=Math.max(delay,v.delay),b=Math.min(delay+len,v.delay+v.len);if(b-a>=2)return true;}return false;}
-      function validClass(cls){return cls!=='dissonant'&&cls!=='undesired';}
-      function intervalInfo(a,b,lowest,modo,icDesired){if(modo!=='tonal'){const d=noteToMidi(b)-noteToMidi(a),m=Math.abs(d)%12,st=icDesired[m];let cls;if(st==='desired')cls='desired';else if(st==='false'){const ma2=noteToMidi(a),mb2=noteToMidi(b),lo2=Math.min(ma2,mb2);cls=(lo2===lowest)?'dissonant':'special-consonant';}else cls='undesired';return {label:String(m),cls,val:m,simpleNum:m};}const ma=noteToMidi(a),mb=noteToMidi(b),lo=Math.min(ma,mb),hi=Math.max(ma,mb),steps=Math.abs((b.octave-a.octave)*7+(LETTERS.indexOf(b.letter)-LETTERS.indexOf(a.letter))),number=steps+1,oct=Math.floor(steps/7),sn=((number-1)%7)+1;let label;if(sn===1&&oct>=1)label='8'+"'".repeat(oct-1);else label=String(sn)+"'".repeat(oct);const semi=hi-lo,mod=semi%12;let cls;if(mod===0||mod===7)cls='perfect';else if(mod===3||mod===4||mod===8||mod===9)cls='imperfect';else if(mod===5||mod===6)cls=(lo===lowest)?'dissonant':'special-consonant';else cls='dissonant';return {label,cls,val:semi,simpleNum:sn};}
-      function finalTest(leader,combo,modo,icDesired){
-        const voices=[leader,...combo];
-        const all=new Set();
-        for(const v of voices)for(const t of v.track.onsets)all.add(t);
-        const ticks=Array.from(all).sort((a,b)=>a-b),lowest=new Map();
-        for(const t of ticks){let low=Infinity;for(const v of voices){const i=v.track.activeIndexAt(t);if(i>=0&&v.midi[i]<low)low=v.midi[i];}lowest.set(t,low);}
-        const pairs={};
-        for(let i=0;i<voices.length;i++)for(let j=i+1;j<voices.length;j++){
-          const a=voices[i],b=voices[j];
-          const pairTicks=Array.from(new Set([...a.track.onsets,...b.track.onsets])).sort((x,y)=>x-y);
-          const arr=[];
-          for(const t of pairTicks){const ia=a.track.activeIndexAt(t),ib=b.track.activeIndexAt(t);if(ia<0||ib<0)continue;const info=intervalInfo(a.seq[ia],b.seq[ib],lowest.get(t),modo,icDesired);arr.push(info);if(!validClass(info.cls))return null;}
-          pairs[i+'-'+j]=arr;
-        }
-        if(!checkOcultasExternas(voices,ticks))return null;
-        return {combo:combo.map(c=>c.cfg),pairsIntervals:pairs};
-      }
-      function checkOcultasExternas(voices,ticks){
-        let lastTop=null,lastBottom=null,lastTopMidi=null,lastBottomMidi=null;
-        for(const t of ticks){
-          let topIdx=-1,bottomIdx=-1,topMidi=-Infinity,bottomMidi=Infinity;
-          for(let v=0;v<voices.length;v++){
-            const i=voices[v].track.activeIndexAt(t);
-            if(i<0)continue;
-            const m=voices[v].midi[i];
-            if(m>topMidi){topMidi=m;topIdx=v;}
-            if(m<bottomMidi){bottomMidi=m;bottomIdx=v;}
-          }
-          if(topIdx<0||bottomIdx<0||topIdx===bottomIdx){lastTop=null;lastBottom=null;lastTopMidi=null;lastBottomMidi=null;continue;}
-          if(lastTop!==null&&lastTop===topIdx&&lastBottom===bottomIdx){
-            const moveTop=topMidi-lastTopMidi,moveBottom=bottomMidi-lastBottomMidi;
-            const sameDir=moveTop!==0&&moveBottom!==0&&Math.sign(moveTop)===Math.sign(moveBottom);
-            if(sameDir){
-              const mod=Math.abs(topMidi-bottomMidi)%12;
-              if(mod===0||mod===7)return false;
-            }
-          }
-          lastTop=topIdx;lastBottom=bottomIdx;lastTopMidi=topMidi;lastBottomMidi=bottomMidi;
-        }
-        return true;
-      }
-      self.onmessage=async(e)=>{const d=e.data,leader=d.leaderNotes,modo=d.modo,key=d.keySig,opts=d.opts,n=d.nVoices,icDesired=d.icDesired||{};try{const delays=d.delays,forms=d.forms,ritmos=d.ritmos;const configs=[];const leaderP=prepare(leader,{transpIdx:-1,transpOpt:['Líder',0],delay:0,inv:false,ret:false,ritmoIdx:0});for(let t=0;t<opts.length;t++)for(const delay of delays)for(const form of forms)for(const rid of ritmos){const cfg={transpIdx:t,transpOpt:opts[t],delay,inv:form.inv,ret:form.ret,ritmoIdx:rid},seq=construir(leader,cfg,modo,key),pr=prepare(seq,cfg);if(check(leaderP,pr,modo)){pr.index=configs.length;configs.push(pr);}}self.postMessage({type:'phase',phase:'matrix',total:configs.length});const m=configs.length,words=Math.ceil(m/32),compat=new Array(m);for(let i=0;i<m;i++)compat[i]=new Uint32Array(words);let last=performance.now();for(let i=0;i<m;i++){for(let j=i;j<m;j++)if(check(configs[i],configs[j],modo)){bitAdd(compat[i],j);if(i!==j)bitAdd(compat[j],i);}if(performance.now()-last>80){self.postMessage({type:'progress',phase:'matrix',value:i+1,total:m});await new Promise(r=>setTimeout(r,0));last=performance.now();}}self.postMessage({type:'progress',phase:'matrix',value:m,total:m});const results=[];let nodes=0,lastP=performance.now(),lastYield=performance.now();const baseInfo=[{delay:0,len:leader.length}];function intersect(a,b){for(let w=0;w<words;w++)a[w]&=b[w];}async function search(depth,idxs,chosen,cands,infos){if(depth===n-1){const r=finalTest(leaderP,chosen,modo,icDesired);if(r)results.push(r);return;}const next=cands.slice();const start=idxs.length?idxs[idxs.length-1]+1:0;let i=start;while(i<m){const wordIndex=i>>>5;const word=next[wordIndex];let bits=word&(-1<<(i&31));if(!bits){i=(i+32)&~31;continue;}const bit=bits&-bits;const idx=(wordIndex<<5)+31-Math.clz32(bit);i=idx+1;const c=configs[idx];if(!overlap(c.cfg.delay,leader.length,infos))continue;let ok=true;for(const sel of idxs)if(!bitHas(compat[sel],idx)){ok=false;break;}if(!ok)continue;nodes++;idxs.push(idx);chosen.push(c);infos.push({delay:c.cfg.delay,len:leader.length});const child=next.slice();intersect(child,compat[idx]);await search(depth+1,idxs,chosen,child,infos);infos.pop();chosen.pop();idxs.pop();const now=performance.now();if(now-lastP>100){self.postMessage({type:'progress',phase:'search',value:nodes,total:m,nodes});lastP=now;}if(now-lastYield>12){await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}}}
-      const initial=new Uint32Array(words);for(let i=0;i<m;i++)bitAdd(initial,i);await search(0,[],[],initial,baseInfo);self.postMessage({type:'done',results,configs:m,nodes});}catch(err){self.postMessage({type:'error',message:err&&err.stack?err.stack:String(err)});}};
-    `;
-    return new Worker(URL.createObjectURL(new Blob([workerSource], {type:'application/javascript'})));
+    const workerSource = document.getElementById('strettoCore').textContent + '\n' + document.getElementById('strettoWorkerMain').textContent;
+    return new Worker(URL.createObjectURL(new Blob([workerSource], { type: 'application/javascript' })));
   }
 
   let activeAnalysisWorker = null;
+  let lastAnalysisCriterio = 'A'; // critério com que a lista atual de resultados foi calculada
 
   async function analisarImitacoesViaveis() {
     appliedAnalysisIndex = null;
@@ -1789,107 +2081,29 @@ buildReferenceTable();
       document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Selecione pelo menos uma forma de imitação e um tipo de ritmo.</div>';
       return;
     }
+    // Grade de ticks inteiros da análise (mmc dos denominadores das durações
+    // efetivas do Líder × fatores de ritmo selecionados).
+    let grid;
+    try { grid = Core.analysisGrid(leaderNotes, ritmos); }
+    catch (err) {
+      document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ As proporções rítmicas do Líder combinadas aos fatores de ritmo escolhidos excedem a precisão numérica da grade temporal. Simplifique as quiálteras ou reduza os fatores de ritmo selecionados.</div>';
+      return;
+    }
+    const criterio = document.getElementById('expCriterio').value;
     const analyzeBtn=document.getElementById('expAnalyzeBtn'); analyzeBtn.disabled=true; analyzeBtn.style.opacity='0.5';
     if(activeAnalysisWorker){activeAnalysisWorker.terminate();activeAnalysisWorker=null;}
-    const nVoices=+voices.value, opts=currentOptions(), maxDelay=Math.max(1,leaderNotes.length-2), delays=Array.from({length:maxDelay+1},(_,i)=>i);
+    // O atraso máximo vem da duração total do Líder em pulsos (ignora o ritmo,
+    // como antes; com notas de 1 pulso equivale a nº de notas − 2).
+    const totalFr = Core.leaderTotalPulses(leaderNotes);
+    const nVoices=+voices.value, opts=currentOptions(), maxDelay=Math.max(1,Math.floor(totalFr[0]/totalFr[1])-2), delays=Array.from({length:maxDelay+1},(_,i)=>i);
     const worker=criarWorkerAnalise(); activeAnalysisWorker=worker;
     worker.onmessage=(ev)=>{const d=ev.data;
       if(d.type==='phase') document.getElementById('expAnalysisNum').textContent='Preparando compatibilidades...';
       else if(d.type==='progress'){if(d.phase==='matrix') document.getElementById('expAnalysisNum').textContent=`Compatibilidades... ${d.value.toLocaleString('pt-BR')}/${d.total.toLocaleString('pt-BR')}`; else document.getElementById('expAnalysisNum').textContent=`Buscando combinações... ${d.nodes.toLocaleString('pt-BR')} estados`; }
       else if(d.type==='error'){console.error(d.message);document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Erro durante a análise. Veja o console para detalhes.</div>';analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
-      else if(d.type==='done'){currentAnalysisResults=d.results;currentAnalysisPage=0;document.getElementById('expAnalysisNum').textContent=d.results.length;document.getElementById('expSavePresetBtn').disabled=d.results.length===0;renderAnalysisResults(d.results,nVoices);analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
+      else if(d.type==='done'){currentAnalysisResults=d.results;lastAnalysisCriterio=criterio;currentAnalysisPage=0;document.getElementById('expAnalysisNum').textContent=d.results.length;document.getElementById('expSavePresetBtn').disabled=d.results.length===0;renderAnalysisResults(d.results,nVoices);analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
     };
-    worker.postMessage({leaderNotes,modo,keySig:expState.keySig,opts,nVoices,delays,forms,ritmos,icDesired});
-  }
-
-  // Pré-calcula a informação de menor voz nos ticks relevantes e só então
-  // constrói os objetos necessários para a apresentação da tabela.
-  // Passa a validar também oitavas/quintas ocultas entre as
-  // vozes externas, para ficar coerente com o finalTest do Worker.
-  function testarCombinacaoPreparada(leaderPrepared, comboPrepared, nVoices) {
-    const voicesPrepared = [leaderPrepared, ...comboPrepared];
-    const voicesNotes = voicesPrepared.map(v => v.seq);
-    const voicesTracks = voicesPrepared.map(v => v.track);
-
-    const allAttackTicks = new Set();
-    for (const tr of voicesTracks) {
-      for (const t of tr.onsets) allAttackTicks.add(t);
-    }
-    const attackTicks = Array.from(allAttackTicks).sort((a, b) => a - b);
-
-    const lowestByTick = new Map();
-    for (const tick of attackTicks) {
-      let lowestMidi = Infinity;
-      for (let v = 0; v < nVoices; v++) {
-        const idx = voicesTracks[v].activeIndexAt(tick);
-        if (idx >= 0) lowestMidi = Math.min(lowestMidi, voicesPrepared[v].midi[idx]);
-      }
-      lowestByTick.set(tick, lowestMidi);
-    }
-
-    let comboValid = true;
-    const pairsIntervals = {};
-
-    for (let i = 0; i < nVoices && comboValid; i++) {
-      for (let j = i + 1; j < nVoices && comboValid; j++) {
-        const pairKey = `${i}-${j}`;
-        pairsIntervals[pairKey] = [];
-        const trackA = voicesTracks[i], trackB = voicesTracks[j];
-
-        const pairTicks = Array.from(new Set([...trackA.onsets, ...trackB.onsets])).sort((a, b) => a - b);
-        for (const tick of pairTicks) {
-          const idxA = trackA.activeIndexAt(tick);
-          const idxB = trackB.activeIndexAt(tick);
-          if (idxA < 0 || idxB < 0) continue;
-
-          const info = intervalInfoFromNotes(
-            voicesNotes[i][idxA],
-            voicesNotes[j][idxB],
-            lowestByTick.get(tick)
-          );
-          pairsIntervals[pairKey].push(info);
-          if (!isValidInterval(info.cls)) {
-            comboValid = false;
-            break;
-          }
-        }
-      }
-    }
-
-    // [AJUSTE OCULTAS] Verificação de movimento direto para 0/7 entre as vozes externas.
-    if (comboValid && !checkOcultasExternasMain(voicesPrepared, attackTicks)) {
-      comboValid = false;
-    }
-
-    return { valid: comboValid, data: { combo: comboPrepared.map(c => c.cfg), pairsIntervals } };
-  }
-
-  function checkOcultasExternasMain(voicesPrepared, ticks) {
-    let lastTop = null, lastBottom = null, lastTopMidi = null, lastBottomMidi = null;
-    for (const t of ticks) {
-      let topIdx = -1, bottomIdx = -1, topMidi = -Infinity, bottomMidi = Infinity;
-      for (let v = 0; v < voicesPrepared.length; v++) {
-        const i = voicesPrepared[v].track.activeIndexAt(t);
-        if (i < 0) continue;
-        const m = voicesPrepared[v].midi[i];
-        if (m > topMidi) { topMidi = m; topIdx = v; }
-        if (m < bottomMidi) { bottomMidi = m; bottomIdx = v; }
-      }
-      if (topIdx < 0 || bottomIdx < 0 || topIdx === bottomIdx) {
-        lastTop = null; lastBottom = null; lastTopMidi = null; lastBottomMidi = null;
-        continue;
-      }
-      if (lastTop !== null && lastTop === topIdx && lastBottom === bottomIdx) {
-        const moveTop = topMidi - lastTopMidi, moveBottom = bottomMidi - lastBottomMidi;
-        const sameDir = moveTop !== 0 && moveBottom !== 0 && Math.sign(moveTop) === Math.sign(moveBottom);
-        if (sameDir) {
-          const mod = Math.abs(topMidi - bottomMidi) % 12;
-          if (mod === 0 || mod === 7) return false;
-        }
-      }
-      lastTop = topIdx; lastBottom = bottomIdx; lastTopMidi = topMidi; lastBottomMidi = bottomMidi;
-    }
-    return true;
+    worker.postMessage({leaderNotes,modo,keySig:expState.keySig,opts,nVoices,delays,forms,ritmos,icDesired,criterio,grid});
   }
 
   // ---------------------------------------------------------------------
@@ -2124,7 +2338,24 @@ buildReferenceTable();
   // tonal), o número de vozes, as notas do Líder e a lista completa de
   // combinações de imitação viáveis já encontradas pela última análise —
   // permitindo recarregar tudo sem rodar a busca de novo.
-  const PRESET_VERSION = 1;
+  const PRESET_VERSION = 2;
+
+  // v2: notas do Líder com duração individual (figura, pontos, quiáltera num:den
+  // — frações [n,d] exatas, nunca float), critério de análise (A/B/C) e a
+  // configuração atual das imitações. v1 (sem esses campos) é migrada ao carregar:
+  // toda nota recebe a duração original de 1 pulso (semibreve), critério A.
+  function notaParaPreset(n) {
+    const sp = Core.noteSpec(n);
+    return {
+      letter: n.letter, acc: n.acc, octave: n.octave, keyAtEntry: n.keyAtEntry,
+      fig: sp.fig, dots: sp.dots, tupNum: sp.tn, tupDen: sp.td,
+      durNominal: Core.nominalDur(sp.fig, sp.dots), durEfetiva: Core.eventDur(n)
+    };
+  }
+  function migrarNota(n) {
+    const sp = Core.noteSpec(n);
+    return { letter: n.letter, acc: n.acc | 0, octave: n.octave | 0, keyAtEntry: n.keyAtEntry, fig: sp.fig, dots: sp.dots, tupNum: sp.tn, tupDen: sp.td };
+  }
 
   function salvarPreset() {
     if (!currentAnalysisResults.length) {
@@ -2137,7 +2368,12 @@ buildReferenceTable();
       modo,
       keySig: expState.keySig,
       nVoices: +voices.value,
-      leaderNotes: expState.notes,
+      criterio: lastAnalysisCriterio,
+      leaderNotes: expState.notes.map(notaParaPreset),
+      imitations: {
+        transposition: imitationState.transposition, delays: imitationState.delays, inversion: imitationState.inversion,
+        retrograde: imitationState.retrograde, ritmo: imitationState.ritmo
+      },
       icDesired: modo === 'atonal' ? icDesired : undefined,
       analysisResults: currentAnalysisResults
     };
@@ -2168,6 +2404,10 @@ buildReferenceTable();
         return;
       }
 
+      if (data.version > PRESET_VERSION) {
+        alert('Este preset foi gerado por uma versão mais nova do Stretto Fuga (formato ' + data.version + '). Campos desconhecidos serão ignorados.');
+      }
+
       // Modo (tonal/atonal) — replica o que o clique no botão de modo faz.
       if (data.modo === 'tonal' || data.modo === 'atonal') {
         modo = data.modo;
@@ -2187,7 +2427,15 @@ buildReferenceTable();
       if (data.nVoices) voices.value = String(data.nVoices);
       if (data.keySig) expState.keySig = data.keySig;
 
-      expState.notes = data.leaderNotes;
+      // v1 (sem duração individual) → 1 pulso por nota; v2 → durações preservadas.
+      expState.notes = data.leaderNotes.map(migrarNota);
+      lastAnalysisCriterio = ['A', 'B', 'C'].includes(data.criterio) ? data.criterio : 'A';
+      document.getElementById('expCriterio').value = lastAnalysisCriterio;
+      if (data.imitations && typeof data.imitations === 'object') {
+        ['transposition', 'delays', 'inversion', 'retrograde', 'ritmo'].forEach(key => {
+          if (data.imitations[key] && typeof data.imitations[key] === 'object') imitationState[key] = Object.assign({}, data.imitations[key]);
+        });
+      }
       appliedAnalysisIndex = null;
       currentAnalysisResults = Array.isArray(data.analysisResults) ? data.analysisResults : [];
       currentAnalysisPage = 0;
