@@ -258,19 +258,25 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <label for="expPulso">Pulso</label>
       <select id="expPulso" title="Valor do pulso de referência: unidade do Atraso das imitações, do BPM e da regra de sobreposição mínima (2 pulsos)"></select>
     </div>
+    <button class="exp-actionbtn" id="expPlayBtn" type="button">▶ Reproduzir</button>
+    <button class="exp-actionbtn" id="expStopBtn" type="button">⏹ Parar</button>
+    <span id="expAudioStatus" class="note" style="margin:0"></span>
+  </div>
+
+  <div class="exp-toolbar exp-durbar" id="expTransformBar">
+    <span class="exp-dur-title">Transformar Proposta</span>
+    <button class="exp-actionbtn" id="expInvertBtn" type="button" title="Espelha a Proposta em torno da primeira nota, que permanece fixa. Tonal: em graus, na armadura. Atonal: por intervalo exato. O ritmo não muda">Inverter</button>
+    <button class="exp-actionbtn" id="expRetroBtn" type="button" title="Inverte a ordem das notas: cada altura leva junto a sua duração">Retrogradar</button>
     <div class="exp-tgroup" id="expTranspGroup">
-      <label for="expTranspMode">Transpor Proposta</label>
+      <label for="expTranspMode">Transpor</label>
       <select id="expTranspMode" title="Diatônica: desloca N graus dentro da armadura atual. Cromática: transpõe por intervalo exato (grafia derivada do intervalo)">
         <option value="dia">Diatônica</option><option value="cro">Cromática</option>
       </select>
       <select id="expTranspInt"></select>
       <button class="exp-actionbtn" id="expTranspUp" type="button" title="Transpor para cima">↑</button>
       <button class="exp-actionbtn" id="expTranspDown" type="button" title="Transpor para baixo">↓</button>
-      <button class="exp-actionbtn" id="expTranspUndo" type="button" disabled title="Restaura a Proposta como estava antes da última transposição">Desfazer transposição</button>
     </div>
-    <button class="exp-actionbtn" id="expPlayBtn" type="button">▶ Reproduzir</button>
-    <button class="exp-actionbtn" id="expStopBtn" type="button">⏹ Parar</button>
-    <span id="expAudioStatus" class="note" style="margin:0"></span>
+    <button class="exp-actionbtn" id="expUndoBtn" type="button" disabled title="Restaura a Proposta como estava antes da última transformação">Desfazer</button>
   </div>
 
   <div class="exp-toolbar exp-durbar" id="expDurBar">
@@ -386,11 +392,16 @@ function transposeChromatic(note, d) {
   const midi = noteToMidi(note) + d, pc = ((midi % 12) + 12) % 12, o = Math.floor(midi / 12) - 1, [l, a] = CHROMA_SPELL[pc];
   return { letter: l, acc: a, octave: o };
 }
+// A alteração em relação à armadura é espelhada junto com o grau (com eixo em
+// Lá, Sol♯ → Si♭, preservando o semitom). A exceção é a própria classe de altura
+// do eixo (a primeira nota e suas oitavas), que mantém a alteração que tem.
 function invertDiatonic(note, first, key) {
   const ref = note.keyAtEntry || key,
     target = 2 * diatonicIndex(first.letter, first.octave) - diatonicIndex(note.letter, note.octave),
     nl = LETTERS[((target % 7) + 7) % 7], no = Math.floor(target / 7),
-    dev = note.acc - keyDefaultAcc(note.letter, ref), na = keyDefaultAcc(nl, ref) + dev;
+    dev = note.acc - keyDefaultAcc(note.letter, ref),
+    isAxis = note.letter === first.letter && note.acc === first.acc,
+    na = keyDefaultAcc(nl, ref) + (isAxis ? dev : -dev);
   return { letter: nl, acc: na, octave: no, keyAtEntry: ref };
 }
 function invertChromatic(note, first) {
@@ -1446,7 +1457,38 @@ buildReferenceTable();
   document.getElementById('accFlat').onclick = () => setPendingAcc(-1);
   document.getElementById('accNatural').onclick = () => setPendingAcc(0);
 
-  // --- Transposição da Proposta (diatônica ou cromática) ---
+  // --- Transformações da Proposta (transposição, inversão, retrogradação) ---
+  // Todas reescrevem a própria Proposta e passam por aplicarTransformacao, que
+  // valida o resultado e guarda o estado para o botão "Desfazer" (um nível).
+  function aplicarTransformacao(out, nome) {
+    if (out.some(nt => nt.octave < 0 || nt.octave > 9)) { alert(nome + ' ultrapassa a extensão representável (oitavas 0–9).'); return; }
+    if (out.some(nt => Math.abs(nt.acc) > 2)) { alert(nome + ' exigiria um acidente além do dobrado sustenido/bemol, que não pode ser escrito.'); return; }
+    expState.undoNotes = expState.notes.map(nt => Object.assign({}, nt));
+    expState.notes = out;
+    expState.afterTransform = JSON.stringify(out);
+    appliedAnalysisIndex = null;
+    clearPendingPreview();
+    expRender();
+  }
+
+  // Inversão em torno da primeira nota, que permanece fixa. Tonal: em graus, na
+  // armadura (como a "Inversão" das imitações). Atonal: intervalo exato, com a
+  // grafia derivada do intervalo.
+  function inverterProposta() {
+    if (expState.notes.length < 2) return;
+    const first = expState.notes[0], key = expState.keySig;
+    const dFirst = diatonicIndex(first.letter, first.octave), mFirst = noteToMidi(first);
+    aplicarTransformacao(expState.notes.map(nt => modo === 'tonal'
+      ? Object.assign({}, nt, invertDiatonic(nt, first, key))
+      : transposeNoteExact(nt, 2 * (dFirst - diatonicIndex(nt.letter, nt.octave)), 2 * (mFirst - noteToMidi(nt)))), 'A inversão');
+  }
+
+  // Retrogradação integral: altura e duração viajam juntas.
+  function retrogradarProposta() {
+    if (expState.notes.length < 2) return;
+    aplicarTransformacao(expState.notes.slice().reverse().map(nt => Object.assign({}, nt)), 'A retrogradação');
+  }
+
   // Diatônica: N graus dentro da armadura atual (mantém o desvio de cada nota em
   // relação à armadura). Cromática: intervalo exato (graus + semitons), com a
   // grafia derivada do intervalo; se exigisse mais que dobrado sustenido/bemol,
@@ -1487,20 +1529,16 @@ buildReferenceTable();
       const [, st, sm] = CHROMA_INTS[v];
       out = expState.notes.map(nt => transposeNoteExact(nt, dir * st, dir * sm));
     }
-    if (out.some(nt => nt.octave < 0 || nt.octave > 9)) { alert('A transposição ultrapassa a extensão representável (oitavas 0–9).'); return; }
-    expState.undoNotes = expState.notes.map(nt => Object.assign({}, nt));
-    expState.notes = out;
-    expState.afterTransp = JSON.stringify(out);
-    appliedAnalysisIndex = null;
-    clearPendingPreview();
-    expRender();
+    aplicarTransformacao(out, 'A transposição');
   }
   document.getElementById('expTranspMode').onchange = refreshTranspUI;
   document.getElementById('expTranspUp').onclick = (e) => { transporProposta(1); e.target.blur(); };
   document.getElementById('expTranspDown').onclick = (e) => { transporProposta(-1); e.target.blur(); };
-  document.getElementById('expTranspUndo').onclick = (e) => {
+  document.getElementById('expInvertBtn').onclick = (e) => { inverterProposta(); e.target.blur(); };
+  document.getElementById('expRetroBtn').onclick = (e) => { retrogradarProposta(); e.target.blur(); };
+  document.getElementById('expUndoBtn').onclick = (e) => {
     if (expState.undoNotes) { expState.notes = expState.undoNotes; expState.undoNotes = null; appliedAnalysisIndex = null; expRender(); }
-    document.getElementById('expTranspUndo').disabled = true; e.target.blur();
+    document.getElementById('expUndoBtn').disabled = true; e.target.blur();
   };
   refreshTranspUI();
 
@@ -1879,8 +1917,8 @@ buildReferenceTable();
 
   function expRender() {
     if (!expState.open) return;
-    // "Desfazer transposição" só vale enquanto a Proposta não foi editada depois
-    document.getElementById('expTranspUndo').disabled = !(expState.undoNotes && JSON.stringify(expState.notes) === expState.afterTransp);
+    // "Desfazer" só vale enquanto a Proposta não foi editada depois da transformação
+    document.getElementById('expUndoBtn').disabled = !(expState.undoNotes && JSON.stringify(expState.notes) === expState.afterTransform);
     let V;
     try { V = computeVoices(); } catch (err) { mostrarErroGrade(err); return; }
     const { n, vals, edIdx, edVal, G } = V;
