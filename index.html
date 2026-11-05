@@ -193,12 +193,12 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </div>
 
 <div class="field"><label for="voices">Número de vozes</label><select id="voices">
-  <option value="1">1 — Apenas o Líder</option>
-  <option value="2">2 — Líder + 1 Imitação</option>
-  <option value="3">3 — Líder + 2 Imitações</option>
-  <option value="4">4 — Líder + 3 Imitações</option>
-  <option value="5">5 — Líder + 4 Imitações</option>
-  <option value="6">6 — Líder + 5 Imitações</option>
+  <option value="1">1 — Apenas a Proposta</option>
+  <option value="2">2 — Proposta + 1 Imitação</option>
+  <option value="3">3 — Proposta + 2 Imitações</option>
+  <option value="4">4 — Proposta + 3 Imitações</option>
+  <option value="5">5 — Proposta + 4 Imitações</option>
+  <option value="6">6 — Proposta + 5 Imitações</option>
 </select></div>
 
 <div id="controls"></div>
@@ -209,7 +209,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   <div class="note">Verde = desejado · Vermelho = indesejado · Dourado = falsa dissonância (dissonante apenas contra a voz mais grave da textura; entre vozes superiores é tratado como consonância). Intervalos complementares (ex.: 5 e 7, 4 e 8) são marcados separadamente. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
 </div>
 
-<div class="note">A 1ª Imitação entra uma nota depois do Líder; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
+<div class="note">A 1ª Imitação entra uma nota depois da Proposta; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
 </aside>
 <main>
 <div class="tabs">
@@ -226,7 +226,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 </div>
 
 <div id="tab-configurador" class="tab-panel">
-  <div class="title">Movimentos melódicos viáveis para o Líder</div>
+  <div class="title">Movimentos melódicos viáveis para a Proposta</div>
   <section class="viable"><div id="moves" class="moves"></div></section>
   <div class="note" id="movesWarn" style="display:none;color:var(--red)">⚠ Uma ou mais imitações usam retrogradação e/ou ritmo diferente de Normal. Esta tabela assume vozes sincronizadas (sem linha do tempo real) e pode não refletir esses casos com exatidão — use a aba "🔍 Análise de Imitações" para a verificação temporal completa.</div>
   <div class="title">Tabela de possibilidades</div><div id="table"></div>
@@ -258,6 +258,16 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <label for="expPulso">Pulso</label>
       <select id="expPulso" title="Valor do pulso de referência: unidade do Atraso das imitações, do BPM e da regra de sobreposição mínima (2 pulsos)"></select>
     </div>
+    <div class="exp-tgroup" id="expTranspGroup">
+      <label for="expTranspMode">Transpor Proposta</label>
+      <select id="expTranspMode" title="Diatônica: desloca N graus dentro da armadura atual. Cromática: transpõe por intervalo exato (grafia derivada do intervalo)">
+        <option value="dia">Diatônica</option><option value="cro">Cromática</option>
+      </select>
+      <select id="expTranspInt"></select>
+      <button class="exp-actionbtn" id="expTranspUp" type="button" title="Transpor para cima">↑</button>
+      <button class="exp-actionbtn" id="expTranspDown" type="button" title="Transpor para baixo">↓</button>
+      <button class="exp-actionbtn" id="expTranspUndo" type="button" disabled title="Restaura a Proposta como estava antes da última transposição">Desfazer transposição</button>
+    </div>
     <button class="exp-actionbtn" id="expPlayBtn" type="button">▶ Reproduzir</button>
     <button class="exp-actionbtn" id="expStopBtn" type="button">⏹ Parar</button>
     <span id="expAudioStatus" class="note" style="margin:0"></span>
@@ -286,7 +296,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
     <span class="exp-dur-info" id="expDurInfo"></span>
   </div>
 
-  <div class="exp-viable-title">Movimentos melódicos viáveis para o Líder</div>
+  <div class="exp-viable-title">Movimentos melódicos viáveis para a Proposta</div>
   <section class="viable exp-viable"><div id="expMoves" class="moves"></div></section>
 
   <div class="exp-keyboard-wrap" id="expKeyboardWrap">
@@ -304,7 +314,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   <div class="exp-analysis">
     <div class="exp-analysis-header">
       <span class="title">Análise de imitações viáveis</span>
-      <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Líder Atual</button>
+      <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Proposta Atual</button>
       <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
       <div class="exp-criterio" title="Critério de validação contrapontística (independente do modo Modal/Escalar × Atonal)">
         <span class="exp-filter-label">Critério:</span>
@@ -327,7 +337,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <input type="file" id="expLoadPresetInput" accept="application/json,.json" style="display:none">
     </div>
     <div id="expAnalysisResults" class="exp-analysis-results">
-      <div class="exp-analysis-empty">Insira notas na pauta do Líder (aba Experimentação) e clique em "Analisar Líder Atual" para verificar as imitações viáveis.</div>
+      <div class="exp-analysis-empty">Insira notas na pauta da Proposta (aba Experimentação) e clique em "Analisar Proposta Atual" para verificar as imitações viáveis.</div>
     </div>
   </div>
 </div>
@@ -1015,10 +1025,10 @@ function getTransposition(i) {
 // =====================================================================
 // MOTOR DE RITMO (aumentação / diminuição)
 // =====================================================================
-// Modelo temporal: o pulso de referência é uma semibreve. Cada nota do Líder
+// Modelo temporal: o pulso de referência é uma semibreve. Cada nota da Proposta
 // tem a sua própria duração (figura, pontos e quiáltera num:den) guardada como
 // FRAÇÃO EXATA de pulso (ver Core.eventDur). O ritmo de uma imitação é um fator
-// racional (Core.RITMO_FRAC) aplicado a cada duração individual do Líder. A
+// racional (Core.RITMO_FRAC) aplicado a cada duração individual da Proposta. A
 // grade de ticks inteiros é o mmc dos denominadores envolvidos e é calculada a
 // cada renderização/análise (Core.gridFor / Core.analysisGrid) — não há mais
 // uma constante fixa de ticks por pulso.
@@ -1169,7 +1179,7 @@ function calc() {
   // adiantada no cânone (a imitação k ainda está "presa" na nota anterior,
   // por causa do atraso de entrada). Se a voz k-1 estiver com Inversão
   // ativa, o movimento que ela realmente executa é o espelhado (-mVal), não
-  // o movimento bruto do Líder — isso é levado em conta no intervalo
+  // o movimento bruto da Proposta — isso é levado em conta no intervalo
   // resultante abaixo. Retrogradação e Ritmo ≠ Normal quebram a premissa de
   // "todas as vozes tocam a mesma sequência em lockstep" desta tabela
   // abstrata (que não tem uma linha de tempo real de notas); esses casos
@@ -1223,7 +1233,7 @@ function movesBox(a, anyUncertain) {
 }
 
 function tableBox(rows, n, anyUncertain) {
-  let h = "<div class='wrap'><table><thead><tr><th>Movimento do Líder</th>";
+  let h = "<div class='wrap'><table><thead><tr><th>Movimento da Proposta</th>";
   for (let k = 1; k < n; k++) h += `<th>Imitação ${k}</th>`;
   h += "</tr></thead><tbody>";
 
@@ -1262,7 +1272,7 @@ function buildReferenceTable() {
   refTable.innerHTML = h + "</tbody></table></div>";
 
   refNote.textContent = modo === "tonal"
-    ? "Grade de consulta geral: cada célula mostra o intervalo resultante entre uma voz e a voz imediatamente anterior a ela (já deslocada pelo movimento melódico), para qualquer transposição de entrada. Serve de referência tanto para o par Líder → 1ª Imitação quanto para qualquer par de Imitações consecutivas."
+    ? "Grade de consulta geral: cada célula mostra o intervalo resultante entre uma voz e a voz imediatamente anterior a ela (já deslocada pelo movimento melódico), para qualquer transposição de entrada. Serve de referência tanto para o par Proposta → 1ª Imitação quanto para qualquer par de Imitações consecutivas."
     : "Grade de consulta geral em intervalos, em semitons (0–11). A cor de cada célula segue a classificação definida no painel \"Intervalos em semitons\", na barra lateral.";
 }
 
@@ -1354,7 +1364,11 @@ buildReferenceTable();
     if (acc === def) return null;
     return VF_ACC[acc] || null;
   }
-  function vfKey(note) { return note.letter.toLowerCase() + '/' + note.octave; }
+  // Altura ESCRITA: sol 8va soa uma oitava acima do escrito; fá 8vb soa uma oitava abaixo.
+  function vfKey(note, ann) {
+    const o = ann === '8va' ? note.octave - 1 : ann === '8vb' ? note.octave + 1 : note.octave;
+    return note.letter.toLowerCase() + '/' + o;
+  }
   function restKeyFor(clef) {
     if (clef === 'bass') return 'd/3';
     if (clef === 'alto') return 'c/4';
@@ -1362,15 +1376,18 @@ buildReferenceTable();
   }
 
   const CLEF_CANDIDATES = [
-    { clef: 'treble', ann: null, bottomL: 'E', bottomO: 4, topL: 'F', topO: 5 },
-    { clef: 'alto', ann: null, bottomL: 'F', bottomO: 3, topL: 'G', topO: 4 },
-    { clef: 'bass', ann: null, bottomL: 'G', bottomO: 2, topL: 'A', topO: 3 }
+    { clef: 'treble', ann: null, bottomL: 'E', bottomO: 4, topL: 'F', topO: 5, bias: 0 },
+    { clef: 'alto', ann: null, bottomL: 'F', bottomO: 3, topL: 'G', topO: 4, bias: 0 },
+    { clef: 'bass', ann: null, bottomL: 'G', bottomO: 2, topL: 'A', topO: 3, bias: 0 },
+    // claves oitavadas: só vencem quando evitam várias linhas suplementares
+    { clef: 'treble', ann: '8va', bottomL: 'E', bottomO: 4, topL: 'F', topO: 5, bias: 4 },
+    { clef: 'bass', ann: '8vb', bottomL: 'G', bottomO: 2, topL: 'A', topO: 3, bias: 4 }
   ];
   const LEDGER_BELOW_WEIGHT = 1.6;
   const LEDGER_ABOVE_WEIGHT = 1.0;
 
   function ledgerLinesFor(letter, octave, spec) {
-    const wOctave = spec.ann === '8vb' ? octave + 1 : octave;
+    const wOctave = spec.ann === '8vb' ? octave + 1 : spec.ann === '8va' ? octave - 1 : octave;
     const di = diatonicIndex(letter, wOctave);
     const bottomIdx = diatonicIndex(spec.bottomL, spec.bottomO);
     const topIdx = diatonicIndex(spec.topL, spec.topO);
@@ -1382,7 +1399,7 @@ buildReferenceTable();
   function chooseClefForNotes(notesArr) {
     let best = null;
     for (const spec of CLEF_CANDIDATES) {
-      let penalty = 0;
+      let penalty = spec.bias || 0;
       notesArr.forEach((nt) => {
         const { below, above } = ledgerLinesFor(nt.letter, nt.octave, spec);
         if (below) penalty += LEDGER_BELOW_WEIGHT * below * below;
@@ -1413,6 +1430,7 @@ buildReferenceTable();
     sel.innerHTML = Object.keys(KEY_LABELS).map(k => `<option value="${k}">${KEY_LABELS[k]}</option>`).join('');
     sel.value = expState.keySig;
     document.getElementById('expKeyGroup').style.display = modo === 'tonal' ? 'flex' : 'none';
+    refreshTranspUI();
   }
   // A função é usada também pelos handlers definidos fora desta IIFE.
   // Expondo-a explicitamente no objeto global evitamos ReferenceError em
@@ -1427,6 +1445,64 @@ buildReferenceTable();
   document.getElementById('accSharp').onclick = () => setPendingAcc(1);
   document.getElementById('accFlat').onclick = () => setPendingAcc(-1);
   document.getElementById('accNatural').onclick = () => setPendingAcc(0);
+
+  // --- Transposição da Proposta (diatônica ou cromática) ---
+  // Diatônica: N graus dentro da armadura atual (mantém o desvio de cada nota em
+  // relação à armadura). Cromática: intervalo exato (graus + semitons), com a
+  // grafia derivada do intervalo; se exigisse mais que dobrado sustenido/bemol,
+  // recorre à grafia enarmônica usual. A clave de cada voz é reescolhida
+  // automaticamente na renderização.
+  var CHROMA_INTS = [['2ª menor', 1, 1], ['2ª maior', 1, 2], ['3ª menor', 2, 3], ['3ª maior', 2, 4],
+    ['4ª justa', 3, 5], ['4ª aumentada', 3, 6], ['5ª diminuta', 4, 6], ['5ª justa', 4, 7],
+    ['6ª menor', 5, 8], ['6ª maior', 5, 9], ['7ª menor', 6, 10], ['7ª maior', 6, 11], ['8ª justa', 7, 12]];
+  var DIA_INTS = ['2ª', '3ª', '4ª', '5ª', '6ª', '7ª', '8ª'];
+  function refreshTranspUI() {
+    const modeSel = document.getElementById('expTranspMode'), intSel = document.getElementById('expTranspInt');
+    if (!modeSel || !DIA_INTS) return;
+    if (modo !== 'tonal') { modeSel.value = 'cro'; modeSel.disabled = true; modeSel.title = 'No modo atonal só a transposição cromática se aplica'; }
+    else { modeSel.disabled = false; }
+    const prev = intSel.value;
+    intSel.innerHTML = modeSel.value === 'dia'
+      ? DIA_INTS.map((l, i) => `<option value="${i + 1}">${l}</option>`).join('')
+      : CHROMA_INTS.map((x, i) => `<option value="${i}">${x[0]}</option>`).join('');
+    if (prev && intSel.querySelector(`option[value="${prev}"]`)) intSel.value = prev;
+  }
+  function transposeNoteExact(nt, steps, semis) {
+    const di = diatonicIndex(nt.letter, nt.octave) + steps, nl = LETTERS[((di % 7) + 7) % 7], no = Math.floor(di / 7);
+    const acc = noteToMidi(nt) + semis - (PITCH_CLASS[nl] + 12 * (no + 1));
+    if (Math.abs(acc) <= 2) return Object.assign({}, nt, { letter: nl, acc, octave: no });
+    return Object.assign({}, nt, transposeChromatic(nt, semis));
+  }
+  function transporProposta(dir) {
+    if (!expState.notes.length) return;
+    const mode = document.getElementById('expTranspMode').value, v = +document.getElementById('expTranspInt').value, key = expState.keySig;
+    let out;
+    if (mode === 'dia' && modo === 'tonal') {
+      out = expState.notes.map(nt => {
+        const dev = nt.acc - keyDefaultAcc(nt.letter, nt.keyAtEntry || key);
+        const base = { letter: nt.letter, acc: keyDefaultAcc(nt.letter, key) + dev, octave: nt.octave, keyAtEntry: key };
+        return Object.assign({}, nt, transposeDiatonic(base, key, dir * v), { keyAtEntry: key });
+      });
+    } else {
+      const [, st, sm] = CHROMA_INTS[v];
+      out = expState.notes.map(nt => transposeNoteExact(nt, dir * st, dir * sm));
+    }
+    if (out.some(nt => nt.octave < 0 || nt.octave > 9)) { alert('A transposição ultrapassa a extensão representável (oitavas 0–9).'); return; }
+    expState.undoNotes = expState.notes.map(nt => Object.assign({}, nt));
+    expState.notes = out;
+    expState.afterTransp = JSON.stringify(out);
+    appliedAnalysisIndex = null;
+    clearPendingPreview();
+    expRender();
+  }
+  document.getElementById('expTranspMode').onchange = refreshTranspUI;
+  document.getElementById('expTranspUp').onclick = (e) => { transporProposta(1); e.target.blur(); };
+  document.getElementById('expTranspDown').onclick = (e) => { transporProposta(-1); e.target.blur(); };
+  document.getElementById('expTranspUndo').onclick = (e) => {
+    if (expState.undoNotes) { expState.notes = expState.undoNotes; expState.undoNotes = null; appliedAnalysisIndex = null; expRender(); }
+    document.getElementById('expTranspUndo').disabled = true; e.target.blur();
+  };
+  refreshTranspUI();
 
   function setOctave(v) { expState.octave = Math.max(0, Math.min(8, v)); document.getElementById('octVal').textContent = expState.octave; }
   document.getElementById('octUp').onclick = () => setOctave(expState.octave + 1);
@@ -1493,7 +1569,7 @@ buildReferenceTable();
     if (!toneReady) await initAudio();
   }
 
-  // Prévia em tempo real: a cada nota inserida no Líder (ou no clique de
+  // Prévia em tempo real: a cada nota inserida na Proposta (ou no clique de
   // "Reproduzir"), recalcula do zero a sequência atual de cada voz
   // (mesma função usada para desenhar a partitura — por isso funciona
   // corretamente mesmo com retrogradação, que é reconstruída por inteiro
@@ -1721,14 +1797,24 @@ buildReferenceTable();
     return gaps;
   }
 
-  function computeYPositions(gaps) {
+  // ext[i] = { above, below }: espaço extra (px) exigido pelas linhas suplementares
+  // da voz i além do que a pauta já reserva (40 px acima da 1ª linha). A margem
+  // superior base deixa folga para hastes e colchetes de quiáltera.
+  const TOP_MARGIN = 28;
+  function computeYPositions(gaps, ext) {
     const yPositions = [];
-    let yAcc = 6;
+    let yAcc = TOP_MARGIN + ext[0].above;
     for (let i = 0; i < gaps.length; i++) {
       yPositions.push(yAcc);
-      yAcc += STAVE_HEIGHT + gaps[i];
+      yAcc += STAVE_HEIGHT + gaps[i] + ext[i].below + (i + 1 < gaps.length ? ext[i + 1].above : 0);
     }
-    return { yPositions, totalHeight: yAcc + 5 };
+    return { yPositions, totalHeight: yAcc + 12 };
+  }
+  function ledgerExtent(d) {
+    const spec = CLEF_CANDIDATES.find(c => c.clef === d.clef.clef && c.ann === d.clef.ann) || CLEF_CANDIDATES[0];
+    let a = 0, b = 0;
+    d.notas.forEach(nt => { const l = ledgerLinesFor(nt.letter, nt.octave, spec); a = Math.max(a, l.above); b = Math.max(b, l.below); });
+    return { above: Math.max(0, a * 10 + 14 - 40), below: b * 10 };
   }
 
   function placeholderNote(delta) {
@@ -1788,11 +1874,13 @@ buildReferenceTable();
     const area = document.getElementById('expCanvasArea');
     const msg = String(err && err.message || err);
     area.innerHTML = '<div class="exp-analysis-empty" style="color:#b0102f">⚠️ ' +
-      (msg.indexOf('GRADE') === 0 ? 'As proporções rítmicas combinadas excedem a precisão numérica da grade temporal. Simplifique as quiálteras do Líder.' : 'Erro ao montar a partitura: ' + msg) + '</div>';
+      (msg.indexOf('GRADE') === 0 ? 'As proporções rítmicas combinadas excedem a precisão numérica da grade temporal. Simplifique as quiálteras da Proposta.' : 'Erro ao montar a partitura: ' + msg) + '</div>';
   }
 
   function expRender() {
     if (!expState.open) return;
+    // "Desfazer transposição" só vale enquanto a Proposta não foi editada depois
+    document.getElementById('expTranspUndo').disabled = !(expState.undoNotes && JSON.stringify(expState.notes) === expState.afterTransp);
     let V;
     try { V = computeVoices(); } catch (err) { mostrarErroGrade(err); return; }
     const { n, vals, edIdx, edVal, G } = V;
@@ -1806,7 +1894,7 @@ buildReferenceTable();
       const v = V.voices[i];
       return {
         index: i,
-        label: i === 0 ? 'Líder' : `Imitação ${i}`,
+        label: i === 0 ? 'Proposta' : `Imitação ${i}`,
         transposicao: vals[i],
         notas: v.events,
         delay: v.delay,
@@ -1818,7 +1906,9 @@ buildReferenceTable();
     });
 
     const gaps = computeGaps(n);
-    const { yPositions, totalHeight } = computeYPositions(gaps);
+    const ext = sortedData.map(ledgerExtent);
+    sortedData.forEach((d, i) => { d._extraBelow = ext[i].below; });
+    const { yPositions, totalHeight } = computeYPositions(gaps, ext);
 
     try { renderCanvas(sortedData, gaps, yPositions, totalHeight, G, V.P); } catch (err) { console.error(err); mostrarErroGrade(err); }
   }
@@ -1826,8 +1916,13 @@ buildReferenceTable();
 
   // Espaçamento horizontal mínimo entre colunas de ataque (evita sobreposição de
   // figuras curtas, p.ex. fusas) e folga extra quando há acidente na coluna.
-  const MIN_GAP = 16;
+  // Espaçamento "de gravação": largura entre dois ataques = max(mínimo, K·Δ^α), Δ em semibreves.
+  const MIN_GAP = 30;
   const ACC_EXTRA = 9;
+  const DOT_EXTRA = 7;
+  const SPACE_K = 64;
+  const SPACE_ALPHA = 0.6;
+  const spaceFor = (dSemi) => SPACE_K * Math.pow(dSemi, SPACE_ALPHA);
 
   // Pulso de referência como fração de semibreve, e seu valor numérico.
   function pulseFr() { return Core.nominalDur(expState.pulse.fig, expState.pulse.dots); }
@@ -1836,8 +1931,6 @@ buildReferenceTable();
     // pulso de referência: duração em ticks e escala horizontal (G = ticks por semibreve)
     const pulseTicks = P[0] * (G / P[1]);
     const pulseVal = P[0] / P[1];
-    // 60 px por semibreve; pulsos curtos ganham escala maior para não ficarem espremidos
-    const pxPerSemi = FIXED_COL_WIDTH * Math.max(1, 1 / (4 * pulseVal));
     const area = document.getElementById('expCanvasArea');
     area.innerHTML = '';
 
@@ -1906,19 +1999,27 @@ buildReferenceTable();
     // --- Mapa de posições X (comum a todas as vozes, para manter o alinhamento
     // vertical): proporcional ao tempo (FIXED_COL_WIDTH px por pulso), com
     // espaçamento mínimo entre colunas consecutivas.
-    const tickSet = new Set(), accTicks = new Set();
-    sortedData.forEach(d => d._plan.forEach(it => { tickSet.add(it.startTick); if (it.acc) accTicks.add(it.startTick); }));
+    const tickSet = new Set(), accTicks = new Set(), dotTicks = new Set();
+    sortedData.forEach(d => d._plan.forEach(it => {
+      tickSet.add(it.startTick);
+      if (it.acc) accTicks.add(it.startTick);
+      if (it.dots) dotTicks.add(it.startTick);
+    }));
     const ticksSorted = Array.from(tickSet).sort((a, b) => a - b);
     const xMap = new Map();
     let prevT = null;
     ticksSorted.forEach(t => {
-      let x = (t / G) * pxPerSemi;
-      if (prevT !== null) x = Math.max(x, xMap.get(prevT) + MIN_GAP + (accTicks.has(t) ? ACC_EXTRA : 0));
+      let x = 0;
+      if (prevT !== null) {
+        const minW = MIN_GAP + (accTicks.has(t) ? ACC_EXTRA : 0) + (dotTicks.has(prevT) ? DOT_EXTRA : 0);
+        x = xMap.get(prevT) + Math.max(minW, spaceFor((t - prevT) / G));
+      }
       xMap.set(t, x);
       prevT = t;
     });
     const lastX = prevT === null ? 0 : xMap.get(prevT);
-    const contentWidth = Math.max(lastX + pxPerSemi * pulseVal, maxTotalPulses * pulseVal * pxPerSemi);
+    const tailW = prevT === null ? MIN_GAP : Math.max(MIN_GAP + (dotTicks.has(prevT) ? DOT_EXTRA : 0), spaceFor(Math.max(0, maxTicksRounded - prevT) / G));
+    const contentWidth = lastX + tailW + 6;
     const staveWidth = noteStartXFinal + contentWidth + 20;
 
     const renderer = new VF.Renderer(area, VF.Renderer.Backends.SVG);
@@ -1958,7 +2059,11 @@ buildReferenceTable();
       // ou pausa) ainda recebe o colchete. Ligaduras unem as figuras de um mesmo evento.
       let tb = [], tbKey = null, prevSn = null;
       const flushTuplet = () => {
-        if (tb.length && tbKey) allTuplets.push(new VF.Tuplet(tb.slice(), { num_notes: tbKey.tn, notes_occupied: tbKey.td }));
+        if (tb.length && tbKey) {
+          // colchete do lado das hastes quando todas apontam para baixo
+          const allDown = tb.every(x => x.getStemDirection() === VF.Stem.DOWN);
+          allTuplets.push(new VF.Tuplet(tb.slice(), { num_notes: tbKey.tn, notes_occupied: tbKey.td, location: allDown ? VF.Tuplet.LOCATION_BOTTOM : VF.Tuplet.LOCATION_TOP }));
+        }
         tb = []; tbKey = null;
       };
 
@@ -1972,7 +2077,8 @@ buildReferenceTable();
           vfNotes.push(sn); startTicks.push(it.startTick);
           return;
         }
-        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(it.nt)], duration: it.fig });
+        // auto_stem: haste para baixo da 3ª linha em diante, para cima abaixo dela
+        const sn = new VF.StaveNote({ clef: d.clef.clef, keys: [vfKey(it.nt, d.clef.ann)], duration: it.fig, auto_stem: true });
         sn.setStave(stave);
         for (let k = 0; k < it.dots; k++) VF.Dot.buildAndAttach([sn], { all: true });
         if (it.acc) sn.addModifier(new VF.Accidental(it.acc), 0);
@@ -2039,7 +2145,7 @@ buildReferenceTable();
     // lista de instantes usada pela validação no Worker).
     for (let i = 0; i < n; i++) {
       const rowA = sortedData[i];
-      const gapTop = rowA._yPos + STAVE_HEIGHT;
+      const gapTop = rowA._yPos + STAVE_HEIGHT + (rowA._extraBelow || 0);
 
       for (let j = i + 1; j < n; j++) {
         const rowB = sortedData[j];
@@ -2099,12 +2205,12 @@ buildReferenceTable();
   async function analisarImitacoesViaveis() {
     appliedAnalysisIndex = null;
     if (+voices.value < 2) {
-      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Selecione ao menos 2 vozes (Líder + 1 Imitação) para buscar imitações compatíveis.</div>';
+      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Selecione ao menos 2 vozes (Proposta + 1 Imitação) para buscar imitações compatíveis.</div>';
       document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults = []; document.getElementById('expSavePresetBtn').disabled = true; return;
     }
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) {
-      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta do Líder (na aba Experimentação) para realizar a análise.</div>';
+      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta da Proposta (na aba Experimentação) para realizar a análise.</div>';
       document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults=[]; document.getElementById('expSavePresetBtn').disabled=true; return;
     }
     const forms=[];
@@ -2120,18 +2226,18 @@ buildReferenceTable();
       return;
     }
     // Grade de ticks inteiros da análise (mmc dos denominadores das durações
-    // efetivas do Líder × fatores de ritmo selecionados).
+    // efetivas da Proposta × fatores de ritmo selecionados).
     let grid;
     const P = pulseFr();
     try { grid = Core.analysisGrid(leaderNotes, ritmos, P); }
     catch (err) {
-      document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ As proporções rítmicas do Líder combinadas aos fatores de ritmo escolhidos excedem a precisão numérica da grade temporal. Simplifique as quiálteras ou reduza os fatores de ritmo selecionados.</div>';
+      document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ As proporções rítmicas da Proposta combinadas aos fatores de ritmo escolhidos excedem a precisão numérica da grade temporal. Simplifique as quiálteras ou reduza os fatores de ritmo selecionados.</div>';
       return;
     }
     const criterio = document.getElementById('expCriterio').value;
     const analyzeBtn=document.getElementById('expAnalyzeBtn'); analyzeBtn.disabled=true; analyzeBtn.style.opacity='0.5';
     if(activeAnalysisWorker){activeAnalysisWorker.terminate();activeAnalysisWorker=null;}
-    // O atraso máximo vem da duração total do Líder em pulsos (ignora o ritmo,
+    // O atraso máximo vem da duração total da Proposta em pulsos (ignora o ritmo,
     // como antes; com notas de 1 pulso equivale a nº de notas − 2).
     const totalFr = Core.leaderTotalPulses(leaderNotes);
     const nVoices=+voices.value, opts=currentOptions(), totPulsos=Core.frMul(totalFr,[P[1],P[0]]), maxDelay=Math.max(1,Math.floor(totPulsos[0]/totPulsos[1])-2), delays=Array.from({length:maxDelay+1},(_,i)=>i);
@@ -2198,7 +2304,7 @@ buildReferenceTable();
     const container = document.getElementById('expAnalysisResults');
 
     if (results.length === 0) {
-      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma combinação de imitação viável encontrada para as notas do Líder sem violações contrapontísticas.</div>';
+      container.innerHTML = '<div class="exp-analysis-empty">Nenhuma combinação de imitação viável encontrada para as notas da Proposta sem violações contrapontísticas.</div>';
       return;
     }
 
@@ -2374,12 +2480,12 @@ buildReferenceTable();
   // SALVAR / CARREGAR PRESET (líder + lista de imitações viáveis)
   // =====================================================================
   // Um preset é um arquivo .json autocontido com: o modo, a tonalidade (se
-  // tonal), o número de vozes, as notas do Líder e a lista completa de
+  // tonal), o número de vozes, as notas da Proposta e a lista completa de
   // combinações de imitação viáveis já encontradas pela última análise —
   // permitindo recarregar tudo sem rodar a busca de novo.
   const PRESET_VERSION = 3;
 
-  // v3: acrescenta o pulso de referência. v2: notas do Líder com duração individual (figura, pontos, quiáltera num:den
+  // v3: acrescenta o pulso de referência. v2: notas da Proposta com duração individual (figura, pontos, quiáltera num:den
   // — frações [n,d] exatas, nunca float), critério de análise (A/B/C) e a
   // configuração atual das imitações. v1 (sem esses campos) é migrada ao carregar:
   // toda nota recebe a duração original de 1 pulso (semibreve), critério A.
@@ -2398,7 +2504,7 @@ buildReferenceTable();
 
   function salvarPreset() {
     if (!currentAnalysisResults.length) {
-      alert('Realize a análise (botão "Analisar Líder Atual") antes de salvar o preset.');
+      alert('Realize a análise (botão "Analisar Proposta Atual") antes de salvar o preset.');
       return;
     }
     const preset = {
