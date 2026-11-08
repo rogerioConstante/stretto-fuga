@@ -800,6 +800,38 @@ function finalTest(leader, combo, modo, icDesired, criterio) {
 }
 
 // ---------------------------------------------------------------------
+// PRÉ-FILTRO DE PAR (condição NECESSÁRIA do finalTest — nunca descarta uma
+// combinação que o teste final aprovaria)
+// A única dependência de um par em relação às demais vozes é a "voz mais
+// grave da textura": 4ª J / trítono (tonal) e a falsa dissonância (atonal)
+// só são dissonantes quando a nota mais grave do par é a mais grave de todas.
+// Aqui esses intervalos são tratados de forma OTIMISTA (como se houvesse uma
+// voz ainda mais grave → 'special-consonant'); só as dissonâncias que nenhuma
+// outra voz pode salvar (2ª, 7ª, classes indesejadas) reprovam o par.
+//  A/C: reprovam como no finalTest (C: apenas nos ataques simultâneos do par).
+//  B:   a dissonância incondicional precisa ser tratável mesmo no melhor caso.
+//       Os nove tratamentos só exigem estados 'C' (nunca 'D'), logo transformar
+//       instantes 'D' em 'C' nunca invalida um tratamento — o teste é monótono.
+// ---------------------------------------------------------------------
+const LOWEST_OTIMISTA = { get: () => -Infinity };
+function pairPossible(a, b, modo, icDesired, criterio) {
+  if (criterio === 'B') {
+    const P = pairContext(a, b, LOWEST_OTIMISTA, modo, icDesired);
+    for (let k = 0; k < P.m; k++) if (P.st[k] === 'D' && !justificada(P, k, modo)) return false;
+    return true;
+  }
+  const ta = a.track, tb = b.track;
+  // Instantes a verificar: C → só ataques simultâneos; A → todos os ataques do par.
+  const ticks = criterio === 'C' ? ta.onsets.filter(t => tb.onsetSet.has(t)) : ta.onsets.concat(tb.onsets);
+  for (const t of ticks) {
+    const ia = ta.activeIndexAt(t), ib = tb.activeIndexAt(t);
+    if (ia < 0 || ib < 0) continue;
+    if (!validClass(intervalInfo(a.seq[ia], b.seq[ib], -Infinity, modo, icDesired).cls)) return false;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------
 // NOTAÇÃO: decompõe uma duração efetiva em figuras (com pontos/ligaduras) e
 // razão de quiáltera. spec/mult (opcionais) mantêm a notação digitada pelo
 // usuário sempre que ela continua representável após o fator de ritmo.
@@ -832,7 +864,7 @@ const __CORE_EXPORTS__ = {
   gcd, fr, frMul, frAdd, frSub, frCmp, frNum, lcm,
   noteSpec, nominalDur, eventDur, leaderTotalPulses, leaderEvents, buildSeq, gridFor, analysisGrid, prepare,
   intervalSimple, validClass, intervalInfo, check, checkOcultasExternas,
-  stepOf, samePitch, pairContext, justificada, TRATAMENTOS, finalTest, nominalSegs, notate
+  stepOf, samePitch, pairContext, justificada, TRATAMENTOS, finalTest, pairPossible, nominalSegs, notate
 };
 
 </script>
@@ -861,25 +893,34 @@ self.onmessage = async (e) => {
       for (const v of voices) if (LEN[0] >= (2 + Math.abs(delay - v.delay)) * LEN[1]) return true;
       return false;
     }
+    // Pré-filtro com a Proposta: paralelismos (check) + dissonâncias que nenhuma
+    // outra voz pode salvar (pairPossible). Ambos são condições necessárias do
+    // finalTest, portanto nenhum resultado válido é perdido e a ordem relativa
+    // das configurações (e dos resultados) é a mesma de antes.
+    const pares = n > 2; // com 2 vozes o par Proposta×imitação já é o teste final
     for (let t = 0; t < opts.length; t++) for (const delay of delays) for (const form of forms) for (const rid of ritmos) {
       const cfg = { transpIdx: t, transpOpt: opts[t], delay, inv: form.inv, ret: form.ret, ritmoIdx: rid },
         seq = buildSeq(leader, cfg, modo, key), pr = prepare(seq, cfg, G, P);
-      if (check(leaderP, pr, modo)) { pr.index = configs.length; configs.push(pr); }
+      if (check(leaderP, pr, modo) && (!pares || pairPossible(leaderP, pr, modo, icDesired, criterio))) { pr.index = configs.length; configs.push(pr); }
     }
     self.postMessage({ type: 'phase', phase: 'matrix', total: configs.length });
     const m = configs.length, words = Math.ceil(m / 32), compat = new Array(m);
     for (let i = 0; i < m; i++) compat[i] = new Uint32Array(words);
     let last = performance.now();
+    // A busca e a matriz são síncronas: o Worker não precisa ceder a vez (a
+    // interface roda em outra thread, as mensagens de progresso chegam mesmo
+    // assim e uma nova análise interrompe este Worker via terminate()).
     for (let i = 0; i < m; i++) {
-      for (let j = i; j < m; j++) if (check(configs[i], configs[j], modo)) { bitAdd(compat[i], j); if (i !== j) bitAdd(compat[j], i); }
-      if (performance.now() - last > 80) { self.postMessage({ type: 'progress', phase: 'matrix', value: i + 1, total: m }); await new Promise(r => setTimeout(r, 0)); last = performance.now(); }
+      if (check(configs[i], configs[i], modo)) bitAdd(compat[i], i);
+      for (let j = i + 1; j < m; j++) if (check(configs[i], configs[j], modo) && (!pares || pairPossible(configs[i], configs[j], modo, icDesired, criterio))) { bitAdd(compat[i], j); bitAdd(compat[j], i); }
+      if (performance.now() - last > 100) { self.postMessage({ type: 'progress', phase: 'matrix', value: i + 1, total: m }); last = performance.now(); }
     }
     self.postMessage({ type: 'progress', phase: 'matrix', value: m, total: m });
     const results = [];
-    let nodes = 0, lastP = performance.now(), lastYield = performance.now();
+    let nodes = 0, lastP = performance.now();
     const baseInfo = [{ delay: 0 }];
     function intersect(a, b) { for (let w = 0; w < words; w++) a[w] &= b[w]; }
-    async function search(depth, idxs, chosen, cands, infos) {
+    function search(depth, idxs, chosen, cands, infos) {
       if (depth === n - 1) { const r = finalTest(leaderP, chosen, modo, icDesired, criterio); if (r) results.push(r); return; }
       const next = cands.slice();
       const start = idxs.length ? idxs[idxs.length - 1] + 1 : 0;
@@ -899,16 +940,17 @@ self.onmessage = async (e) => {
         idxs.push(idx); chosen.push(c); infos.push({ delay: c.cfg.delay });
         const child = next.slice();
         intersect(child, compat[idx]);
-        await search(depth + 1, idxs, chosen, child, infos);
+        search(depth + 1, idxs, chosen, child, infos);
         infos.pop(); chosen.pop(); idxs.pop();
-        const now = performance.now();
-        if (now - lastP > 100) { self.postMessage({ type: 'progress', phase: 'search', value: nodes, total: m, nodes }); lastP = now; }
-        if (now - lastYield > 12) { await new Promise(r => setTimeout(r, 0)); lastYield = performance.now(); }
+        if ((nodes & 255) === 0) {
+          const now = performance.now();
+          if (now - lastP > 100) { self.postMessage({ type: 'progress', phase: 'search', value: nodes, total: m, nodes }); lastP = now; }
+        }
       }
     }
     const initial = new Uint32Array(words);
     for (let i = 0; i < m; i++) bitAdd(initial, i);
-    await search(0, [], [], initial, baseInfo);
+    search(0, [], [], initial, baseInfo);
     self.postMessage({ type: 'done', results, configs: m, nodes });
   } catch (err) {
     self.postMessage({ type: 'error', message: err && err.stack ? err.stack : String(err) });
