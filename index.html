@@ -150,6 +150,19 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results .apply-btn.active-applied{background:var(--cyan);color:#04141c;border-color:var(--cyan);font-weight:700}
 
 .exp-analysis-empty{color:var(--muted);font-size:13px;padding:16px 0}
+.exp-restr{margin:-6px 0 14px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#10151e;font-size:12px}
+.exp-restr summary{cursor:pointer;color:var(--cyan);font-weight:600}
+.exp-restr-hint{color:var(--muted);font-weight:400}
+.exp-restr .note{margin:8px 0}
+.exp-restr-rows{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.exp-restr-row,.exp-filter-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.exp-restr-row .ct,.exp-filter-row .ct{margin:0;min-width:84px}
+.exp-restr-row label,.exp-filter-row label{display:inline-flex;align-items:center;gap:4px;margin:0;font-size:11px;color:var(--muted)}
+.exp-restr-row input[type=number]{width:52px;padding:4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:11px;text-align:center;font-family:inherit}
+.exp-restr-row select,.exp-filter-row select{width:auto;padding:4px 6px;font-size:11px}
+.exp-filters{margin:4px 0 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10151e;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.exp-filters .exp-filters-title{color:var(--muted);font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.exp-analysis-pagebar input.page-input{width:64px;padding:3px 4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:12px;text-align:center;font-family:inherit}
 .exp-analysis .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
 .exp-analysis .badge-yes{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}
 .exp-analysis .badge-no{color:var(--muted);border:1px solid #39465755;background:#171e29}
@@ -159,6 +172,10 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-preset-btn{padding:8px 18px;background:var(--panel2);border:1px solid #394657;border-radius:7px;color:var(--cyan);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .exp-preset-btn:hover{border-color:var(--cyan)}
 .exp-preset-btn:disabled{opacity:.4;cursor:not-allowed}
+.analysis-page-btn{padding:3px 9px;background:var(--panel2);border:1px solid #394657;border-radius:5px;color:var(--cyan);font-size:12px;cursor:pointer;font-family:inherit}
+.analysis-page-btn:hover:not(:disabled){border-color:var(--cyan)}
+.analysis-page-btn:disabled{opacity:.4;cursor:not-allowed}
+.exp-restr #expRestrClear{padding:4px 12px;font-size:11px}
 
 /* Editor rítmico (barra de duração) e critério de análise */
 .exp-durbar{align-items:center}
@@ -342,6 +359,12 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
       <button class="exp-preset-btn" id="expLoadPresetBtn" type="button">📂 Carregar Preset</button>
       <input type="file" id="expLoadPresetInput" accept="application/json,.json" style="display:none">
     </div>
+    <details class="exp-restr" id="expRestrBox">
+      <summary>Restrições da busca por imitação <span class="exp-restr-hint">(opcional — reduz o número de resultados e o tempo de cálculo)</span></summary>
+      <div class="note">As imitações são numeradas pela ordem de entrada: a 1ª é a que entra primeiro (menor atraso), a 2ª entra junto ou depois dela, e assim por diante. Campos de atraso em branco = sem limite.</div>
+      <div id="expRestrRows" class="exp-restr-rows"></div>
+      <button type="button" class="exp-preset-btn" id="expRestrClear">Limpar restrições</button>
+    </details>
     <div id="expAnalysisResults" class="exp-analysis-results">
       <div class="exp-analysis-empty">Insira notas na pauta da Proposta (aba Experimentação) e clique em "Analisar Proposta Atual" para verificar as imitações viáveis.</div>
     </div>
@@ -769,6 +792,10 @@ function justificada(P, k, modo) {
 //  B — dissonâncias somente quando tratadas
 //  C — consonância apenas nos ataques simultâneos do par
 // ---------------------------------------------------------------------
+// Ordem canônica de uma configuração: transposição → atraso → forma (O, I, R) → ritmo.
+function ordemCanonica(cfg) {
+  return ((cfg.transpIdx * 4096 + cfg.delay) * 3 + (cfg.ret ? 2 : cfg.inv ? 1 : 0)) * 64 + (cfg.ritmoIdx || 0);
+}
 function finalTest(leader, combo, modo, icDesired, criterio) {
   const voices = [leader, ...combo];
   const all = new Set();
@@ -795,7 +822,14 @@ function finalTest(leader, combo, modo, icDesired, criterio) {
     }
     pairs[i + '-' + j] = arr;
   }
-  if (!checkOcultasExternas(voices, ticks)) return null;
+  // A verificação de ocultas depende da ordem das vozes quando duas delas
+  // estão em UNÍSSONO no extremo agudo ou grave (a primeira da lista é tomada
+  // como a voz externa). Para que o resultado não dependa da numeração das
+  // imitações, as vozes são sempre consideradas na ordem canônica das
+  // configurações (transposição, atraso, forma, ritmo) — a mesma das versões
+  // anteriores, preservando exatamente o comportamento já validado.
+  const ocVoices = [leader, ...combo.slice().sort((x, y) => ordemCanonica(x.cfg) - ordemCanonica(y.cfg))];
+  if (!checkOcultasExternas(ocVoices, ticks)) return null;
   return { combo: combo.map(c => c.cfg), pairsIntervals: pairs };
 }
 
@@ -877,81 +911,109 @@ const __CORE_EXPORTS__ = {
 function bitHas(bits, i) { return (bits[i >>> 5] & (1 << (i & 31))) !== 0; }
 function bitAdd(bits, i) { bits[i >>> 5] |= 1 << (i & 31); }
 
-self.onmessage = async (e) => {
+// Restrição de uma configuração para a imitação de posição k (ordem de entrada).
+//   r = { dmin, dmax, forms: ['O'|'I'|'R', ...], ritmos: [id, ...] }
+//   (dmin/dmax nulos = sem limite; forms/ritmos ausentes = qualquer um)
+function formKey(cfg) { return cfg.ret ? 'R' : cfg.inv ? 'I' : 'O'; }
+function cabeNaRestricao(cfg, r) {
+  if (!r) return true;
+  if (r.dmin != null && cfg.delay < r.dmin) return false;
+  if (r.dmax != null && cfg.delay > r.dmax) return false;
+  if (r.forms && !r.forms.includes(formKey(cfg))) return false;
+  if (r.ritmos && !r.ritmos.includes(cfg.ritmoIdx || 0)) return false;
+  return true;
+}
+
+self.onmessage = (e) => {
   const d = e.data, leader = d.leaderNotes, modo = d.modo, key = d.keySig, opts = d.opts, n = d.nVoices,
-    icDesired = d.icDesired || {}, criterio = d.criterio || 'A', G = d.grid, P = d.pulse || [1, 1];
+    icDesired = d.icDesired || {}, criterio = d.criterio || 'A', G = d.grid, P = d.pulse || [1, 1],
+    K = n - 1, restr = Array.from({ length: K }, (_, k) => (d.restr && d.restr[k]) || null);
   try {
     const delays = d.delays, forms = d.forms, ritmos = d.ritmos;
-    const configs = [];
     const leaderP = prepare(leaderEvents(leader), { transpIdx: -1, transpOpt: ['Líder', 0], delay: 0, inv: false, ret: false, ritmoIdx: 0 }, G, P);
     // Duração total do Líder em PULSOS de referência (fração exata) — a
     // pré-condição de sobreposição segue ignorando o ritmo, como na versão original.
     const LEN = frMul(leaderTotalPulses(leader), [P[1], P[0]]);
-    // sobreposição >= 2 pulsos com alguma voz já escolhida:
+    // sobreposição >= 2 pulsos com alguma voz que entrou antes (ou junto):
     //   len - |atraso - atraso_v| >= 2   <=>   LEN[0] >= (2 + |Δ|) * LEN[1]
     function overlap(delay, voices) {
       for (const v of voices) if (LEN[0] >= (2 + Math.abs(delay - v.delay)) * LEN[1]) return true;
       return false;
     }
     // Pré-filtro com a Proposta: paralelismos (check) + dissonâncias que nenhuma
-    // outra voz pode salvar (pairPossible). Ambos são condições necessárias do
-    // finalTest, portanto nenhum resultado válido é perdido e a ordem relativa
-    // das configurações (e dos resultados) é a mesma de antes.
+    // outra voz pode salvar (pairPossible) — ambos condições necessárias do
+    // finalTest. Configurações que não cabem em NENHUMA posição (restrições da
+    // busca) são descartadas logo aqui.
     const pares = n > 2; // com 2 vozes o par Proposta×imitação já é o teste final
+    const cand = [];
     for (let t = 0; t < opts.length; t++) for (const delay of delays) for (const form of forms) for (const rid of ritmos) {
-      const cfg = { transpIdx: t, transpOpt: opts[t], delay, inv: form.inv, ret: form.ret, ritmoIdx: rid },
-        seq = buildSeq(leader, cfg, modo, key), pr = prepare(seq, cfg, G, P);
-      if (check(leaderP, pr, modo) && (!pares || pairPossible(leaderP, pr, modo, icDesired, criterio))) { pr.index = configs.length; configs.push(pr); }
+      const cfg = { transpIdx: t, transpOpt: opts[t], delay, inv: form.inv, ret: form.ret, ritmoIdx: rid };
+      if (!restr.some(r => cabeNaRestricao(cfg, r))) continue;
+      const pr = prepare(buildSeq(leader, cfg, modo, key), cfg, G, P);
+      if (check(leaderP, pr, modo) && (!pares || pairPossible(leaderP, pr, modo, icDesired, criterio))) cand.push(pr);
     }
+    // ORDEM DE ENTRADA: as configurações são ordenadas pelo atraso (ordenação
+    // estável). A busca escolhe índices crescentes, então a k-ésima voz de uma
+    // combinação é sempre a k-ésima a entrar (empates de atraso: ordem da lista),
+    // cada conjunto aparece uma única vez e a sobreposição é verificada contra
+    // as vozes que entraram antes — o sentido musical da regra.
+    const configs = cand.map((c, i) => ({ c, i })).sort((a, b) => a.c.cfg.delay - b.c.cfg.delay || a.i - b.i).map(x => x.c);
+    configs.forEach((c, i) => { c.index = i; });
     self.postMessage({ type: 'phase', phase: 'matrix', total: configs.length });
-    const m = configs.length, words = Math.ceil(m / 32), compat = new Array(m);
+    const m = configs.length, words = Math.max(1, Math.ceil(m / 32)), compat = new Array(m);
     for (let i = 0; i < m; i++) compat[i] = new Uint32Array(words);
+    // Máscara de candidatos por posição (restrições de cada imitação).
+    const posMask = restr.map(r => { const b = new Uint32Array(words); for (let i = 0; i < m; i++) if (cabeNaRestricao(configs[i].cfg, r)) bitAdd(b, i); return b; });
     let last = performance.now();
     // A busca e a matriz são síncronas: o Worker não precisa ceder a vez (a
     // interface roda em outra thread, as mensagens de progresso chegam mesmo
     // assim e uma nova análise interrompe este Worker via terminate()).
-    for (let i = 0; i < m; i++) {
-      if (check(configs[i], configs[i], modo)) bitAdd(compat[i], i);
-      for (let j = i + 1; j < m; j++) if (check(configs[i], configs[j], modo) && (!pares || pairPossible(configs[i], configs[j], modo, icDesired, criterio))) { bitAdd(compat[i], j); bitAdd(compat[j], i); }
+    if (pares) for (let i = 0; i < m; i++) {
+      for (let j = i + 1; j < m; j++) if (check(configs[i], configs[j], modo) && pairPossible(configs[i], configs[j], modo, icDesired, criterio)) { bitAdd(compat[i], j); bitAdd(compat[j], i); }
       if (performance.now() - last > 100) { self.postMessage({ type: 'progress', phase: 'matrix', value: i + 1, total: m }); last = performance.now(); }
     }
     self.postMessage({ type: 'progress', phase: 'matrix', value: m, total: m });
-    const results = [];
+    // Resultados COMPACTOS: só os índices das configurações (K por resultado).
+    // Os intervalos de cada par são recalculados na tela, apenas para as linhas
+    // exibidas — guardar todos eles para centenas de milhares de resultados
+    // esgotava a memória do navegador.
+    let out = new Int32Array(1024 * K), count = 0;
+    function push(idxs) {
+      if ((count + 1) * K > out.length) { const o = new Int32Array(out.length * 2); o.set(out); out = o; }
+      for (let k = 0; k < K; k++) out[count * K + k] = idxs[k];
+      count++;
+    }
     let nodes = 0, lastP = performance.now();
-    const baseInfo = [{ delay: 0 }];
-    function intersect(a, b) { for (let w = 0; w < words; w++) a[w] &= b[w]; }
-    function search(depth, idxs, chosen, cands, infos) {
-      if (depth === n - 1) { const r = finalTest(leaderP, chosen, modo, icDesired, criterio); if (r) results.push(r); return; }
-      const next = cands.slice();
-      const start = idxs.length ? idxs[idxs.length - 1] + 1 : 0;
-      let i = start;
+    const infos = [{ delay: 0 }];
+    function search(depth, idxs, chosen, cands) {
+      if (depth === K) { if (finalTest(leaderP, chosen, modo, icDesired, criterio)) push(idxs); return; }
+      const mask = posMask[depth];
+      let i = idxs.length ? idxs[idxs.length - 1] + 1 : 0;
       while (i < m) {
-        const wordIndex = i >>> 5, word = next[wordIndex];
-        let bits = word & (-1 << (i & 31));
-        if (!bits) { i = (i + 32) & ~31; continue; }
+        const wordIndex = i >>> 5, word = cands[wordIndex] & mask[wordIndex];
+        const bits = word & (-1 << (i & 31));
+        if (!bits) { i = (wordIndex + 1) << 5; continue; }
         const bit = bits & -bits, idx = (wordIndex << 5) + 31 - Math.clz32(bit);
         i = idx + 1;
         const c = configs[idx];
         if (!overlap(c.cfg.delay, infos)) continue;
-        let ok = true;
-        for (const sel of idxs) if (!bitHas(compat[sel], idx)) { ok = false; break; }
-        if (!ok) continue;
         nodes++;
         idxs.push(idx); chosen.push(c); infos.push({ delay: c.cfg.delay });
-        const child = next.slice();
-        intersect(child, compat[idx]);
-        search(depth + 1, idxs, chosen, child, infos);
+        let child = cands;
+        if (pares && depth + 1 < K) { child = cands.slice(); for (let w = 0; w < words; w++) child[w] &= compat[idx][w]; }
+        search(depth + 1, idxs, chosen, child);
         infos.pop(); chosen.pop(); idxs.pop();
         if ((nodes & 255) === 0) {
           const now = performance.now();
-          if (now - lastP > 100) { self.postMessage({ type: 'progress', phase: 'search', value: nodes, total: m, nodes }); lastP = now; }
+          if (now - lastP > 100) { self.postMessage({ type: 'progress', phase: 'search', value: nodes, total: m, nodes, found: count }); lastP = now; }
         }
       }
     }
     const initial = new Uint32Array(words);
     for (let i = 0; i < m; i++) bitAdd(initial, i);
-    search(0, [], [], initial, baseInfo);
-    self.postMessage({ type: 'done', results, configs: m, nodes });
+    search(0, [], [], initial);
+    const combos = out.slice(0, count * K);
+    self.postMessage({ type: 'done', cfgs: configs.map(c => c.cfg), combos, k: K, count, configs: m, nodes }, [combos.buffer]);
   } catch (err) {
     self.postMessage({ type: 'error', message: err && err.stack ? err.stack : String(err) });
   }
@@ -2259,13 +2321,152 @@ buildReferenceTable();
   // =====================================================================
   // ANÁLISE DE IMITAÇÕES VIÁVEIS (Varredura Completa com Indicador Assíncrono)
   // =====================================================================
-  let currentAnalysisResults = [];
+  // ---------------------------------------------------------------------
+  // ESTADO DA ANÁLISE (formato compacto)
+  // analysis = { ctx, cfgs, combos, k, count, prep, leaderP, distinct }
+  //   cfgs   : configurações distintas usadas pelos resultados
+  //   combos : Int32Array com k índices de cfgs por resultado (ordem de entrada)
+  //   ctx    : dados com que a análise foi feita (Proposta, modo, armadura,
+  //            grade, pulso, classes de intervalo, critério) — usados para
+  //            recalcular os intervalos apenas das linhas exibidas.
+  // ---------------------------------------------------------------------
+  let analysis = null;
   let currentAnalysisPage = 0;
   const ANALYSIS_PAGE_SIZE = 250;
 
   // Estado da ordenação da tabela de análise
   let analysisSortKey = null;   // 'transp' | 'delay' | 'inv' | 'ret' | 'ritmo' | null
   let analysisSortDir = 1;      // 1 = asc, -1 = desc
+  // Filtros sobre os resultados já calculados: { [posição k]: { transp, delay, form, ritmo } }
+  let analysisFilters = {};
+  let analysisView = null, analysisViewSig = '';
+
+  function analysisCount() { return analysis ? analysis.count : 0; }
+  function comboCfgs(a, r) { const out = []; for (let p = 0; p < a.k; p++) out.push(a.cfgs[a.combos[r * a.k + p]]); return out; }
+  function formKeyOf(c) { return c.ret ? 'R' : c.inv ? 'I' : 'O'; }
+  const FORM_LABEL = { O: 'Original', I: 'Inversão', R: 'Retrogradação' };
+
+  function setAnalysis(a) {
+    analysis = a;
+    analysisFilters = {}; analysisSortKey = null; analysisSortDir = 1;
+    analysisView = null; analysisViewSig = ''; currentAnalysisPage = 0;
+    const n = analysisCount();
+    document.getElementById('expAnalysisNum').textContent = n.toLocaleString('pt-BR');
+    document.getElementById('expSavePresetBtn').disabled = n === 0;
+  }
+  function limparAnalise(msgHtml) {
+    setAnalysis(null);
+    document.getElementById('expAnalysisNum').textContent = '0';
+    if (msgHtml) document.getElementById('expAnalysisResults').innerHTML = `<div class="exp-analysis-empty">${msgHtml}</div>`;
+  }
+
+  // Voz preparada de uma configuração (cache por análise).
+  function prepCfg(a, ci) {
+    let p = a.prep.get(ci);
+    if (!p) { const c = a.cfgs[ci], x = a.ctx; p = Core.prepare(Core.buildSeq(x.leaderNotes, c, x.modo, x.keySig), c, x.grid, x.pulse); a.prep.set(ci, p); }
+    return p;
+  }
+  function leaderPrep(a) {
+    if (!a.leaderP) { const x = a.ctx; a.leaderP = Core.prepare(Core.leaderEvents(x.leaderNotes), { transpIdx: -1, transpOpt: ['Líder', 0], delay: 0, inv: false, ret: false, ritmoIdx: 0 }, x.grid, x.pulse); }
+    return a.leaderP;
+  }
+  // Intervalos resultantes por par, recalculados pelo MESMO teste final do Worker.
+  // null = a combinação não passa nas regras atuais (só pode ocorrer em presets antigos).
+  function intervalsOf(a, r) {
+    const chosen = [];
+    for (let p = 0; p < a.k; p++) chosen.push(prepCfg(a, a.combos[r * a.k + p]));
+    const x = a.ctx, res = Core.finalTest(leaderPrep(a), chosen, x.modo, x.icDesired, x.criterio);
+    return res ? res.pairsIntervals : null;
+  }
+
+  // Valores distintos presentes nos resultados, por posição (opções dos filtros).
+  function distinctValues(a) {
+    if (a.distinct) return a.distinct;
+    const k = a.k, seen = Array.from({ length: k }, () => new Set());
+    for (let i = 0; i < a.combos.length; i++) seen[i % k].add(a.combos[i]);
+    a.distinct = seen.map(set => {
+      const cs = [...set].map(ci => a.cfgs[ci]);
+      const uniq = (arr) => [...new Map(arr.map(v => [v[0], v])).values()].sort((x, y) => x[2] - y[2]);
+      return {
+        transp: uniq(cs.map(c => [String(c.transpIdx), c.transpOpt[0], c.transpOpt[1]])),
+        delay: uniq(cs.map(c => [String(c.delay), String(c.delay), c.delay])),
+        form: uniq(cs.map(c => { const f = formKeyOf(c); return [f, FORM_LABEL[f], 'OIR'.indexOf(f)]; })),
+        ritmo: uniq(cs.map(c => [String(c.ritmoIdx || 0), RITMO_OPTIONS[c.ritmoIdx || 0].label, c.ritmoIdx || 0]))
+      };
+    });
+    return a.distinct;
+  }
+
+  // Lista (índices de resultados) filtrada e ordenada — refeita só quando a
+  // ordenação ou os filtros mudam; trocar de página/aba reaproveita o cache.
+  function getAnalysisView() {
+    const a = analysis, sig = JSON.stringify([analysisSortKey, analysisSortDir, analysisFilters]);
+    if (analysisView && analysisViewSig === sig) return analysisView;
+    const k = a.k, combos = a.combos, cfgs = a.cfgs;
+    const tests = [];
+    for (const p of Object.keys(analysisFilters)) {
+      const f = analysisFilters[p];
+      for (const field of Object.keys(f)) {
+        if (f[field] === '' || f[field] == null) continue;
+        const ok = new Uint8Array(cfgs.length), v = f[field];
+        cfgs.forEach((c, ci) => {
+          const val = field === 'transp' ? String(c.transpIdx) : field === 'delay' ? String(c.delay) : field === 'form' ? formKeyOf(c) : String(c.ritmoIdx || 0);
+          ok[ci] = val === v ? 1 : 0;
+        });
+        tests.push({ p: +p, ok });
+      }
+    }
+    let view = new Uint32Array(a.count), nv = 0;
+    for (let r = 0; r < a.count; r++) {
+      let pass = true;
+      for (const t of tests) if (!t.ok[combos[r * k + t.p]]) { pass = false; break; }
+      if (pass) view[nv++] = r;
+    }
+    view = view.slice(0, nv);
+    if (analysisSortKey) {
+      const key = analysisSortKey, dir = analysisSortDir, kv = new Float64Array(cfgs.length);
+      cfgs.forEach((c, ci) => { kv[ci] = key === 'transp' ? c.transpOpt[1] : key === 'delay' ? c.delay : key === 'inv' ? (c.inv ? 1 : 0) : key === 'ret' ? (c.ret ? 1 : 0) : (c.ritmoIdx || 0); });
+      view.sort((x, y) => {
+        for (let p = 0; p < k; p++) { const d = kv[combos[x * k + p]] - kv[combos[y * k + p]]; if (d) return dir * d; }
+        return x - y;
+      });
+    }
+    analysisView = view; analysisViewSig = sig;
+    return view;
+  }
+
+  // ---------------------------------------------------------------------
+  // RESTRIÇÕES DA BUSCA (por imitação, na ordem de entrada)
+  // ---------------------------------------------------------------------
+  const restrState = {}; // { [k 1-based]: { dmin, dmax, form, ritmo } } — valores como texto ('' = livre)
+  function maxDelayAtual() {
+    if (!expState.notes.length) return null;
+    const P = pulseFr(), tot = Core.frMul(Core.leaderTotalPulses(expState.notes), [P[1], P[0]]);
+    return Math.max(1, Math.floor(tot[0] / tot[1]) - 2);
+  }
+  function renderRestrRows() {
+    const box = document.getElementById('expRestrRows'), n = +voices.value, md = maxDelayAtual();
+    if (n < 2) { box.innerHTML = '<div class="note">Selecione ao menos 2 vozes.</div>'; return; }
+    let h = '';
+    for (let k = 1; k < n; k++) {
+      const r = restrState[k] || {};
+      h += `<div class="exp-restr-row" data-k="${k}"><span class="ct">${k}ª Imitação</span>
+        <label>Atraso de <input type="number" min="0" step="1" data-f="dmin" value="${r.dmin ?? ''}" placeholder="0"></label>
+        <label>até <input type="number" min="0" step="1" data-f="dmax" value="${r.dmax ?? ''}" placeholder="${md == null ? 'máx' : md}"></label>
+        <label>Forma <select data-f="form"><option value="">Qualquer (marcadas)</option>${Object.keys(FORM_LABEL).map(f => `<option value="${f}">${FORM_LABEL[f]}</option>`).join('')}</select></label>
+        <label>Ritmo <select data-f="ritmo"><option value="">Qualquer (marcados)</option>${RITMO_OPTIONS.map(o => `<option value="${o.id}">${o.label}</option>`).join('')}</select></label>
+      </div>`;
+    }
+    box.innerHTML = h;
+    box.querySelectorAll('.exp-restr-row').forEach(row => {
+      const k = +row.dataset.k, r = restrState[k] || {};
+      row.querySelectorAll('[data-f]').forEach(el => {
+        if (el.tagName === 'SELECT') el.value = r[el.dataset.f] ?? '';
+        el.onchange = () => { restrState[k] = Object.assign(restrState[k] || {}, { [el.dataset.f]: el.value.trim() }); };
+      });
+    });
+  }
+  document.getElementById('expRestrClear').onclick = () => { Object.keys(restrState).forEach(k => delete restrState[k]); renderRestrRows(); };
 
   // ---------------------------------------------------------------------
   // ANÁLISE EM WEB WORKER
@@ -2284,95 +2485,69 @@ buildReferenceTable();
 
   async function analisarImitacoesViaveis() {
     appliedAnalysisIndex = null;
-    if (+voices.value < 2) {
-      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Selecione ao menos 2 vozes (Proposta + 1 Imitação) para buscar imitações compatíveis.</div>';
-      document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults = []; document.getElementById('expSavePresetBtn').disabled = true; return;
-    }
+    if (+voices.value < 2) { limparAnalise('⚠️ Selecione ao menos 2 vozes (Proposta + 1 Imitação) para buscar imitações compatíveis.'); return; }
     const leaderNotes = expState.notes;
-    if (leaderNotes.length < 2) {
-      document.getElementById('expAnalysisResults').innerHTML = '<div class="exp-analysis-empty">⚠️ Insira pelo menos 2 notas na pauta da Proposta (na aba Experimentação) para realizar a análise.</div>';
-      document.getElementById('expAnalysisNum').textContent = '0'; currentAnalysisResults=[]; document.getElementById('expSavePresetBtn').disabled=true; return;
+    if (leaderNotes.length < 2) { limparAnalise('⚠️ Insira pelo menos 2 notas na pauta da Proposta (na aba Experimentação) para realizar a análise.'); return; }
+    const FORM_DEF = { O: { inv: false, ret: false }, I: { inv: true, ret: false }, R: { inv: false, ret: true } };
+    const formsSel = [];
+    if (document.getElementById('expFormOriginal').checked) formsSel.push('O');
+    if (document.getElementById('expFormInversion').checked) formsSel.push('I');
+    if (document.getElementById('expFormRetrograde').checked) formsSel.push('R');
+    const ritmosSel = RITMO_OPTIONS.filter(r => { const cb = document.getElementById('expRitmo' + r.id); return cb && cb.checked; }).map(r => r.id);
+
+    // Restrições por imitação: "Qualquer" = formas/ritmos marcados acima; uma
+    // escolha específica vale mesmo que não esteja marcada globalmente.
+    const nVoices = +voices.value, K = nVoices - 1, restr = [], formsAll = new Set(), ritmosAll = new Set();
+    for (let k = 1; k <= K; k++) {
+      const r = restrState[k] || {}, num = v => (v === '' || v == null) ? null : Math.max(0, Math.floor(+v));
+      const dmin = num(r.dmin), dmax = num(r.dmax);
+      if (dmin != null && dmax != null && dmin > dmax) { limparAnalise(`⚠️ Restrição da ${k}ª imitação: o atraso mínimo (${dmin}) é maior que o máximo (${dmax}).`); return; }
+      const forms = r.form ? [r.form] : formsSel, ritmos = (r.ritmo !== '' && r.ritmo != null) ? [+r.ritmo] : ritmosSel;
+      if (!forms.length || !ritmos.length) { limparAnalise(`⚠️ Selecione pelo menos uma forma de imitação e um tipo de ritmo (ou escolha-os na restrição da ${k}ª imitação).`); return; }
+      forms.forEach(f => formsAll.add(f)); ritmos.forEach(x => ritmosAll.add(x));
+      restr.push({ dmin, dmax, forms, ritmos });
     }
-    const forms=[];
-    if(document.getElementById('expFormOriginal').checked) forms.push({inv:false,ret:false});
-    if(document.getElementById('expFormInversion').checked) forms.push({inv:true,ret:false});
-    if(document.getElementById('expFormRetrograde').checked) forms.push({inv:false,ret:true});
-    const ritmos=RITMO_OPTIONS.filter(r => {
-      const cb = document.getElementById('expRitmo' + r.id);
-      return cb && cb.checked;
-    }).map(r => r.id);
-    if(!forms.length||!ritmos.length){
-      document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Selecione pelo menos uma forma de imitação e um tipo de ritmo.</div>';
-      return;
+    const forms = ['O', 'I', 'R'].filter(f => formsAll.has(f)).map(f => FORM_DEF[f]), ritmos = [...ritmosAll].sort((a, b) => a - b);
+    // A ordem de entrada exige atrasos não decrescentes: avisa se as faixas se contradizem.
+    for (let k = 1; k < K; k++) {
+      const lo = restr.slice(0, k + 1).reduce((m, r) => Math.max(m, r.dmin ?? 0), 0), hi = restr[k].dmax;
+      if (hi != null && lo > hi) { limparAnalise(`⚠️ As restrições são incompatíveis com a ordem de entrada: a ${k + 1}ª imitação não pode entrar antes de uma imitação anterior (atraso mínimo ${lo} > máximo ${hi}).`); return; }
     }
+
     // Grade de ticks inteiros da análise (mmc dos denominadores das durações
-    // efetivas da Proposta × fatores de ritmo selecionados).
+    // efetivas da Proposta × fatores de ritmo usados).
     let grid;
     const P = pulseFr();
     try { grid = Core.analysisGrid(leaderNotes, ritmos, P); }
-    catch (err) {
-      document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ As proporções rítmicas da Proposta combinadas aos fatores de ritmo escolhidos excedem a precisão numérica da grade temporal. Simplifique as quiálteras ou reduza os fatores de ritmo selecionados.</div>';
-      return;
-    }
+    catch (err) { limparAnalise('⚠️ As proporções rítmicas da Proposta combinadas aos fatores de ritmo escolhidos excedem a precisão numérica da grade temporal. Simplifique as quiálteras ou reduza os fatores de ritmo selecionados.'); return; }
     const criterio = document.getElementById('expCriterio').value;
-    const analyzeBtn=document.getElementById('expAnalyzeBtn'); analyzeBtn.disabled=true; analyzeBtn.style.opacity='0.5';
-    if(activeAnalysisWorker){activeAnalysisWorker.terminate();activeAnalysisWorker=null;}
+    const analyzeBtn = document.getElementById('expAnalyzeBtn'); analyzeBtn.disabled = true; analyzeBtn.style.opacity = '0.5';
+    if (activeAnalysisWorker) { activeAnalysisWorker.terminate(); activeAnalysisWorker = null; }
     // O atraso máximo vem da duração total da Proposta em pulsos (ignora o ritmo,
     // como antes; com notas de 1 pulso equivale a nº de notas − 2).
-    const totalFr = Core.leaderTotalPulses(leaderNotes);
-    const nVoices=+voices.value, opts=currentOptions(), totPulsos=Core.frMul(totalFr,[P[1],P[0]]), maxDelay=Math.max(1,Math.floor(totPulsos[0]/totPulsos[1])-2), delays=Array.from({length:maxDelay+1},(_,i)=>i);
-    const worker=criarWorkerAnalise(); activeAnalysisWorker=worker;
-    worker.onmessage=(ev)=>{const d=ev.data;
-      if(d.type==='phase') document.getElementById('expAnalysisNum').textContent='Preparando compatibilidades...';
-      else if(d.type==='progress'){if(d.phase==='matrix') document.getElementById('expAnalysisNum').textContent=`Compatibilidades... ${d.value.toLocaleString('pt-BR')}/${d.total.toLocaleString('pt-BR')}`; else document.getElementById('expAnalysisNum').textContent=`Buscando combinações... ${d.nodes.toLocaleString('pt-BR')} estados`; }
-      else if(d.type==='error'){console.error(d.message);document.getElementById('expAnalysisResults').innerHTML='<div class="exp-analysis-empty">⚠️ Erro durante a análise. Veja o console para detalhes.</div>';analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
-      else if(d.type==='done'){currentAnalysisResults=d.results;lastAnalysisCriterio=criterio;currentAnalysisPage=0;document.getElementById('expAnalysisNum').textContent=d.results.length;document.getElementById('expSavePresetBtn').disabled=d.results.length===0;renderAnalysisResults(d.results,nVoices);analyzeBtn.disabled=false;analyzeBtn.style.opacity='1';worker.terminate();activeAnalysisWorker=null;}
+    const maxDelay = maxDelayAtual(), delays = Array.from({ length: maxDelay + 1 }, (_, i) => i), opts = currentOptions();
+    const ctx = {
+      leaderNotes: leaderNotes.map(n => Object.assign({}, n)), modo, keySig: expState.keySig, grid, pulse: P,
+      icDesired: Object.assign({}, icDesired), criterio, nVoices, restr
     };
-    worker.postMessage({leaderNotes,modo,keySig:expState.keySig,opts,nVoices,delays,forms,ritmos,icDesired,criterio,grid,pulse:P});
-  }
-
-  // ---------------------------------------------------------------------
-  // Comparadores para ordenação da tabela de análise
-  // ---------------------------------------------------------------------
-  function cmpNumberArray(arrA, arrB) {
-    const len = Math.max(arrA.length, arrB.length);
-    for (let i = 0; i < len; i++) {
-      const a = arrA[i] !== undefined ? arrA[i] : 0;
-      const b = arrB[i] !== undefined ? arrB[i] : 0;
-      if (a !== b) return a < b ? -1 : 1;
-    }
-    return 0;
-  }
-
-  function compareResults(a, b, key) {
-    let cmp = 0;
-    if (key === 'transp') {
-      // Compara voz por voz pelo valor numérico da transposição (não pelo texto)
-      const arrA = a.combo.map(c => c.transpOpt[1]);
-      const arrB = b.combo.map(c => c.transpOpt[1]);
-      cmp = cmpNumberArray(arrA, arrB);
-    } else if (key === 'delay') {
-      const arrA = a.combo.map(c => c.delay);
-      const arrB = b.combo.map(c => c.delay);
-      cmp = cmpNumberArray(arrA, arrB);
-    } else if (key === 'inv') {
-      const arrA = a.combo.map(c => c.inv ? 1 : 0);
-      const arrB = b.combo.map(c => c.inv ? 1 : 0);
-      cmp = cmpNumberArray(arrA, arrB);
-    } else if (key === 'ret') {
-      const arrA = a.combo.map(c => c.ret ? 1 : 0);
-      const arrB = b.combo.map(c => c.ret ? 1 : 0);
-      cmp = cmpNumberArray(arrA, arrB);
-    } else if (key === 'ritmo') {
-      const arrA = a.combo.map(c => c.ritmoIdx);
-      const arrB = b.combo.map(c => c.ritmoIdx);
-      cmp = cmpNumberArray(arrA, arrB);
-    }
-    if (cmp === 0) {
-      // Desempate estável pelo índice original
-      cmp = (a._origIdx || 0) - (b._origIdx || 0);
-    }
-    return cmp;
+    const worker = criarWorkerAnalise(); activeAnalysisWorker = worker;
+    const numEl = document.getElementById('expAnalysisNum');
+    const fim = () => { analyzeBtn.disabled = false; analyzeBtn.style.opacity = '1'; worker.terminate(); activeAnalysisWorker = null; };
+    worker.onmessage = (ev) => {
+      const d = ev.data;
+      if (d.type === 'phase') numEl.textContent = 'Preparando compatibilidades...';
+      else if (d.type === 'progress') {
+        if (d.phase === 'matrix') numEl.textContent = `Compatibilidades... ${d.value.toLocaleString('pt-BR')}/${d.total.toLocaleString('pt-BR')}`;
+        else numEl.textContent = `Buscando combinações... ${d.nodes.toLocaleString('pt-BR')} estados, ${(d.found || 0).toLocaleString('pt-BR')} encontradas`;
+      }
+      else if (d.type === 'error') { console.error(d.message); limparAnalise('⚠️ Erro durante a análise. Veja o console para detalhes.'); fim(); }
+      else if (d.type === 'done') {
+        lastAnalysisCriterio = criterio;
+        setAnalysis({ ctx, cfgs: d.cfgs, combos: d.combos, k: d.k, count: d.count, prep: new Map(), leaderP: null, distinct: null });
+        renderAnalysisResults(); fim();
+      }
+    };
+    worker.postMessage({ leaderNotes, modo, keySig: expState.keySig, opts, nVoices, delays, forms, ritmos, icDesired, criterio, grid, pulse: P, restr });
   }
 
   function sortIndicatorFor(key) {
@@ -2380,46 +2555,53 @@ buildReferenceTable();
     return `<span class="sort-ind">${analysisSortDir === 1 ? '▲' : '▼'}</span>`;
   }
 
-  function renderAnalysisResults(results, nVoices) {
-    const container = document.getElementById('expAnalysisResults');
+  function pageBarHtml(totalPages, align) {
+    const p = currentAnalysisPage, first = p === 0, last = p >= totalPages - 1;
+    return `<span style="display:flex;align-items:center;gap:6px;justify-content:${align}">
+        <button type="button" class="analysis-page-btn" data-page="first" ${first ? 'disabled' : ''} title="Primeira página">«</button>
+        <button type="button" class="analysis-page-btn" data-page="prev" ${first ? 'disabled' : ''}>‹ Anterior</button>
+        <span>Página <input type="number" class="page-input" min="1" max="${totalPages}" value="${p + 1}" title="Digite o número da página e pressione Enter"> / ${totalPages.toLocaleString('pt-BR')}</span>
+        <button type="button" class="analysis-page-btn" data-page="next" ${last ? 'disabled' : ''}>Próxima ›</button>
+        <button type="button" class="analysis-page-btn" data-page="last" ${last ? 'disabled' : ''} title="Última página">»</button>
+      </span>`;
+  }
 
-    if (results.length === 0) {
+  function filtersHtml(a) {
+    const dv = distinctValues(a), anyActive = Object.values(analysisFilters).some(f => Object.values(f).some(v => v !== '' && v != null));
+    let h = `<div class="exp-filters"><div class="exp-filters-title"><span>Filtrar resultados (sem refazer a busca):</span>
+      <button type="button" class="analysis-page-btn" id="expFiltersClear" ${anyActive ? '' : 'disabled'}>Limpar filtros</button></div>`;
+    const sel = (p, field, label, opts) => {
+      const cur = (analysisFilters[p] && analysisFilters[p][field]) || '';
+      return `<label>${label} <select data-p="${p}" data-field="${field}"><option value="">Todas</option>${opts.map(o => `<option value="${o[0]}" ${o[0] === cur ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></label>`;
+    };
+    for (let p = 0; p < a.k; p++) {
+      h += `<div class="exp-filter-row"><span class="ct">${p + 1}ª Imitação</span>${sel(p, 'transp', 'Transposição', dv[p].transp)}${sel(p, 'delay', 'Atraso', dv[p].delay)}${sel(p, 'form', 'Forma', dv[p].form)}${sel(p, 'ritmo', 'Ritmo', dv[p].ritmo)}</div>`;
+    }
+    return h + '</div>';
+  }
+
+  function renderAnalysisResults() {
+    const container = document.getElementById('expAnalysisResults');
+    const a = analysis;
+    if (!a || a.count === 0) {
       container.innerHTML = '<div class="exp-analysis-empty">Nenhuma combinação de imitação viável encontrada para as notas da Proposta sem violações contrapontísticas.</div>';
       return;
     }
-
-    // Anexa o índice original uma única vez, preservando a referência do "Aplicar".
-    const indexed = results.map((r, i) => {
-      if (r._origIdx === undefined) r._origIdx = i;
-      return r;
-    });
-
-    // Ordenação só é executada quando solicitada pelo usuário. A paginação
-    // evita construir milhares de linhas HTML de uma só vez.
-    let view = indexed;
-    if (analysisSortKey) {
-      view = indexed.slice().sort((a, b) => analysisSortDir * compareResults(a, b, analysisSortKey));
-    }
-
+    const view = getAnalysisView(), nVoices = a.k + 1;
     const totalPages = Math.max(1, Math.ceil(view.length / ANALYSIS_PAGE_SIZE));
     currentAnalysisPage = Math.max(0, Math.min(currentAnalysisPage, totalPages - 1));
     const pageStart = currentAnalysisPage * ANALYSIS_PAGE_SIZE;
     const pageEnd = Math.min(pageStart + ANALYSIS_PAGE_SIZE, view.length);
-    const pageView = view.slice(pageStart, pageEnd);
 
     const thSortable = (key, label, cls) => {
       const active = analysisSortKey === key ? ' sort-active' : '';
-      return `<th class="col-${cls} sortable" data-sort="${key}">${label}${sortIndicatorFor(key)}</th>`;
+      return `<th class="col-${cls} sortable${active}" data-sort="${key}">${label}${sortIndicatorFor(key)}</th>`;
     };
-
-    let html = `
-      <div class="exp-analysis-pagebar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;font-size:12px">
-        <span>Resultados ${pageStart + 1}–${pageEnd} de ${view.length.toLocaleString('pt-BR')}</span>
-        <span style="display:flex;align-items:center;gap:6px">
-          <button type="button" class="analysis-page-btn" data-page="prev" ${currentAnalysisPage === 0 ? 'disabled' : ''}>‹ Anterior</button>
-          <span>Página ${currentAnalysisPage + 1} / ${totalPages}</span>
-          <button type="button" class="analysis-page-btn" data-page="next" ${currentAnalysisPage >= totalPages - 1 ? 'disabled' : ''}>Próxima ›</button>
-        </span>
+    const filtrado = view.length !== a.count ? ` (filtrados de ${a.count.toLocaleString('pt-BR')})` : '';
+    let html = filtersHtml(a) + `
+      <div class="exp-analysis-pagebar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;font-size:12px;flex-wrap:wrap">
+        <span>${view.length ? `Resultados ${(pageStart + 1).toLocaleString('pt-BR')}–${pageEnd.toLocaleString('pt-BR')} de ${view.length.toLocaleString('pt-BR')}` : 'Nenhum resultado com estes filtros'}${filtrado}</span>
+        ${pageBarHtml(totalPages, 'flex-end')}
       </div>
       <table>
         <thead>
@@ -2437,22 +2619,22 @@ buildReferenceTable();
         <tbody>
     `;
 
-    pageView.forEach((r) => {
-      const origIdx = r._origIdx;
-      const isSelected = (appliedAnalysisIndex === origIdx);
-      const rowClass = isSelected ? 'selected-row' : '';
-
-      const transpText = r.combo.map((c, i) => `${i + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
-      const delayText = r.combo.map(c => `${c.delay}`).join(' / ');
-      const invText = r.combo.map(c => c.inv ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
-      const retText = r.combo.map(c => c.ret ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
-      const ritmoText = r.combo.map(c => RITMO_OPTIONS[c.ritmoIdx || 0].label).join('<br>');
+    for (let vi = pageStart; vi < pageEnd; vi++) {
+      const r = view[vi], combo = comboCfgs(a, r);
+      const isSelected = (appliedAnalysisIndex === r);
+      const transpText = combo.map((c, i) => `${i + 1}ªIm: <b>${c.transpOpt[0]}</b>`).join('<br>');
+      const delayText = combo.map(c => `${c.delay}`).join(' / ');
+      const invText = combo.map(c => c.inv ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
+      const retText = combo.map(c => c.ret ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>').join('<br>');
+      const ritmoText = combo.map(c => RITMO_OPTIONS[c.ritmoIdx || 0].label).join('<br>');
 
       let ivLines = '';
-      for (let i = 0; i < nVoices; i++) {
+      let pairs = null;
+      try { pairs = intervalsOf(a, r); } catch (e) { console.warn(e); }
+      if (!pairs) ivLines = '<span style="color:var(--red)">⚠ Esta combinação não passa nas regras da versão atual.</span>';
+      else for (let i = 0; i < nVoices; i++) {
         for (let j = i + 1; j < nVoices; j++) {
-          const pairKey = `${i}-${j}`;
-          const ivs = r.pairsIntervals[pairKey];
+          const ivs = pairs[`${i}-${j}`];
           if (ivs && ivs.length > 0) {
             const pairName = i === 0 ? `Líd×${j}ªIm` : `${i}ªIm×${j}ªIm`;
             const summary = ivs.map(iv => `<span class="iv ${iv.cls}" style="min-width:18px;padding:1px 3px;font-size:10px">${iv.label}</span>`).join(' ');
@@ -2460,59 +2642,61 @@ buildReferenceTable();
           }
         }
       }
-
       const btnLabel = isSelected ? '✓ Aplicado' : 'Aplicar nas Imitações';
       const btnClass = isSelected ? 'apply-btn active-applied' : 'apply-btn';
-
       html += `
-        <tr class="${rowClass}">
-          <td class="col-idx">${origIdx + 1}</td>
+        <tr class="${isSelected ? 'selected-row' : ''}">
+          <td class="col-idx">${(r + 1).toLocaleString('pt-BR')}</td>
           <td class="col-transp">${transpText}</td>
           <td class="col-delay">${delayText}</td>
           <td class="col-inv">${invText}</td>
           <td class="col-ret">${retText}</td>
           <td class="col-ritmo">${ritmoText}</td>
           <td class="col-ivs">${ivLines}</td>
-          <td class="col-action"><button class="${btnClass}" data-idx="${origIdx}">${btnLabel}</button></td>
-        </tr>
-      `;
-    });
+          <td class="col-action"><button class="${btnClass}" data-idx="${r}">${btnLabel}</button></td>
+        </tr>`;
+    }
 
     html += '</tbody></table>';
-    html += `
-      <div class="exp-analysis-pagebar" style="display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0;font-size:12px">
-        <button type="button" class="analysis-page-btn" data-page="prev" ${currentAnalysisPage === 0 ? 'disabled' : ''}>‹ Anterior</button>
-        <span>Página ${currentAnalysisPage + 1} / ${totalPages}</span>
-        <button type="button" class="analysis-page-btn" data-page="next" ${currentAnalysisPage >= totalPages - 1 ? 'disabled' : ''}>Próxima ›</button>
-      </div>`;
+    html += `<div class="exp-analysis-pagebar" style="display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0;font-size:12px">${pageBarHtml(totalPages, 'center')}</div>`;
     container.innerHTML = html;
 
     container.querySelectorAll('th.sortable').forEach(th => {
       th.onclick = () => {
         const key = th.dataset.sort;
         if (analysisSortKey === key) analysisSortDir *= -1;
-        else {
-          analysisSortKey = key;
-          analysisSortDir = 1;
-        }
+        else { analysisSortKey = key; analysisSortDir = 1; }
         currentAnalysisPage = 0;
-        renderAnalysisResults(currentAnalysisResults, +voices.value);
+        renderAnalysisResults();
       };
     });
-
-    container.querySelectorAll('.analysis-page-btn').forEach(btn => {
+    const goPage = (p) => { currentAnalysisPage = Math.max(0, Math.min(totalPages - 1, p)); renderAnalysisResults(); };
+    container.querySelectorAll('.analysis-page-btn[data-page]').forEach(btn => {
       btn.onclick = () => {
         if (btn.disabled) return;
-        if (btn.dataset.page === 'prev') currentAnalysisPage--;
-        else currentAnalysisPage++;
-        renderAnalysisResults(currentAnalysisResults, +voices.value);
+        const t = btn.dataset.page;
+        goPage(t === 'first' ? 0 : t === 'last' ? totalPages - 1 : t === 'prev' ? currentAnalysisPage - 1 : currentAnalysisPage + 1);
       };
     });
-
+    container.querySelectorAll('input.page-input').forEach(inp => {
+      const go = () => { const v = parseInt(inp.value, 10); if (Number.isFinite(v)) goPage(v - 1); else inp.value = currentAnalysisPage + 1; };
+      inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } };
+      inp.onchange = go;
+    });
+    container.querySelectorAll('.exp-filters select').forEach(sel => {
+      sel.onchange = () => {
+        const p = sel.dataset.p;
+        analysisFilters[p] = Object.assign(analysisFilters[p] || {}, { [sel.dataset.field]: sel.value });
+        currentAnalysisPage = 0;
+        renderAnalysisResults();
+      };
+    });
+    const clr = document.getElementById('expFiltersClear');
+    if (clr) clr.onclick = () => { analysisFilters = {}; currentAnalysisPage = 0; renderAnalysisResults(); };
     container.querySelectorAll('.apply-btn').forEach(btn => {
       btn.onclick = () => {
         const idx = +btn.dataset.idx;
-        aplicarConfiguracaoMultipla(results[idx], idx);
+        aplicarConfiguracaoMultipla({ combo: comboCfgs(a, idx) }, idx);
       };
     });
   }
@@ -2548,9 +2732,7 @@ buildReferenceTable();
     if (expState.open) expRender();
 
     // Re-renderiza a tabela de análise para atualizar o destaque visual da linha
-    if (currentAnalysisResults.length > 0) {
-      renderAnalysisResults(currentAnalysisResults, +voices.value);
-    }
+    if (analysisCount() > 0) renderAnalysisResults();
 
     const expTabBtn = document.querySelector('.tab-btn[data-tab="experimentacao"]');
     if (expTabBtn) expTabBtn.click();
@@ -2563,8 +2745,12 @@ buildReferenceTable();
   // tonal), o número de vozes, as notas da Proposta e a lista completa de
   // combinações de imitação viáveis já encontradas pela última análise —
   // permitindo recarregar tudo sem rodar a busca de novo.
-  const PRESET_VERSION = 3;
+  const PRESET_VERSION = 4;
 
+  // v4: resultados COMPACTOS — `analysis` guarda as configurações distintas
+  // (cfgs), os índices de cada combinação (combos, k por resultado, na ordem de
+  // entrada) e o contexto da análise; os intervalos são recalculados ao exibir.
+  // Presets v1–v3 (analysisResults com os intervalos completos) continuam abrindo.
   // v3: acrescenta o pulso de referência. v2: notas da Proposta com duração individual (figura, pontos, quiáltera num:den
   // — frações [n,d] exatas, nunca float), critério de análise (A/B/C) e a
   // configuração atual das imitações. v1 (sem esses campos) é migrada ao carregar:
@@ -2583,7 +2769,7 @@ buildReferenceTable();
   }
 
   function salvarPreset() {
-    if (!currentAnalysisResults.length) {
+    if (!analysisCount()) {
       alert('Realize a análise (botão "Analisar Proposta Atual") antes de salvar o preset.');
       return;
     }
@@ -2601,9 +2787,19 @@ buildReferenceTable();
         retrograde: imitationState.retrograde, ritmo: imitationState.ritmo
       },
       icDesired: modo === 'atonal' ? icDesired : undefined,
-      analysisResults: currentAnalysisResults
+      analysis: {
+        ctx: {
+          leaderNotes: analysis.ctx.leaderNotes.map(notaParaPreset), modo: analysis.ctx.modo, keySig: analysis.ctx.keySig,
+          pulse: analysis.ctx.pulse, icDesired: analysis.ctx.icDesired, criterio: analysis.ctx.criterio, restr: analysis.ctx.restr
+        },
+        k: analysis.k, count: analysis.count,
+        cfgs: analysis.cfgs.map(c => ({ transpIdx: c.transpIdx, transpOpt: c.transpOpt, delay: c.delay, inv: !!c.inv, ret: !!c.ret, ritmoIdx: c.ritmoIdx || 0 })),
+        combos: Array.from(analysis.combos)
+      }
     };
-    const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' });
+    // Sem indentação: com centenas de milhares de combinações o arquivo
+    // indentado ficaria enorme (um número por linha).
+    const blob = new Blob([JSON.stringify(preset)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const ts = new Date().toISOString().replace(/[:.]/g, '-');
@@ -2613,6 +2809,43 @@ buildReferenceTable();
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  }
+
+  // Reconstrói o estado compacto da análise a partir de um preset (v4 ou antigo).
+  function analiseDoPreset(data) {
+    const A = data.analysis;
+    const ctxSrc = (A && A.ctx) || {};
+    const leaderNotes = (ctxSrc.leaderNotes || data.leaderNotes).map(migrarNota);
+    const pulseObj = data.pulse && Core.FIG_VAL[data.pulse.fig] ? data.pulse : { fig: 'w', dots: 0 };
+    const pulse = Array.isArray(ctxSrc.pulse) ? ctxSrc.pulse : Core.nominalDur(pulseObj.fig, Math.max(0, Math.min(1, pulseObj.dots | 0)));
+    const md = ctxSrc.modo || data.modo || modo;
+    const ctx = {
+      leaderNotes, modo: md, keySig: ctxSrc.keySig || data.keySig || 'C', pulse,
+      icDesired: Object.assign({}, icDesired, ctxSrc.icDesired || {}),
+      criterio: ['A', 'B', 'C'].includes(ctxSrc.criterio || data.criterio) ? (ctxSrc.criterio || data.criterio) : 'A',
+      restr: ctxSrc.restr || null
+    };
+    let cfgs, combos, k, count;
+    if (A && Array.isArray(A.cfgs) && Array.isArray(A.combos)) {
+      cfgs = A.cfgs; k = A.k | 0; combos = Int32Array.from(A.combos); count = k ? combos.length / k : 0;
+    } else if (Array.isArray(data.analysisResults) && data.analysisResults.length) {
+      // Formato antigo: cada resultado traz as configurações completas. As
+      // imitações são reordenadas pela ORDEM DE ENTRADA (atraso; empate mantém a ordem).
+      const keyOf = c => [c.transpIdx, c.delay, !!c.inv, !!c.ret, c.ritmoIdx || 0].join('|'), map = new Map();
+      cfgs = [];
+      k = data.analysisResults[0].combo.length; count = data.analysisResults.length; combos = new Int32Array(count * k);
+      data.analysisResults.forEach((r, ri) => {
+        r.combo.map((c, i) => ({ c, i })).sort((x, y) => x.c.delay - y.c.delay || x.i - y.i).forEach(({ c }, p) => {
+          const kk = keyOf(c);
+          let ci = map.get(kk);
+          if (ci === undefined) { ci = cfgs.length; map.set(kk, ci); cfgs.push({ transpIdx: c.transpIdx, transpOpt: c.transpOpt, delay: c.delay, inv: !!c.inv, ret: !!c.ret, ritmoIdx: c.ritmoIdx || 0 }); }
+          combos[ri * k + p] = ci;
+        });
+      });
+    } else return null;
+    ctx.nVoices = k + 1;
+    ctx.grid = Core.analysisGrid(leaderNotes, [...new Set(cfgs.map(c => c.ritmoIdx || 0))], pulse);
+    return { ctx, cfgs, combos, k, count, prep: new Map(), leaderP: null, distinct: null };
   }
 
   function carregarPresetArquivo(file) {
@@ -2667,17 +2900,17 @@ buildReferenceTable();
         });
       }
       appliedAnalysisIndex = null;
-      currentAnalysisResults = Array.isArray(data.analysisResults) ? data.analysisResults : [];
-      currentAnalysisPage = 0;
+      let carregada = null;
+      try { carregada = analiseDoPreset(data); } catch (e) { console.error(e); alert('Não foi possível reconstruir a lista de resultados deste preset.'); }
+      setAnalysis(carregada);
 
       setup();
       calc();
       buildReferenceTable();
       populateKeySelect();
 
-      document.getElementById('expAnalysisNum').textContent = currentAnalysisResults.length;
-      document.getElementById('expSavePresetBtn').disabled = currentAnalysisResults.length === 0;
-      renderAnalysisResults(currentAnalysisResults, +voices.value);
+      renderRestrRows();
+      renderAnalysisResults();
 
       // Leva o usuário à aba "Análise de Imitações", onde a lista carregada
       // é exibida (a aba Experimentação se atualiza sozinha quando aberta,
@@ -2702,6 +2935,8 @@ buildReferenceTable();
   };
 
   document.getElementById('expAnalyzeBtn').onclick = analisarImitacoesViaveis;
+  voices.addEventListener('change', renderRestrRows);
+  renderRestrRows();
 
   // =====================================================================
   // INICIALIZAÇÃO
@@ -2736,9 +2971,8 @@ buildReferenceTable();
         expRender();
       } else if (btn.dataset.tab === 'analise') {
         expState.open = false;
-        if (currentAnalysisResults.length > 0) {
-          renderAnalysisResults(currentAnalysisResults, +voices.value);
-        }
+        renderRestrRows();
+        if (analysisCount() > 0) renderAnalysisResults();
       } else {
         expState.open = false;
       }
