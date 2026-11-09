@@ -136,12 +136,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results th.col-inv, .exp-analysis-results td.col-inv{width:75px;text-align:center}
 .exp-analysis-results th.col-ret, .exp-analysis-results td.col-ret{width:75px;text-align:center}
 .exp-analysis-results th.col-ritmo, .exp-analysis-results td.col-ritmo{width:150px;text-align:left}
-.exp-form-filters{display:flex;align-items:center;flex-wrap:wrap;gap:5px 9px;margin-left:8px;font-size:11px;line-height:1.2}
-.exp-form-filters label{white-space:nowrap;cursor:pointer}
-.exp-form-filters input{vertical-align:middle;margin:0 2px 0 0}
 .exp-filter-label{font-weight:700;margin-left:4px}
-.exp-ritmo-filters{display:contents}
-@media(max-width:1100px){.exp-form-filters{width:100%;margin-left:0;margin-top:4px}}
 .exp-analysis-results th.col-action, .exp-analysis-results td.col-action{width:150px;text-align:center}
 .exp-analysis-results th.col-ivs, .exp-analysis-results td.col-ivs{width:auto;text-align:left;white-space:normal}
 
@@ -160,6 +155,14 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-restr-row label,.exp-filter-row label{display:inline-flex;align-items:center;gap:4px;margin:0;font-size:11px;color:var(--muted)}
 .exp-restr-row input[type=number]{width:52px;padding:4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:11px;text-align:center;font-family:inherit}
 .exp-restr-row select,.exp-filter-row select{width:auto;padding:4px 6px;font-size:11px}
+.exp-restr-group{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.exp-restr-group label{gap:2px!important;cursor:pointer}
+.exp-restr-multi{position:relative;display:inline-block}
+.exp-restr-multi>summary{list-style:none;cursor:pointer;padding:4px 8px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:11px;font-weight:400;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.exp-restr-multi>summary::-webkit-details-marker{display:none}
+.exp-restr-multi[open]>summary{border-color:var(--cyan)}
+.exp-restr-multi-panel{position:absolute;z-index:20;top:calc(100% + 3px);left:0;display:grid;grid-template-columns:repeat(3,auto);gap:4px 12px;padding:8px 10px;background:var(--panel);border:1px solid #394657;border-radius:6px;box-shadow:0 6px 18px #0008}
+.exp-restr-multi-panel label{white-space:nowrap;cursor:pointer}
 .exp-filters{margin:4px 0 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10151e;display:flex;flex-direction:column;gap:6px;font-size:12px}
 .exp-filters .exp-filters-title{color:var(--muted);font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .exp-analysis-pagebar input.page-input{width:64px;padding:3px 4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:12px;text-align:center;font-family:inherit}
@@ -175,7 +178,8 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .analysis-page-btn{padding:3px 9px;background:var(--panel2);border:1px solid #394657;border-radius:5px;color:var(--cyan);font-size:12px;cursor:pointer;font-family:inherit}
 .analysis-page-btn:hover:not(:disabled){border-color:var(--cyan)}
 .analysis-page-btn:disabled{opacity:.4;cursor:not-allowed}
-.exp-restr #expRestrClear{padding:4px 12px;font-size:11px}
+.exp-restr-actions{display:flex;gap:8px;flex-wrap:wrap}
+.exp-restr-actions .exp-preset-btn{padding:4px 12px;font-size:11px}
 
 /* Editor rítmico (barra de duração) e critério de análise */
 .exp-durbar{align-items:center}
@@ -347,23 +351,18 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
           <option value="C">Modo C — Consonância nos ataques simultâneos</option>
         </select>
       </div>
-      <div class="exp-form-filters" title="Selecione as formas de imitação e os tipos de ritmo que serão analisados">
-        <span class="exp-filter-label">Formas:</span>
-        <label><input type="checkbox" id="expFormOriginal" checked> Original</label>
-        <label><input type="checkbox" id="expFormInversion" checked> Inversão</label>
-        <label><input type="checkbox" id="expFormRetrograde" checked> Retrogradação</label>
-        <span class="exp-filter-label">Ritmo:</span>
-        <span id="expRitmoFilters" class="exp-ritmo-filters"></span>
-      </div>
       <button class="exp-preset-btn" id="expSavePresetBtn" type="button" disabled>💾 Salvar Preset</button>
       <button class="exp-preset-btn" id="expLoadPresetBtn" type="button">📂 Carregar Preset</button>
       <input type="file" id="expLoadPresetInput" accept="application/json,.json" style="display:none">
     </div>
-    <details class="exp-restr" id="expRestrBox">
-      <summary>Restrições da busca por imitação <span class="exp-restr-hint">(opcional — reduz o número de resultados e o tempo de cálculo)</span></summary>
-      <div class="note">As imitações são numeradas pela ordem de entrada: a 1ª é a que entra primeiro (menor atraso), a 2ª entra junto ou depois dela, e assim por diante. Campos de atraso em branco = sem limite.</div>
+    <details class="exp-restr" id="expRestrBox" open>
+      <summary>Configuração da busca por imitação <span class="exp-restr-hint">(atraso, direção da transposição, forma e ritmo de cada imitação — quanto mais restrita, mais rápida a busca)</span></summary>
+      <div class="note">As imitações são numeradas pela ordem de entrada: a 1ª é a que entra primeiro (menor atraso), a 2ª entra junto ou depois dela, e assim por diante. Campos de atraso em branco = sem limite. O uníssono só entra com as duas direções (Acima e Abaixo) marcadas.</div>
       <div id="expRestrRows" class="exp-restr-rows"></div>
-      <button type="button" class="exp-preset-btn" id="expRestrClear">Limpar restrições</button>
+      <div class="exp-restr-actions">
+        <button type="button" class="exp-preset-btn" id="expRestrCopy" title="Copia o atraso, a transposição, a forma e o ritmo da 1ª imitação para todas as outras">Igualar todas à 1ª imitação</button>
+        <button type="button" class="exp-preset-btn" id="expRestrClear" title="Volta todas as imitações ao padrão: atraso livre, Acima + Abaixo, O + I + R, ritmo Normal">Restaurar padrão</button>
+      </div>
     </details>
     <div id="expAnalysisResults" class="exp-analysis-results">
       <div class="exp-analysis-empty">Insira notas na pauta da Proposta (aba Experimentação) e clique em "Analisar Proposta Atual" para verificar as imitações viáveis.</div>
@@ -912,13 +911,20 @@ function bitHas(bits, i) { return (bits[i >>> 5] & (1 << (i & 31))) !== 0; }
 function bitAdd(bits, i) { bits[i >>> 5] |= 1 << (i & 31); }
 
 // Restrição de uma configuração para a imitação de posição k (ordem de entrada).
-//   r = { dmin, dmax, forms: ['O'|'I'|'R', ...], ritmos: [id, ...] }
-//   (dmin/dmax nulos = sem limite; forms/ritmos ausentes = qualquer um)
+//   r = { dmin, dmax, dirs: ['up'|'down', ...], forms: ['O'|'I'|'R', ...], ritmos: [id, ...] }
+//   (dmin/dmax nulos = sem limite; dirs/forms/ritmos ausentes = qualquer um)
+//   dirs: 'up' = transposição acima da Proposta (> 0), 'down' = abaixo (< 0);
+//   o uníssono (0) só passa quando as duas direções estão presentes.
 function formKey(cfg) { return cfg.ret ? 'R' : cfg.inv ? 'I' : 'O'; }
+function dirOk(cfg, dirs) {
+  const d = cfg.transpOpt[1];
+  return d > 0 ? dirs.includes('up') : d < 0 ? dirs.includes('down') : (dirs.includes('up') && dirs.includes('down'));
+}
 function cabeNaRestricao(cfg, r) {
   if (!r) return true;
   if (r.dmin != null && cfg.delay < r.dmin) return false;
   if (r.dmax != null && cfg.delay > r.dmax) return false;
+  if (r.dirs && !dirOk(cfg, r.dirs)) return false;
   if (r.forms && !r.forms.includes(formKey(cfg))) return false;
   if (r.ritmos && !r.ritmos.includes(cfg.ritmoIdx || 0)) return false;
   return true;
@@ -1912,9 +1918,6 @@ buildReferenceTable();
     if (r.id === 0) return 'Normal';
     return r.mult >= 1 ? ('×' + r.mult) : ('÷' + Math.round((1 / r.mult) * 100) / 100);
   }
-  document.getElementById('expRitmoFilters').innerHTML = RITMO_OPTIONS.map(r =>
-    `<label title="${r.label}"><input type="checkbox" id="expRitmo${r.id}"> ${ritmoShortLabel(r)}</label>`
-  ).join('');
 
   let kbOpen = false;
   document.getElementById('expToggleKbBtn').onclick = () => {
@@ -2339,6 +2342,7 @@ buildReferenceTable();
   let analysisSortDir = 1;      // 1 = asc, -1 = desc
   // Filtros sobre os resultados já calculados: { [posição k]: { transp, delay, form, ritmo } }
   let analysisFilters = {};
+  let openFilterRitmo = null; // posição cujo painel de ritmos (filtro de resultados) está aberto
   let analysisView = null, analysisViewSig = '';
 
   function analysisCount() { return analysis ? analysis.count : 0; }
@@ -2397,6 +2401,9 @@ buildReferenceTable();
     return a.distinct;
   }
 
+  // Um campo de filtro está ativo se tem um valor (texto) ou uma lista não vazia.
+  function filtroAtivo(v) { return Array.isArray(v) ? v.length > 0 : (v !== '' && v != null); }
+
   // Lista (índices de resultados) filtrada e ordenada — refeita só quando a
   // ordenação ou os filtros mudam; trocar de página/aba reaproveita o cache.
   function getAnalysisView() {
@@ -2407,11 +2414,14 @@ buildReferenceTable();
     for (const p of Object.keys(analysisFilters)) {
       const f = analysisFilters[p];
       for (const field of Object.keys(f)) {
-        if (f[field] === '' || f[field] == null) continue;
+        if (!filtroAtivo(f[field])) continue;
         const ok = new Uint8Array(cfgs.length), v = f[field];
         cfgs.forEach((c, ci) => {
+          // transp: 'up' / 'down' (direção) ou o índice de uma transposição;
+          // form / ritmo: listas (várias opções = qualquer uma delas).
+          if (field === 'transp' && (v === 'up' || v === 'down')) { const d = c.transpOpt[1]; ok[ci] = (v === 'up' ? d > 0 : d < 0) ? 1 : 0; return; }
           const val = field === 'transp' ? String(c.transpIdx) : field === 'delay' ? String(c.delay) : field === 'form' ? formKeyOf(c) : String(c.ritmoIdx || 0);
-          ok[ci] = val === v ? 1 : 0;
+          ok[ci] = (Array.isArray(v) ? v.includes(val) : val === v) ? 1 : 0;
         });
         tests.push({ p: +p, ok });
       }
@@ -2438,7 +2448,13 @@ buildReferenceTable();
   // ---------------------------------------------------------------------
   // RESTRIÇÕES DA BUSCA (por imitação, na ordem de entrada)
   // ---------------------------------------------------------------------
-  const restrState = {}; // { [k 1-based]: { dmin, dmax, form, ritmo } } — valores como texto ('' = livre)
+  // { [k 1-based]: { dmin, dmax, dirs: [...], forms: [...], ritmos: [...] } }
+  // dmin/dmax como texto ('' = livre). Cada imitação nasce com o padrão abaixo;
+  // as listas precisam ter ao menos uma opção marcada para a busca rodar.
+  const restrState = {};
+  const restrPadrao = () => ({ dmin: '', dmax: '', dirs: ['up', 'down'], forms: ['O', 'I', 'R'], ritmos: [0] });
+  const restrDe = (k) => (restrState[k] = restrState[k] || restrPadrao());
+  const DIR_LABEL = { up: 'Acima', down: 'Abaixo' };
   function maxDelayAtual() {
     if (!expState.notes.length) return null;
     const P = pulseFr(), tot = Core.frMul(Core.leaderTotalPulses(expState.notes), [P[1], P[0]]);
@@ -2448,25 +2464,49 @@ buildReferenceTable();
     const box = document.getElementById('expRestrRows'), n = +voices.value, md = maxDelayAtual();
     if (n < 2) { box.innerHTML = '<div class="note">Selecione ao menos 2 vozes.</div>'; return; }
     let h = '';
+    const chk = (f, v, on, lbl, title) => `<label${title ? ` title="${title}"` : ''}><input type="checkbox" data-m="${f}" value="${v}"${on ? ' checked' : ''}> ${lbl}</label>`;
     for (let k = 1; k < n; k++) {
-      const r = restrState[k] || {};
+      const r = restrDe(k), dirs = r.dirs, forms = r.forms, ritmos = r.ritmos;
       h += `<div class="exp-restr-row" data-k="${k}"><span class="ct">${k}ª Imitação</span>
         <label>Atraso de <input type="number" min="0" step="1" data-f="dmin" value="${r.dmin ?? ''}" placeholder="0"></label>
         <label>até <input type="number" min="0" step="1" data-f="dmax" value="${r.dmax ?? ''}" placeholder="${md == null ? 'máx' : md}"></label>
-        <label>Forma <select data-f="form"><option value="">Qualquer (marcadas)</option>${Object.keys(FORM_LABEL).map(f => `<option value="${f}">${FORM_LABEL[f]}</option>`).join('')}</select></label>
-        <label>Ritmo <select data-f="ritmo"><option value="">Qualquer (marcados)</option>${RITMO_OPTIONS.map(o => `<option value="${o.id}">${o.label}</option>`).join('')}</select></label>
+        <span class="exp-restr-group" title="Direção da transposição em relação à Proposta">Transposição ${Object.keys(DIR_LABEL).map(d => chk('dirs', d, dirs.includes(d), DIR_LABEL[d])).join('')}</span>
+        <span class="exp-restr-group" title="O = Original, I = Inversão, R = Retrogradação">Forma ${Object.keys(FORM_LABEL).map(f => chk('forms', f, forms.includes(f), f, FORM_LABEL[f])).join('')}</span>
+        <span class="exp-restr-group">Ritmo <details class="exp-restr-multi"><summary></summary><div class="exp-restr-multi-panel">${RITMO_OPTIONS.map(o => chk('ritmos', o.id, ritmos.includes(o.id), ritmoShortLabel(o), o.label)).join('')}</div></details></span>
       </div>`;
     }
     box.innerHTML = h;
+    const ritmoResumo = (ids) => !ids.length ? 'Nenhum ▾'
+      : RITMO_OPTIONS.filter(o => ids.includes(o.id)).map(ritmoShortLabel).join(', ') + ' ▾';
     box.querySelectorAll('.exp-restr-row').forEach(row => {
-      const k = +row.dataset.k, r = restrState[k] || {};
+      const k = +row.dataset.k, st = () => restrDe(k);
       row.querySelectorAll('[data-f]').forEach(el => {
-        if (el.tagName === 'SELECT') el.value = r[el.dataset.f] ?? '';
-        el.onchange = () => { restrState[k] = Object.assign(restrState[k] || {}, { [el.dataset.f]: el.value.trim() }); };
+        el.onchange = () => { st()[el.dataset.f] = el.value.trim(); };
+      });
+      const sum = row.querySelector('.exp-restr-multi > summary');
+      sum.textContent = ritmoResumo(st().ritmos);
+      row.querySelectorAll('[data-m]').forEach(el => {
+        el.onchange = () => {
+          const f = el.dataset.m;
+          st()[f] = [...row.querySelectorAll(`[data-m="${f}"]:checked`)].map(c => f === 'ritmos' ? +c.value : c.value);
+          if (f === 'ritmos') sum.textContent = ritmoResumo(st().ritmos);
+        };
       });
     });
+    const cp = document.getElementById('expRestrCopy');
+    if (cp) cp.disabled = n < 3; // com uma só imitação não há o que igualar
   }
+  // Fecha o painel de ritmos das restrições ao clicar fora dele.
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.exp-restr-multi[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+  });
   document.getElementById('expRestrClear').onclick = () => { Object.keys(restrState).forEach(k => delete restrState[k]); renderRestrRows(); };
+  // Copia a configuração da 1ª imitação para todas as outras.
+  document.getElementById('expRestrCopy').onclick = () => {
+    const ref = restrDe(1), n = +voices.value;
+    for (let k = 2; k < n; k++) restrState[k] = { dmin: ref.dmin, dmax: ref.dmax, dirs: [...ref.dirs], forms: [...ref.forms], ritmos: [...ref.ritmos] };
+    renderRestrRows();
+  };
 
   // ---------------------------------------------------------------------
   // ANÁLISE EM WEB WORKER
@@ -2489,23 +2529,17 @@ buildReferenceTable();
     const leaderNotes = expState.notes;
     if (leaderNotes.length < 2) { limparAnalise('⚠️ Insira pelo menos 2 notas na pauta da Proposta (na aba Experimentação) para realizar a análise.'); return; }
     const FORM_DEF = { O: { inv: false, ret: false }, I: { inv: true, ret: false }, R: { inv: false, ret: true } };
-    const formsSel = [];
-    if (document.getElementById('expFormOriginal').checked) formsSel.push('O');
-    if (document.getElementById('expFormInversion').checked) formsSel.push('I');
-    if (document.getElementById('expFormRetrograde').checked) formsSel.push('R');
-    const ritmosSel = RITMO_OPTIONS.filter(r => { const cb = document.getElementById('expRitmo' + r.id); return cb && cb.checked; }).map(r => r.id);
 
-    // Restrições por imitação: "Qualquer" = formas/ritmos marcados acima; uma
-    // escolha específica vale mesmo que não esteja marcada globalmente.
+    // Configuração por imitação (ordem de entrada): atraso, direções, formas e ritmos.
     const nVoices = +voices.value, K = nVoices - 1, restr = [], formsAll = new Set(), ritmosAll = new Set();
     for (let k = 1; k <= K; k++) {
-      const r = restrState[k] || {}, num = v => (v === '' || v == null) ? null : Math.max(0, Math.floor(+v));
+      const r = restrDe(k), num = v => (v === '' || v == null) ? null : Math.max(0, Math.floor(+v));
       const dmin = num(r.dmin), dmax = num(r.dmax);
       if (dmin != null && dmax != null && dmin > dmax) { limparAnalise(`⚠️ Restrição da ${k}ª imitação: o atraso mínimo (${dmin}) é maior que o máximo (${dmax}).`); return; }
-      const forms = r.form ? [r.form] : formsSel, ritmos = (r.ritmo !== '' && r.ritmo != null) ? [+r.ritmo] : ritmosSel;
-      if (!forms.length || !ritmos.length) { limparAnalise(`⚠️ Selecione pelo menos uma forma de imitação e um tipo de ritmo (ou escolha-os na restrição da ${k}ª imitação).`); return; }
+      const dirs = [...r.dirs], forms = [...r.forms], ritmos = [...r.ritmos];
+      if (!dirs.length || !forms.length || !ritmos.length) { limparAnalise(`⚠️ ${k}ª imitação: marque pelo menos uma direção de transposição, uma forma e um ritmo.`); return; }
       forms.forEach(f => formsAll.add(f)); ritmos.forEach(x => ritmosAll.add(x));
-      restr.push({ dmin, dmax, forms, ritmos });
+      restr.push({ dmin, dmax, dirs, forms, ritmos });
     }
     const forms = ['O', 'I', 'R'].filter(f => formsAll.has(f)).map(f => FORM_DEF[f]), ritmos = [...ritmosAll].sort((a, b) => a - b);
     // A ordem de entrada exige atrasos não decrescentes: avisa se as faixas se contradizem.
@@ -2567,15 +2601,35 @@ buildReferenceTable();
   }
 
   function filtersHtml(a) {
-    const dv = distinctValues(a), anyActive = Object.values(analysisFilters).some(f => Object.values(f).some(v => v !== '' && v != null));
+    const dv = distinctValues(a), anyActive = Object.values(analysisFilters).some(f => Object.values(f).some(filtroAtivo));
     let h = `<div class="exp-filters"><div class="exp-filters-title"><span>Filtrar resultados (sem refazer a busca):</span>
       <button type="button" class="analysis-page-btn" id="expFiltersClear" ${anyActive ? '' : 'disabled'}>Limpar filtros</button></div>`;
-    const sel = (p, field, label, opts) => {
-      const cur = (analysisFilters[p] && analysisFilters[p][field]) || '';
-      return `<label>${label} <select data-p="${p}" data-field="${field}"><option value="">Todas</option>${opts.map(o => `<option value="${o[0]}" ${o[0] === cur ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></label>`;
+    const cur = (p, field, def) => (analysisFilters[p] && analysisFilters[p][field]) || def;
+    const sel = (p, field, label, opts, extra = '') => {
+      const c = cur(p, field, '');
+      return `<label>${label} <select data-p="${p}" data-field="${field}"><option value="">Todas</option>${extra}${opts.map(o => `<option value="${o[0]}" ${o[0] === c ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></label>`;
+    };
+    // Transposição: além de cada valor, as direções Acima / Abaixo (só as presentes).
+    const dirOpts = (p) => {
+      const c = cur(p, 'transp', ''), ds = dv[p].transp.map(o => o[2]);
+      const opt = (v, lbl) => `<option value="${v}" ${c === v ? 'selected' : ''}>${lbl}</option>`;
+      return (ds.some(d => d > 0) ? opt('up', 'Acima (todas ↑)') : '') + (ds.some(d => d < 0) ? opt('down', 'Abaixo (todas ↓)') : '');
+    };
+    // Forma: caixas (nenhuma marcada = todas).
+    const formChecks = (p) => {
+      const c = cur(p, 'form', []);
+      return `<span class="exp-restr-group" title="Nenhuma marcada = todas">Forma ${dv[p].form.map(o =>
+        `<label title="${o[1]}"><input type="checkbox" data-p="${p}" data-mf="form" value="${o[0]}"${c.includes(o[0]) ? ' checked' : ''}> ${o[0]}</label>`).join('')}</span>`;
+    };
+    // Ritmo: painel com caixas (nenhuma marcada = todos).
+    const ritmoMulti = (p) => {
+      const c = cur(p, 'ritmo', []);
+      const resumo = c.length ? dv[p].ritmo.filter(o => c.includes(o[0])).map(o => ritmoShortLabel(RITMO_OPTIONS[o[2]])).join(', ') : 'Todos';
+      return `<span class="exp-restr-group">Ritmo <details class="exp-restr-multi" data-p="${p}"${openFilterRitmo === p ? ' open' : ''}><summary>${resumo} ▾</summary><div class="exp-restr-multi-panel">${dv[p].ritmo.map(o =>
+        `<label title="${o[1]}"><input type="checkbox" data-p="${p}" data-mf="ritmo" value="${o[0]}"${c.includes(o[0]) ? ' checked' : ''}> ${ritmoShortLabel(RITMO_OPTIONS[o[2]])}</label>`).join('')}</div></details></span>`;
     };
     for (let p = 0; p < a.k; p++) {
-      h += `<div class="exp-filter-row"><span class="ct">${p + 1}ª Imitação</span>${sel(p, 'transp', 'Transposição', dv[p].transp)}${sel(p, 'delay', 'Atraso', dv[p].delay)}${sel(p, 'form', 'Forma', dv[p].form)}${sel(p, 'ritmo', 'Ritmo', dv[p].ritmo)}</div>`;
+      h += `<div class="exp-filter-row"><span class="ct">${p + 1}ª Imitação</span>${sel(p, 'transp', 'Transposição', dv[p].transp, dirOpts(p))}${sel(p, 'delay', 'Atraso', dv[p].delay)}${formChecks(p)}${ritmoMulti(p)}</div>`;
     }
     return h + '</div>';
   }
@@ -2691,8 +2745,22 @@ buildReferenceTable();
         renderAnalysisResults();
       };
     });
+    // Filtros de escolha múltipla (Forma / Ritmo): lista das caixas marcadas.
+    container.querySelectorAll('.exp-filters input[data-mf]').forEach(cb => {
+      cb.onchange = () => {
+        const p = cb.dataset.p, f = cb.dataset.mf;
+        const vals = [...container.querySelectorAll(`.exp-filters input[data-p="${p}"][data-mf="${f}"]:checked`)].map(x => x.value);
+        analysisFilters[p] = Object.assign(analysisFilters[p] || {}, { [f]: vals });
+        if (f === 'ritmo') openFilterRitmo = +p; // mantém o painel aberto após redesenhar
+        currentAnalysisPage = 0;
+        renderAnalysisResults();
+      };
+    });
+    container.querySelectorAll('.exp-filters details.exp-restr-multi').forEach(d => {
+      d.ontoggle = () => { if (d.open) openFilterRitmo = +d.dataset.p; else if (openFilterRitmo === +d.dataset.p) openFilterRitmo = null; };
+    });
     const clr = document.getElementById('expFiltersClear');
-    if (clr) clr.onclick = () => { analysisFilters = {}; currentAnalysisPage = 0; renderAnalysisResults(); };
+    if (clr) clr.onclick = () => { analysisFilters = {}; openFilterRitmo = null; currentAnalysisPage = 0; renderAnalysisResults(); };
     container.querySelectorAll('.apply-btn').forEach(btn => {
       btn.onclick = () => {
         const idx = +btn.dataset.idx;
