@@ -145,9 +145,25 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-analysis-results .apply-btn.active-applied{background:var(--cyan);color:#04141c;border-color:var(--cyan);font-weight:700}
 
 .exp-analysis-empty{color:var(--muted);font-size:13px;padding:16px 0}
-.exp-restr{margin:-6px 0 14px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#10151e;font-size:12px}
-.exp-restr summary{cursor:pointer;color:var(--cyan);font-weight:600}
-.exp-restr-hint{color:var(--muted);font-weight:400}
+.exp-restr{margin:-6px 0 14px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:#10151e;font-size:12px}
+/* Título comum aos quadros ① Configuração e ② Filtrar resultados */
+.exp-box-title{cursor:default;color:var(--cyan);font-weight:700;font-size:13px}
+summary.exp-box-title{cursor:pointer}
+.exp-restr-hint{color:var(--muted);font-weight:400;font-size:11px}
+.exp-header-spacer{flex:1}
+.exp-context{margin:10px 0 8px;padding:6px 10px;border-left:3px solid #394657;background:#0c1118;color:var(--muted);font-size:11px;line-height:1.6}
+.exp-context b{color:var(--text);font-weight:600}
+.exp-search-opts{display:flex;align-items:center;flex-wrap:wrap;gap:10px 22px;margin:4px 0 12px}
+.exp-opt{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:11px;color:var(--muted);cursor:pointer}
+.exp-opt input[type=number]{width:52px;padding:5px 4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:12px;text-align:center;font-family:inherit}
+.exp-subtitle{margin:6px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.exp-run{display:flex;align-items:center;justify-content:flex-end;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.exp-run-status{font-size:12px;color:var(--muted)}
+.exp-run-status b{color:var(--text)}
+.exp-analyze-btn:disabled{cursor:wait}
+.exp-stale{margin:-4px 0 12px;padding:8px 12px;border:1px solid #ffe45c55;border-radius:8px;background:#ffe45c10;color:#ffe45c;font-size:12px}
+.exp-results-count{font-size:12px;color:var(--muted)}
+.exp-results-count b{color:var(--text)}
 .exp-restr .note{margin:8px 0}
 .exp-restr-rows{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
 .exp-restr-row,.exp-filter-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
@@ -164,7 +180,8 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
 .exp-restr-multi-panel{position:absolute;z-index:20;top:calc(100% + 3px);left:0;display:grid;grid-template-columns:repeat(3,auto);gap:4px 12px;padding:8px 10px;background:var(--panel);border:1px solid #394657;border-radius:6px;box-shadow:0 6px 18px #0008}
 .exp-restr-multi-panel label{white-space:nowrap;cursor:pointer}
 .exp-filters{margin:4px 0 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#10151e;display:flex;flex-direction:column;gap:6px;font-size:12px}
-.exp-filters .exp-filters-title{color:var(--muted);font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.exp-filters{padding:10px 14px}
+.exp-filters .exp-filters-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:2px}
 .exp-analysis-pagebar input.page-input{width:64px;padding:3px 4px;background:var(--panel2);color:var(--text);border:1px solid #394657;border-radius:4px;font-size:12px;text-align:center;font-family:inherit}
 .exp-analysis .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
 .exp-analysis .badge-yes{color:var(--green);border:1px solid #4dff9a55;background:#4dff9a12}
@@ -230,7 +247,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   <div class="note">Verde = desejado · Vermelho = indesejado · Dourado = falsa dissonância (dissonante apenas contra a voz mais grave da textura; entre vozes superiores é tratado como consonância). Intervalos complementares (ex.: 5 e 7, 4 e 8) são marcados separadamente. Define a coloração da Tabela de Referência e quais movimentos entram em "Movimentos viáveis".</div>
 </div>
 
-<div class="note">A 1ª Imitação entra uma nota depois da Proposta; a 2ª, uma nota depois da 1ª; e assim sucessivamente.</div>
+<div class="note">O atraso de cada imitação é medido em pulsos de referência (escolhidos na aba Experimentação), contados a partir da entrada da Proposta.</div>
 </aside>
 <main>
 <div class="tabs">
@@ -277,7 +294,7 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
     </div>
     <div class="exp-tgroup">
       <label for="expPulso">Pulso</label>
-      <select id="expPulso" title="Valor do pulso de referência: unidade do Atraso das imitações, do BPM e da regra de sobreposição mínima (2 pulsos)"></select>
+      <select id="expPulso" title="Valor do pulso de referência: unidade do Atraso das imitações, do BPM e da Sobreposição mínima (aba Análise de Imitações)"></select>
     </div>
     <button class="exp-actionbtn" id="expPlayBtn" type="button">▶ Reproduzir</button>
     <button class="exp-actionbtn" id="expStopBtn" type="button">⏹ Parar</button>
@@ -341,29 +358,44 @@ table.compact .iv{min-width:20px;padding:1px 3px;font-size:10px}
   <div class="exp-analysis">
     <div class="exp-analysis-header">
       <span class="title">Análise de imitações viáveis</span>
-      <button class="exp-analyze-btn" id="expAnalyzeBtn">Analisar Proposta Atual</button>
-      <span class="exp-analysis-count" id="expAnalysisCount">Encontradas: <b id="expAnalysisNum">0</b></span>
-      <div class="exp-criterio" title="Critério de validação contrapontística (independente do modo Modal/Escalar × Atonal)">
-        <span class="exp-filter-label">Critério:</span>
-        <select id="expCriterio">
-          <option value="A">Modo A — Consonância estrita</option>
-          <option value="B">Modo B — Dissonâncias tratadas</option>
-          <option value="C">Modo C — Consonância nos ataques simultâneos</option>
-        </select>
-      </div>
-      <button class="exp-preset-btn" id="expSavePresetBtn" type="button" disabled>💾 Salvar Preset</button>
-      <button class="exp-preset-btn" id="expLoadPresetBtn" type="button">📂 Carregar Preset</button>
+      <span class="exp-header-spacer"></span>
+      <button class="exp-preset-btn" id="expSavePresetBtn" type="button" disabled title="Salva a Proposta, a configuração da busca e a lista de resultados num arquivo .json">💾 Salvar Preset</button>
+      <button class="exp-preset-btn" id="expLoadPresetBtn" type="button" title="Abre um preset salvo: Proposta, configuração da busca e resultados, sem refazer a busca">📂 Carregar Preset</button>
       <input type="file" id="expLoadPresetInput" accept="application/json,.json" style="display:none">
     </div>
-    <details class="exp-restr" id="expRestrBox" open>
-      <summary>Configuração da busca por imitação <span class="exp-restr-hint">(atraso, direção da transposição, forma e ritmo de cada imitação — quanto mais restrita, mais rápida a busca)</span></summary>
-      <div class="note">As imitações são numeradas pela ordem de entrada: a 1ª é a que entra primeiro (menor atraso), a 2ª entra junto ou depois dela, e assim por diante. Campos de atraso em branco = sem limite. O uníssono só entra com as duas direções (Acima e Abaixo) marcadas.</div>
+    <details class="exp-box exp-restr" id="expRestrBox" open>
+      <summary class="exp-box-title">① Configuração da busca por imitação <span class="exp-restr-hint">(define quais combinações são procuradas — quanto mais restrita, mais rápida a busca)</span></summary>
+      <div class="exp-context" id="expContext" title="Condições definidas fora desta aba: Modo, Número de vozes e intervalos na barra lateral; Pulso e Proposta na aba Experimentação"></div>
+      <div class="exp-search-opts">
+        <div class="exp-criterio" title="Critério de validação contrapontística (independente do modo Modal/Escalar × Atonal)">
+          <span class="exp-filter-label">Critério</span>
+          <select id="expCriterio">
+            <option value="A">Modo A — Consonância estrita</option>
+            <option value="B">Modo B — Dissonâncias tratadas</option>
+            <option value="C">Modo C — Consonância nos ataques simultâneos</option>
+          </select>
+        </div>
+        <label class="exp-opt" title="Cada imitação precisa ficar sobreposta, por pelo menos este número de pulsos, a alguma voz que entrou antes (ou junto). Valores maiores reduzem os atrasos possíveis e o tempo da busca">
+          <span class="exp-filter-label">Sobreposição mínima</span>
+          <input type="number" id="expSobrepMin" min="1" step="1" value="1"> pulso(s)
+        </label>
+        <label class="exp-opt" title="Desmarcado: toda imitação fica sobreposta à Proposta. Marcado: uma imitação pode começar depois do fim da Proposta, desde que fique sobreposta a uma imitação anterior (amplia bastante a busca — use as faixas de atraso abaixo para limitá-la)">
+          <input type="checkbox" id="expEncadeado"> Permitir entradas após o fim da Proposta (encadeadas)
+        </label>
+      </div>
+      <div class="exp-subtitle">Restrições por imitação</div>
+      <div class="note">As imitações são numeradas pela ordem de entrada: a 1ª é a que entra primeiro (menor atraso), a 2ª entra junto ou depois dela, e assim por diante. Atraso em pulsos, contado a partir da entrada da Proposta; em branco = sem limite além do máximo indicado (que decorre da sobreposição mínima). O uníssono só entra com as duas direções (Acima e Abaixo) marcadas.</div>
       <div id="expRestrRows" class="exp-restr-rows"></div>
       <div class="exp-restr-actions">
         <button type="button" class="exp-preset-btn" id="expRestrCopy" title="Copia o atraso, a transposição, a forma e o ritmo da 1ª imitação para todas as outras">Igualar todas à 1ª imitação</button>
         <button type="button" class="exp-preset-btn" id="expRestrClear" title="Volta todas as imitações ao padrão: atraso livre, Acima + Abaixo, O + I + R, ritmo Normal">Restaurar padrão</button>
       </div>
+      <div class="exp-run">
+        <span class="exp-run-status" id="expAnalysisStatus"></span>
+        <button class="exp-analyze-btn" id="expAnalyzeBtn" type="button">🔍 Analisar Proposta Atual</button>
+      </div>
     </details>
+    <div class="exp-stale" id="expStaleWarn" hidden>⚠️ A configuração mudou desde a última busca — os resultados abaixo correspondem à busca anterior. Clique em "Analisar Proposta Atual" para atualizá-los.</div>
     <div id="expAnalysisResults" class="exp-analysis-results">
       <div class="exp-analysis-empty">Insira notas na pauta da Proposta (aba Experimentação) e clique em "Analisar Proposta Atual" para verificar as imitações viáveis.</div>
     </div>
@@ -891,7 +923,47 @@ function notate(dur, src, mult) {
   return { segs: segs || [{ fig: '128', dots: 0 }], tn, td, approx: !segs };
 }
 
+// ---------------------------------------------------------------------
+// SOBREPOSIÇÃO MÍNIMA E TETO DO ATRASO (tudo em PULSOS de referência, frações exatas)
+// ---------------------------------------------------------------------
+// Uma imitação só é aceita se ficar sobreposta, por pelo menos `sobrepMin`
+// pulsos, a alguma voz que entrou antes (ou junto). A duração de cada voz é a
+// duração da Proposta (LEN) multiplicada pelo fator de ritmo da voz.
+// Fim de uma voz (em pulsos): atraso + LEN × fator de ritmo.
+function voiceEnd(LEN, cfg) { return frAdd(fr(cfg.delay, 1), frMul(LEN, RITMO_FRAC[cfg.ritmoIdx || 0])); }
+// Voz que entra em `delay` e termina em `end`, contra uma voz anterior que
+// termina em `prevEnd` (e entrou antes ou junto): sobreposição = min(end, prevEnd) − delay.
+function overlapOk(delay, end, prevEnd, sobrepMin) {
+  const e = frCmp(end, prevEnd) < 0 ? end : prevEnd;
+  return frCmp(frSub(e, fr(delay, 1)), fr(sobrepMin, 1)) >= 0;
+}
+// Teto do atraso (inteiro) de cada posição de entrada k = 0..K−1.
+//  Sem encadeamento: toda imitação se sobrepõe à Proposta → floor(LEN − mín).
+//  Encadeado: a k-ésima pode se sobrepor a qualquer voz anterior; o teto é
+//   floor(maior fim possível das vozes anteriores − mín), onde o fim máximo da
+//   imitação j = teto_j + LEN × (maior fator de ritmo permitido na posição j).
+//  dmaxUser[k] (opcional, null = livre) aperta o teto da posição e das seguintes.
+// Retorna null quando a sobreposição mínima excede a duração da Proposta.
+function delayCaps(LEN, K, sobrepMin, encadeado, fatoresMax, dmaxUser) {
+  const floorFr = a => Math.floor(a[0] / a[1]);
+  const base = floorFr(frSub(LEN, fr(sobrepMin, 1)));
+  if (base < 0) return null;
+  const caps = [];
+  let maxEnd = LEN;
+  for (let k = 0; k < K; k++) {
+    let cap = encadeado ? floorFr(frSub(maxEnd, fr(sobrepMin, 1))) : base;
+    if (dmaxUser && dmaxUser[k] != null) cap = Math.min(cap, dmaxUser[k]);
+    caps.push(cap);
+    if (encadeado && cap >= 0) {
+      const e = frAdd(fr(cap, 1), frMul(LEN, (fatoresMax && fatoresMax[k]) || [1, 1]));
+      if (frCmp(e, maxEnd) > 0) maxEnd = e;
+    }
+  }
+  return caps;
+}
+
 const __CORE_EXPORTS__ = {
+  voiceEnd, overlapOk, delayCaps,
   LETTERS, PITCH_CLASS, KEY_INFO, CHROMA_SPELL, FIG_ORDER, FIG_VAL, RITMO_FRAC,
   keyDefaultAcc, noteToMidi, diatonicIndex, transposeDiatonic, transposeChromatic, invertDiatonic, invertChromatic,
   gcd, fr, frMul, frAdd, frSub, frCmp, frNum, lcm,
@@ -937,13 +1009,15 @@ self.onmessage = (e) => {
   try {
     const delays = d.delays, forms = d.forms, ritmos = d.ritmos;
     const leaderP = prepare(leaderEvents(leader), { transpIdx: -1, transpOpt: ['Líder', 0], delay: 0, inv: false, ret: false, ritmoIdx: 0 }, G, P);
-    // Duração total do Líder em PULSOS de referência (fração exata) — a
-    // pré-condição de sobreposição segue ignorando o ritmo, como na versão original.
+    // Duração total do Líder em PULSOS de referência (fração exata).
     const LEN = frMul(leaderTotalPulses(leader), [P[1], P[0]]);
-    // sobreposição >= 2 pulsos com alguma voz que entrou antes (ou junto):
-    //   len - |atraso - atraso_v| >= 2   <=>   LEN[0] >= (2 + |Δ|) * LEN[1]
-    function overlap(delay, voices) {
-      for (const v of voices) if (LEN[0] >= (2 + Math.abs(delay - v.delay)) * LEN[1]) return true;
+    // Sobreposição mínima (em pulsos, escolhida pelo usuário) com alguma voz que
+    // entrou antes (ou junto) — Proposta ou imitação anterior (modo encadeado).
+    // A duração de cada voz considera o seu fator de ritmo (Core.voiceEnd).
+    // Os tetos de atraso por posição já chegam aplicados em restr[k].dmax.
+    const sobrepMin = d.sobrepMin != null ? d.sobrepMin : 1;
+    function overlap(c, voices) {
+      for (const v of voices) if (overlapOk(c.cfg.delay, c.end, v.end, sobrepMin)) return true;
       return false;
     }
     // Pré-filtro com a Proposta: paralelismos (check) + dissonâncias que nenhuma
@@ -964,7 +1038,7 @@ self.onmessage = (e) => {
     // cada conjunto aparece uma única vez e a sobreposição é verificada contra
     // as vozes que entraram antes — o sentido musical da regra.
     const configs = cand.map((c, i) => ({ c, i })).sort((a, b) => a.c.cfg.delay - b.c.cfg.delay || a.i - b.i).map(x => x.c);
-    configs.forEach((c, i) => { c.index = i; });
+    configs.forEach((c, i) => { c.index = i; c.end = voiceEnd(LEN, c.cfg); });
     self.postMessage({ type: 'phase', phase: 'matrix', total: configs.length });
     const m = configs.length, words = Math.max(1, Math.ceil(m / 32)), compat = new Array(m);
     for (let i = 0; i < m; i++) compat[i] = new Uint32Array(words);
@@ -990,7 +1064,7 @@ self.onmessage = (e) => {
       count++;
     }
     let nodes = 0, lastP = performance.now();
-    const infos = [{ delay: 0 }];
+    const infos = [{ end: LEN }]; // a Proposta entra em 0 e termina em LEN
     function search(depth, idxs, chosen, cands) {
       if (depth === K) { if (finalTest(leaderP, chosen, modo, icDesired, criterio)) push(idxs); return; }
       const mask = posMask[depth];
@@ -1002,9 +1076,9 @@ self.onmessage = (e) => {
         const bit = bits & -bits, idx = (wordIndex << 5) + 31 - Math.clz32(bit);
         i = idx + 1;
         const c = configs[idx];
-        if (!overlap(c.cfg.delay, infos)) continue;
+        if (!overlap(c, infos)) continue;
         nodes++;
-        idxs.push(idx); chosen.push(c); infos.push({ delay: c.cfg.delay });
+        idxs.push(idx); chosen.push(c); infos.push({ end: c.end });
         let child = cands;
         if (pares && depth + 1 < K) { child = cands.slice(); for (let w = 0; w < words; w++) child[w] &= compat[idx][w]; }
         search(depth + 1, idxs, chosen, child);
@@ -2355,14 +2429,71 @@ buildReferenceTable();
     analysisFilters = {}; analysisSortKey = null; analysisSortDir = 1;
     analysisView = null; analysisViewSig = ''; currentAnalysisPage = 0;
     const n = analysisCount();
-    document.getElementById('expAnalysisNum').textContent = n.toLocaleString('pt-BR');
+    document.getElementById('expAnalysisStatus').innerHTML = a ? `Última busca: <b>${n.toLocaleString('pt-BR')}</b> combinaç${n === 1 ? 'ão' : 'ões'} encontrada${n === 1 ? '' : 's'}` : '';
     document.getElementById('expSavePresetBtn').disabled = n === 0;
+    atualizarAvisoDesatualizado();
   }
   function limparAnalise(msgHtml) {
     setAnalysis(null);
-    document.getElementById('expAnalysisNum').textContent = '0';
     if (msgHtml) document.getElementById('expAnalysisResults').innerHTML = `<div class="exp-analysis-empty">${msgHtml}</div>`;
   }
+
+  // ---------------------------------------------------------------------
+  // OPÇÕES GLOBAIS DA BUSCA, CONTEXTO E AVISO DE CONFIGURAÇÃO ALTERADA
+  // ---------------------------------------------------------------------
+  // sobrepMin: sobreposição mínima (pulsos inteiros ≥ 1) com alguma voz anterior.
+  // encadeado: permite que uma imitação comece após o fim da Proposta, desde
+  //            que se sobreponha a uma imitação anterior.
+  const buscaState = { sobrepMin: 1, encadeado: false };
+  function syncBuscaUI() {
+    document.getElementById('expSobrepMin').value = buscaState.sobrepMin;
+    document.getElementById('expEncadeado').checked = buscaState.encadeado;
+  }
+  // Duração da Proposta em pulsos de referência (fração exata) ou null.
+  function leaderLenPulses() {
+    if (!expState.notes.length) return null;
+    const P = pulseFr();
+    return Core.frMul(Core.leaderTotalPulses(expState.notes), [P[1], P[0]]);
+  }
+  const fmtPulsos = (f) => {
+    const v = f[0] / f[1];
+    return (Number.isInteger(v) ? String(v) : v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })) + (v === 1 ? ' pulso' : ' pulsos');
+  };
+  // Resumo, só para leitura, das condições definidas fora desta aba.
+  function atualizarContexto() {
+    const el = document.getElementById('expContext');
+    if (!el) return;
+    const n = +voices.value, ps = document.getElementById('expPulso'), LEN = leaderLenPulses();
+    const pulso = ps && ps.selectedIndex >= 0 ? ps.options[ps.selectedIndex].text : '—';
+    const partes = [
+      `Modo: <b>${modo === 'tonal' ? 'Modal/Escalar' : 'Atonal'}</b>`,
+      `<b>${n}</b> voz${n === 1 ? '' : 'es'} (${Math.max(0, n - 1)} imitaç${n - 1 === 1 ? 'ão' : 'ões'})`,
+      `Pulso: <b>${pulso}</b>`,
+      LEN ? `Proposta: <b>${expState.notes.length}</b> nota${expState.notes.length === 1 ? '' : 's'}, <b>${fmtPulsos(LEN)}</b>` : 'Proposta: <b>vazia</b>'
+    ];
+    if (modo === 'atonal') partes.push('Intervalos desejados: <b>conforme a barra lateral</b>');
+    el.innerHTML = 'Contexto: ' + partes.join(' · ');
+  }
+  // Assinatura de tudo o que condiciona a busca (para detectar resultados desatualizados).
+  function assinaturaBusca() {
+    const n = +voices.value, restr = [];
+    for (let k = 1; k < n; k++) { const r = restrDe(k); restr.push([r.dmin, r.dmax, r.dirs, r.forms, r.ritmos]); }
+    return JSON.stringify({
+      notas: expState.notes.map(x => [x.letter, x.acc, x.octave, x.keyAtEntry, Core.eventDur(x)]),
+      key: expState.keySig, modo, n, pulso: pulseFr(), crit: document.getElementById('expCriterio').value,
+      restr, sobrep: buscaState.sobrepMin, enc: buscaState.encadeado, ic: modo === 'atonal' ? icDesired : null
+    });
+  }
+  function atualizarAvisoDesatualizado() {
+    const w = document.getElementById('expStaleWarn');
+    if (!w) return;
+    w.hidden = !(analysis && analysis.sig && analysis.sig !== assinaturaBusca());
+  }
+  // Qualquer alteração (barra lateral, aba Experimentação, esta aba) reavalia o
+  // aviso depois que os handlers próprios atualizaram o estado.
+  const reavaliarAviso = () => setTimeout(() => { atualizarAvisoDesatualizado(); atualizarContexto(); }, 0);
+  document.addEventListener('change', reavaliarAviso);
+  document.addEventListener('click', reavaliarAviso);
 
   // Voz preparada de uma configuração (cache por análise).
   function prepCfg(a, ci) {
@@ -2455,13 +2586,33 @@ buildReferenceTable();
   const restrPadrao = () => ({ dmin: '', dmax: '', dirs: ['up', 'down'], forms: ['O', 'I', 'R'], ritmos: [0] });
   const restrDe = (k) => (restrState[k] = restrState[k] || restrPadrao());
   const DIR_LABEL = { up: 'Acima', down: 'Abaixo' };
-  function maxDelayAtual() {
-    if (!expState.notes.length) return null;
-    const P = pulseFr(), tot = Core.frMul(Core.leaderTotalPulses(expState.notes), [P[1], P[0]]);
-    return Math.max(1, Math.floor(tot[0] / tot[1]) - 2);
+  const numOuNull = v => (v === '' || v == null) ? null : Math.max(0, Math.floor(+v));
+  // Teto do atraso de cada imitação (ordem de entrada), derivado da duração da
+  // Proposta, da sobreposição mínima, do modo encadeado, dos ritmos permitidos
+  // em cada posição e dos atrasos máximos digitados. null = Proposta vazia ou
+  // sobreposição mínima maior que a Proposta.
+  function tetosAtraso() {
+    const LEN = leaderLenPulses(), K = +voices.value - 1;
+    if (!LEN || K < 1) return null;
+    const fatores = [], dmax = [];
+    for (let k = 1; k <= K; k++) {
+      const r = restrDe(k), ids = r.ritmos.length ? r.ritmos : [0];
+      fatores.push(ids.map(i => Core.RITMO_FRAC[i]).reduce((m, f) => Core.frCmp(f, m) > 0 ? f : m, [0, 1]));
+      dmax.push(numOuNull(r.dmax));
+    }
+    return Core.delayCaps(LEN, K, buscaState.sobrepMin, buscaState.encadeado, fatores, dmax);
+  }
+  // Atualiza só os placeholders "máx" (sem redesenhar as linhas).
+  function atualizarTetos() {
+    const caps = tetosAtraso();
+    document.querySelectorAll('#expRestrRows .exp-restr-row').forEach(row => {
+      const inp = row.querySelector('[data-f="dmax"]'), k = +row.dataset.k;
+      if (inp) inp.placeholder = caps ? String(caps[k - 1]) : 'máx';
+    });
   }
   function renderRestrRows() {
-    const box = document.getElementById('expRestrRows'), n = +voices.value, md = maxDelayAtual();
+    const box = document.getElementById('expRestrRows'), n = +voices.value, caps = tetosAtraso();
+    atualizarContexto();
     if (n < 2) { box.innerHTML = '<div class="note">Selecione ao menos 2 vozes.</div>'; return; }
     let h = '';
     const chk = (f, v, on, lbl, title) => `<label${title ? ` title="${title}"` : ''}><input type="checkbox" data-m="${f}" value="${v}"${on ? ' checked' : ''}> ${lbl}</label>`;
@@ -2469,7 +2620,7 @@ buildReferenceTable();
       const r = restrDe(k), dirs = r.dirs, forms = r.forms, ritmos = r.ritmos;
       h += `<div class="exp-restr-row" data-k="${k}"><span class="ct">${k}ª Imitação</span>
         <label>Atraso de <input type="number" min="0" step="1" data-f="dmin" value="${r.dmin ?? ''}" placeholder="0"></label>
-        <label>até <input type="number" min="0" step="1" data-f="dmax" value="${r.dmax ?? ''}" placeholder="${md == null ? 'máx' : md}"></label>
+        <label>até <input type="number" min="0" step="1" data-f="dmax" value="${r.dmax ?? ''}" placeholder="${caps ? caps[k - 1] : 'máx'}" title="Em branco = até o máximo permitido pela sobreposição mínima"></label>
         <span class="exp-restr-group" title="Direção da transposição em relação à Proposta">Transposição ${Object.keys(DIR_LABEL).map(d => chk('dirs', d, dirs.includes(d), DIR_LABEL[d])).join('')}</span>
         <span class="exp-restr-group" title="O = Original, I = Inversão, R = Retrogradação">Forma ${Object.keys(FORM_LABEL).map(f => chk('forms', f, forms.includes(f), f, FORM_LABEL[f])).join('')}</span>
         <span class="exp-restr-group">Ritmo <details class="exp-restr-multi"><summary></summary><div class="exp-restr-multi-panel">${RITMO_OPTIONS.map(o => chk('ritmos', o.id, ritmos.includes(o.id), ritmoShortLabel(o), o.label)).join('')}</div></details></span>
@@ -2481,7 +2632,7 @@ buildReferenceTable();
     box.querySelectorAll('.exp-restr-row').forEach(row => {
       const k = +row.dataset.k, st = () => restrDe(k);
       row.querySelectorAll('[data-f]').forEach(el => {
-        el.onchange = () => { st()[el.dataset.f] = el.value.trim(); };
+        el.onchange = () => { st()[el.dataset.f] = el.value.trim(); atualizarTetos(); };
       });
       const sum = row.querySelector('.exp-restr-multi > summary');
       sum.textContent = ritmoResumo(st().ritmos);
@@ -2489,7 +2640,7 @@ buildReferenceTable();
         el.onchange = () => {
           const f = el.dataset.m;
           st()[f] = [...row.querySelectorAll(`[data-m="${f}"]:checked`)].map(c => f === 'ritmos' ? +c.value : c.value);
-          if (f === 'ritmos') sum.textContent = ritmoResumo(st().ritmos);
+          if (f === 'ritmos') { sum.textContent = ritmoResumo(st().ritmos); atualizarTetos(); }
         };
       });
     });
@@ -2500,6 +2651,13 @@ buildReferenceTable();
   document.addEventListener('click', (e) => {
     document.querySelectorAll('.exp-restr-multi[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
   });
+  document.getElementById('expSobrepMin').onchange = (e) => {
+    const v = Math.floor(+e.target.value);
+    buscaState.sobrepMin = Number.isFinite(v) && v >= 1 ? v : 1;
+    e.target.value = buscaState.sobrepMin;
+    atualizarTetos();
+  };
+  document.getElementById('expEncadeado').onchange = (e) => { buscaState.encadeado = e.target.checked; atualizarTetos(); };
   document.getElementById('expRestrClear').onclick = () => { Object.keys(restrState).forEach(k => delete restrState[k]); renderRestrRows(); };
   // Copia a configuração da 1ª imitação para todas as outras.
   document.getElementById('expRestrCopy').onclick = () => {
@@ -2533,8 +2691,8 @@ buildReferenceTable();
     // Configuração por imitação (ordem de entrada): atraso, direções, formas e ritmos.
     const nVoices = +voices.value, K = nVoices - 1, restr = [], formsAll = new Set(), ritmosAll = new Set();
     for (let k = 1; k <= K; k++) {
-      const r = restrDe(k), num = v => (v === '' || v == null) ? null : Math.max(0, Math.floor(+v));
-      const dmin = num(r.dmin), dmax = num(r.dmax);
+      const r = restrDe(k);
+      const dmin = numOuNull(r.dmin), dmax = numOuNull(r.dmax);
       if (dmin != null && dmax != null && dmin > dmax) { limparAnalise(`⚠️ Restrição da ${k}ª imitação: o atraso mínimo (${dmin}) é maior que o máximo (${dmax}).`); return; }
       const dirs = [...r.dirs], forms = [...r.forms], ritmos = [...r.ritmos];
       if (!dirs.length || !forms.length || !ritmos.length) { limparAnalise(`⚠️ ${k}ª imitação: marque pelo menos uma direção de transposição, uma forma e um ritmo.`); return; }
@@ -2547,6 +2705,18 @@ buildReferenceTable();
       const lo = restr.slice(0, k + 1).reduce((m, r) => Math.max(m, r.dmin ?? 0), 0), hi = restr[k].dmax;
       if (hi != null && lo > hi) { limparAnalise(`⚠️ As restrições são incompatíveis com a ordem de entrada: a ${k + 1}ª imitação não pode entrar antes de uma imitação anterior (atraso mínimo ${lo} > máximo ${hi}).`); return; }
     }
+    // Teto do atraso de cada posição (sobreposição mínima / modo encadeado).
+    const caps = tetosAtraso(), LENp = leaderLenPulses();
+    if (!caps) { limparAnalise(`⚠️ A sobreposição mínima (${fmtPulsos([buscaState.sobrepMin, 1])}) é maior que a duração da Proposta (${fmtPulsos(LENp)}).`); return; }
+    for (let k = 0; k < K; k++) {
+      if (restr[k].dmin != null && restr[k].dmin > caps[k]) {
+        limparAnalise(`⚠️ ${k + 1}ª imitação: o atraso mínimo (${restr[k].dmin}) excede o máximo permitido (${caps[k]}) pela sobreposição mínima de ${fmtPulsos([buscaState.sobrepMin, 1])}${buscaState.encadeado ? '' : ' com a Proposta (marque "Permitir entradas após o fim da Proposta" para encadear imitações)'}.`);
+        return;
+      }
+    }
+    // O Worker recebe as faixas já limitadas pelos tetos.
+    const restrBusca = restr.map((r, k) => Object.assign({}, r, { dmax: r.dmax == null ? caps[k] : Math.min(r.dmax, caps[k]) }));
+    const sig = assinaturaBusca();
 
     // Grade de ticks inteiros da análise (mmc dos denominadores das durações
     // efetivas da Proposta × fatores de ritmo usados).
@@ -2557,15 +2727,16 @@ buildReferenceTable();
     const criterio = document.getElementById('expCriterio').value;
     const analyzeBtn = document.getElementById('expAnalyzeBtn'); analyzeBtn.disabled = true; analyzeBtn.style.opacity = '0.5';
     if (activeAnalysisWorker) { activeAnalysisWorker.terminate(); activeAnalysisWorker = null; }
-    // O atraso máximo vem da duração total da Proposta em pulsos (ignora o ritmo,
-    // como antes; com notas de 1 pulso equivale a nº de notas − 2).
-    const maxDelay = maxDelayAtual(), delays = Array.from({ length: maxDelay + 1 }, (_, i) => i), opts = currentOptions();
+    // Atrasos candidatos: de 0 ao maior teto entre as posições (o teto de cada
+    // posição é aplicado pelo Worker via restrBusca[k].dmax).
+    const maxDelay = Math.max(...caps), delays = Array.from({ length: maxDelay + 1 }, (_, i) => i), opts = currentOptions();
+    const { sobrepMin, encadeado } = buscaState;
     const ctx = {
       leaderNotes: leaderNotes.map(n => Object.assign({}, n)), modo, keySig: expState.keySig, grid, pulse: P,
-      icDesired: Object.assign({}, icDesired), criterio, nVoices, restr
+      icDesired: Object.assign({}, icDesired), criterio, nVoices, restr, sobrepMin, encadeado
     };
     const worker = criarWorkerAnalise(); activeAnalysisWorker = worker;
-    const numEl = document.getElementById('expAnalysisNum');
+    const numEl = document.getElementById('expAnalysisStatus');
     const fim = () => { analyzeBtn.disabled = false; analyzeBtn.style.opacity = '1'; worker.terminate(); activeAnalysisWorker = null; };
     worker.onmessage = (ev) => {
       const d = ev.data;
@@ -2577,11 +2748,11 @@ buildReferenceTable();
       else if (d.type === 'error') { console.error(d.message); limparAnalise('⚠️ Erro durante a análise. Veja o console para detalhes.'); fim(); }
       else if (d.type === 'done') {
         lastAnalysisCriterio = criterio;
-        setAnalysis({ ctx, cfgs: d.cfgs, combos: d.combos, k: d.k, count: d.count, prep: new Map(), leaderP: null, distinct: null });
+        setAnalysis({ ctx, cfgs: d.cfgs, combos: d.combos, k: d.k, count: d.count, prep: new Map(), leaderP: null, distinct: null, sig });
         renderAnalysisResults(); fim();
       }
     };
-    worker.postMessage({ leaderNotes, modo, keySig: expState.keySig, opts, nVoices, delays, forms, ritmos, icDesired, criterio, grid, pulse: P, restr });
+    worker.postMessage({ leaderNotes, modo, keySig: expState.keySig, opts, nVoices, delays, forms, ritmos, icDesired, criterio, grid, pulse: P, restr: restrBusca, sobrepMin });
   }
 
   function sortIndicatorFor(key) {
@@ -2602,7 +2773,7 @@ buildReferenceTable();
 
   function filtersHtml(a) {
     const dv = distinctValues(a), anyActive = Object.values(analysisFilters).some(f => Object.values(f).some(filtroAtivo));
-    let h = `<div class="exp-filters"><div class="exp-filters-title"><span>Filtrar resultados (sem refazer a busca):</span>
+    let h = `<div class="exp-filters"><div class="exp-filters-title"><span class="exp-box-title">② Filtrar resultados <span class="exp-restr-hint">(sobre a lista já encontrada, sem refazer a busca)</span></span>
       <button type="button" class="analysis-page-btn" id="expFiltersClear" ${anyActive ? '' : 'disabled'}>Limpar filtros</button></div>`;
     const cur = (p, field, def) => (analysisFilters[p] && analysisFilters[p][field]) || def;
     const sel = (p, field, label, opts, extra = '') => {
@@ -2651,10 +2822,13 @@ buildReferenceTable();
       const active = analysisSortKey === key ? ' sort-active' : '';
       return `<th class="col-${cls} sortable${active}" data-sort="${key}">${label}${sortIndicatorFor(key)}</th>`;
     };
-    const filtrado = view.length !== a.count ? ` (filtrados de ${a.count.toLocaleString('pt-BR')})` : '';
+    const fmt = x => x.toLocaleString('pt-BR');
+    const contagem = `<b>${fmt(a.count)}</b> encontrada${a.count === 1 ? '' : 's'}`
+      + (view.length !== a.count ? ` · <b>${fmt(view.length)}</b> exibida${view.length === 1 ? '' : 's'} após os filtros` : '')
+      + (view.length ? ` · mostrando ${fmt(pageStart + 1)}–${fmt(pageEnd)}` : ' · nenhum resultado com estes filtros');
     let html = filtersHtml(a) + `
       <div class="exp-analysis-pagebar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;font-size:12px;flex-wrap:wrap">
-        <span>${view.length ? `Resultados ${(pageStart + 1).toLocaleString('pt-BR')}–${pageEnd.toLocaleString('pt-BR')} de ${view.length.toLocaleString('pt-BR')}` : 'Nenhum resultado com estes filtros'}${filtrado}</span>
+        <span class="exp-results-count">Resultados: ${contagem}</span>
         ${pageBarHtml(totalPages, 'flex-end')}
       </div>
       <table>
@@ -2813,7 +2987,13 @@ buildReferenceTable();
   // tonal), o número de vozes, as notas da Proposta e a lista completa de
   // combinações de imitação viáveis já encontradas pela última análise —
   // permitindo recarregar tudo sem rodar a busca de novo.
-  const PRESET_VERSION = 4;
+  const PRESET_VERSION = 5;
+
+  // v5: o contexto da análise guarda também a sobreposição mínima (sobrepMin) e
+  // o modo encadeado; ao carregar, a configuração da busca (critério,
+  // restrições por imitação, sobreposição, encadeamento) é restaurada na tela.
+  // Presets anteriores foram calculados com a regra fixa de 2 pulsos sobre a
+  // Proposta: carregam com sobreposição mínima 2 e sem encadeamento.
 
   // v4: resultados COMPACTOS — `analysis` guarda as configurações distintas
   // (cfgs), os índices de cada combinação (combos, k por resultado, na ordem de
@@ -2858,7 +3038,8 @@ buildReferenceTable();
       analysis: {
         ctx: {
           leaderNotes: analysis.ctx.leaderNotes.map(notaParaPreset), modo: analysis.ctx.modo, keySig: analysis.ctx.keySig,
-          pulse: analysis.ctx.pulse, icDesired: analysis.ctx.icDesired, criterio: analysis.ctx.criterio, restr: analysis.ctx.restr
+          pulse: analysis.ctx.pulse, icDesired: analysis.ctx.icDesired, criterio: analysis.ctx.criterio, restr: analysis.ctx.restr,
+          sobrepMin: analysis.ctx.sobrepMin, encadeado: !!analysis.ctx.encadeado
         },
         k: analysis.k, count: analysis.count,
         cfgs: analysis.cfgs.map(c => ({ transpIdx: c.transpIdx, transpOpt: c.transpOpt, delay: c.delay, inv: !!c.inv, ret: !!c.ret, ritmoIdx: c.ritmoIdx || 0 })),
@@ -2891,7 +3072,9 @@ buildReferenceTable();
       leaderNotes, modo: md, keySig: ctxSrc.keySig || data.keySig || 'C', pulse,
       icDesired: Object.assign({}, icDesired, ctxSrc.icDesired || {}),
       criterio: ['A', 'B', 'C'].includes(ctxSrc.criterio || data.criterio) ? (ctxSrc.criterio || data.criterio) : 'A',
-      restr: ctxSrc.restr || null
+      restr: ctxSrc.restr || null,
+      sobrepMin: Number.isInteger(ctxSrc.sobrepMin) && ctxSrc.sobrepMin >= 1 ? ctxSrc.sobrepMin : 2,
+      encadeado: !!ctxSrc.encadeado
     };
     let cfgs, combos, k, count;
     if (A && Array.isArray(A.cfgs) && Array.isArray(A.combos)) {
@@ -2970,6 +3153,22 @@ buildReferenceTable();
       appliedAnalysisIndex = null;
       let carregada = null;
       try { carregada = analiseDoPreset(data); } catch (e) { console.error(e); alert('Não foi possível reconstruir a lista de resultados deste preset.'); }
+      // Restaura a configuração da busca com que os resultados foram obtidos.
+      Object.keys(restrState).forEach(k => delete restrState[k]);
+      if (carregada) {
+        const cx = carregada.ctx;
+        buscaState.sobrepMin = cx.sobrepMin; buscaState.encadeado = cx.encadeado;
+        if (Array.isArray(cx.restr)) cx.restr.forEach((r, i) => {
+          if (!r) return;
+          const txt = v => (v == null ? '' : String(v)), def = restrPadrao();
+          restrState[i + 1] = {
+            dmin: txt(r.dmin), dmax: txt(r.dmax),
+            dirs: Array.isArray(r.dirs) ? [...r.dirs] : def.dirs, forms: Array.isArray(r.forms) ? [...r.forms] : def.forms,
+            ritmos: Array.isArray(r.ritmos) ? [...r.ritmos] : def.ritmos
+          };
+        });
+      } else { buscaState.sobrepMin = 1; buscaState.encadeado = false; }
+      syncBuscaUI();
       setAnalysis(carregada);
 
       setup();
@@ -2978,6 +3177,10 @@ buildReferenceTable();
       populateKeySelect();
 
       renderRestrRows();
+      // A assinatura é tomada depois de restaurar todo o estado: a tela agora
+      // corresponde exatamente à busca que gerou a lista carregada.
+      if (analysis) analysis.sig = assinaturaBusca();
+      atualizarAvisoDesatualizado();
       renderAnalysisResults();
 
       // Leva o usuário à aba "Análise de Imitações", onde a lista carregada
@@ -3004,6 +3207,7 @@ buildReferenceTable();
 
   document.getElementById('expAnalyzeBtn').onclick = analisarImitacoesViaveis;
   voices.addEventListener('change', renderRestrRows);
+  syncBuscaUI();
   renderRestrRows();
 
   // =====================================================================
